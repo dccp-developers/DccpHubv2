@@ -174,7 +174,7 @@ final class User extends Authenticatable implements FilamentUser, MustVerifyEmai
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return false;
     }
 
     protected static function booted(): void
@@ -186,7 +186,7 @@ final class User extends Authenticatable implements FilamentUser, MustVerifyEmai
         }));
     }
 
-   
+
 
     // public function getPhotoUrl(): Attribute
     // {
@@ -207,7 +207,7 @@ final class User extends Authenticatable implements FilamentUser, MustVerifyEmai
             'password' => 'hashed',
         ];
     }
-    
+
     public function person()
     {
         return $this->morphTo();

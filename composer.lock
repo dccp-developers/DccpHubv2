@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a3abaf0bd469190234783a2455e55164",
+    "content-hash": "5cff66a2cbaea90d5d0a4ea20d8d8282",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -6307,6 +6307,85 @@
                 "source": "https://github.com/bobthecow/psysh/tree/v0.12.7"
             },
             "time": "2024-12-10T01:58:33+00:00"
+        },
+        {
+            "name": "quix-labs/laravel-supabase-flysystem",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/quix-labs/laravel-supabase-flysystem.git",
+                "reference": "0a064dcea246a3897ee4e671c904405c8e0aec06"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/quix-labs/laravel-supabase-flysystem/zipball/0a064dcea246a3897ee4e671c904405c8e0aec06",
+                "reference": "0a064dcea246a3897ee4e671c904405c8e0aec06",
+                "shasum": ""
+            },
+            "require": {
+                "ext-fileinfo": "*",
+                "guzzlehttp/guzzle": "^7.2",
+                "illuminate/contracts": "^10.0|^11.0",
+                "illuminate/filesystem": "^10.0|^11.0",
+                "illuminate/http": "^10.0|^11.0",
+                "illuminate/support": "^10.0|^11.0",
+                "league/flysystem": "^3.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "larastan/larastan": "^2.0.1",
+                "laravel/pint": "^1.0",
+                "nunomaduro/collision": "^7.8",
+                "orchestra/testbench": "^8.8",
+                "pestphp/pest": "^2.20",
+                "pestphp/pest-plugin-arch": "^2.0",
+                "pestphp/pest-plugin-laravel": "^2.0",
+                "phpstan/extension-installer": "^1.1",
+                "phpstan/phpstan-deprecation-rules": "^1.0",
+                "phpstan/phpstan-phpunit": "^1.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "QuixLabs\\LaravelSupabaseFlysystem\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "QuixLabs\\LaravelSupabaseFlysystem\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "COLANT Alan",
+                    "email": "contact@alancolant.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Supabase Adapter for Laravel Flysystem Storage",
+            "homepage": "https://github.com/quix-labs/laravel-supabase-flysystem",
+            "keywords": [
+                "Flysystem",
+                "laravel",
+                "supabase"
+            ],
+            "support": {
+                "issues": "https://github.com/quix-labs/laravel-supabase-flysystem/issues",
+                "source": "https://github.com/quix-labs/laravel-supabase-flysystem/tree/1.0.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/alancolant",
+                    "type": "github"
+                }
+            ],
+            "time": "2024-03-24T20:35:32+00:00"
         },
         {
             "name": "ralouphie/getallheaders",

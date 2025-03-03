@@ -58,6 +58,24 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
         ],
+        'supabase' => [
+    'driver' => 'supabase',
+    'key'    => env('SUPABASE_STORAGE_KEY'), // Use a privileged key; read-only does not work
+    'bucket' => env('SUPABASE_STORAGE_BUCKET'),
+    'endpoint' => env('SUPABASE_STORAGE_ENDPOINT'),
+
+    'url'      => null, // <- Automatically generated; change here if you are using a proxy
+
+    'public'                      => true,  // Default to true
+    'defaultUrlGeneration'        => null, // 'signed' | 'public' <- default depends on public
+
+    'defaultUrlGenerationOptions' => [
+        'download'  => false,
+        'transform' => [],
+    ],
+
+    'signedUrlExpires' => 60*60*24, // 1 day <- default to 1 hour (3600)
+],
 
     ],
 
