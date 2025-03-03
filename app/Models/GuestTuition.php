@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 /* CREATE TABLE `guest_tuition` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `totaltuition` int(11) DEFAULT NULL,
@@ -14,14 +17,15 @@ use Illuminate\Database\Eloquent\Model;
   `invoice_uuid` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci */
-class GuestTuition extends Model
+final class GuestTuition extends Model
 {
     use HasFactory;
+
+    public $timestamps = false;
+
     protected $table = 'guest_tuition';
 
     protected $primaryKey = 'id';
-
-    public $timestamps = false;
 
     protected $fillable = [
         'totaltuition',
@@ -50,8 +54,9 @@ class GuestTuition extends Model
         'miscellaneous' => 'int',
         'overall_total' => 'int',
     ];
+
     public function enrollee()
     {
         return $this->belongsTo(GuestEnrollment::class);
-    }   
+    }
 }

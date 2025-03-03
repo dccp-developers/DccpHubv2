@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 /* CREATE TABLE `guest_personal_info` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `firstname` varchar(100) DEFAULT NULL,
@@ -24,32 +27,35 @@ use Illuminate\Database\Eloquent\Model;
   `age` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci */
-class GuestPersonalInfo extends Model
+final class GuestPersonalInfo extends Model
 {
     use HasFactory;
 
-    protected $table = "guest_personal_info";
-    protected $primaryKey = "id";
     public $timestamps = false;
 
+    protected $table = 'guest_personal_info';
+
+    protected $primaryKey = 'id';
+
     protected $fillable = [
-        "firstname",
-        "middleinitial",
-        "lastname",
-        "birthdate",
-        "birthplace",
-        "citizenship",
-        "religion",
-        "sex",
-        "civilstatus",
-        "weight",
-        "height",
-        "currentaddress",
-        "permanentaddress",
-        "inputemail",
-        "phone",
-        "age",
+        'firstname',
+        'middleinitial',
+        'lastname',
+        'birthdate',
+        'birthplace',
+        'citizenship',
+        'religion',
+        'sex',
+        'civilstatus',
+        'weight',
+        'height',
+        'currentaddress',
+        'permanentaddress',
+        'inputemail',
+        'phone',
+        'age',
     ];
+
     public function enrollee()
     {
         return $this->belongsTo(GuestEnrollment::class);

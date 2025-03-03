@@ -8,12 +8,8 @@ use App\Models\Team;
 use App\Models\User;
 use Stripe\Customer;
 use App\Models\Faculty;
-use App\Models\Student;
 use App\Models\Students;
 use App\Models\ShsStudents;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Laravel\Jetstream\Jetstream;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Config;
@@ -40,8 +36,8 @@ final class CreateNewUser implements CreatesNewUsers
             'id' => ['required', 'integer'],
             // 'person_type' => ['required', 'string'],
         ])->validate();
-                // Determine person type
-                $personType = $this->determinePersonType($input['id']);
+        // Determine person type
+        $personType = $this->determinePersonType($input['id']);
 
         return DB::transaction(fn () => tap(User::query()->create([
             'name' => $input['name'],
@@ -57,18 +53,6 @@ final class CreateNewUser implements CreatesNewUsers
             // $this->createTeam($user);
             $this->createCustomer($user);
         }));
-    }
-
-    /**
-     * Create a personal team for the user.
-     */
-    private function createTeam(User $user): void
-    {
-        $user->ownedTeams()->save(Team::query()->forceCreate([
-            'user_id' => $user->id,
-            'name' => explode(' ', $user->name, 2)[0]."'s Team",
-            'personal_team' => true,
-        ]));
     }
 
     /**
@@ -88,30 +72,20 @@ final class CreateNewUser implements CreatesNewUsers
         ]);
     }
 
-    private function determineRole(int $roleId): string
-    {
-        if (Students::where('id', $roleId)->exists()) {
-            return 'student';
-        } elseif (Faculty::where('id', $roleId)->exists()) {
-            return 'faculty';
-        }
-        return 'guest';
-    }
-
     /**
      * Determine the person type based on the ID.
      */
     private function determinePersonType(string $studentId): ?string
     {
-        if (Students::where('id', $studentId)->exists()) {
+        if (\App\Models\Students::query()->where('id', $studentId)->exists()) {
             return Students::class;
         }
 
-        if (Faculty::where('id', $studentId)->exists()) {
+        if (\App\Models\Faculty::query()->where('id', $studentId)->exists()) {
             return Faculty::class;
         }
 
-        if (ShsStudents::where('student_lrn', $studentId)->exists()) {
+        if (\App\Models\ShsStudents::query()->where('student_lrn', $studentId)->exists()) {
             return ShsStudents::class;
         }
 

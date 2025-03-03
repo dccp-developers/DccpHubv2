@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /* CREATE TABLE "rooms" (
     "id" bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -13,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
     "updated_at" timestamp NULL DEFAULT NULL,
     PRIMARY KEY ("id")
 ) */
-class rooms extends Model
+final class rooms extends Model
 {
     use HasFactory;
 

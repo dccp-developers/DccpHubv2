@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /*CREATE TABLE laravel.subject (
     id                   int  NOT NULL  AUTO_INCREMENT  PRIMARY KEY,
@@ -24,8 +26,10 @@ ALTER TABLE laravel.subject ADD CONSTRAINT fk_subject_courses FOREIGN KEY ( cour
 
 */
 
-class Subject extends Model
+final class Subject extends Model
 {
+    public $timestamps = false;
+
     protected $table = 'subject';
 
     protected $primaryKey = 'id';
@@ -43,7 +47,13 @@ class Subject extends Model
         'semester' => 'integer',
     ];
 
-    public $timestamps = false;
+    /**
+     * Get subjects details by academic year
+     */
+    public static function getSubjectsDetailsByYear(Collection $subjects, int $year): string
+    {
+        return $subjects->where('academic_year', $year)->map(fn($subject): string => "{$subject->title} (Code: {$subject->code}, Units: {$subject->units})")->join(', ');
+    }
 
     /**
      * Get the course associated with the subject
@@ -86,16 +96,6 @@ class Subject extends Model
     }
 
     /**
-     * Get subjects details by academic year
-     */
-    public static function getSubjectsDetailsByYear(Collection $subjects, int $year): string
-    {
-        return $subjects->where('academic_year', $year)->map(function ($subject) {
-            return "{$subject->title} (Code: {$subject->code}, Units: {$subject->units})";
-        })->join(', ');
-    }
-
-    /**
      * Get the total hours per week (lecture + laboratory)
      */
     public function getTotalHoursPerWeekAttribute(): int
@@ -108,6 +108,6 @@ class Subject extends Model
      */
     public function hasPrerequisites(): bool
     {
-        return !empty($this->pre_riquisite);
+        return ! empty($this->pre_riquisite);
     }
 }

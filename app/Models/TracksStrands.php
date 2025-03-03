@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class TracksStrands extends Model
+final class TracksStrands extends Model
 {
     use HasFactory;
 
@@ -16,11 +18,13 @@ class TracksStrands extends Model
         'track_id',
     ];
 
-    public function Track(){
+    public function Track()
+    {
         return $this->belongsTo(ShsTracks::class, 'track_id');
     }
 
-    public function Subjects(){
+    public function Subjects()
+    {
         return $this->hasMany(StrandSubjects::class, 'strand_id');
     }
 }

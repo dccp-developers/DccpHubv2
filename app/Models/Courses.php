@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /* CREATE TABLE test.courses (
     id                   int  NOT NULL  AUTO_INCREMENT,
@@ -16,13 +18,13 @@ use Illuminate\Database\Eloquent\Model;
 
  */
 
-class Courses extends Model
+final class Courses extends Model
 {
     use HasFactory;
 
-    protected $table = 'courses';
-
     public $timestamps = false;
+
+    protected $table = 'courses';
 
     protected $fillable = [
         'code',
@@ -34,20 +36,14 @@ class Courses extends Model
         'lab_per_unit',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        self::creating(function ($model) {
-            $model->code = strtoupper($model->code);
-        });
-
-        self::deleting(function ($model) {
-            $model->Subjects()->delete();
-        });
-    }
-
     protected $primaryKey = 'id';
+
+    public static function getCourseDetails($courseId): string
+    {
+        $course = self::query()->find($courseId);
+
+        return $course ? "{$course->title} (Code: {$course->code}, Department: {$course->department})" : 'Course details not available';
+    }
 
     // protected $casts = [
     //     'code' => 'array',
@@ -58,15 +54,21 @@ class Courses extends Model
         return $this->hasMany(Subject::class, 'course_id', 'id');
     }
 
-    public static function getCourseDetails($courseId)
+    public function getCourseCodeAttribute(): string
     {
-        $course = self::find($courseId);
-
-        return $course ? "{$course->title} (Code: {$course->code}, Department: {$course->department})" : 'Course details not available';
+        return mb_strtoupper((string) $this->attributes['code']);
     }
 
-    public function getCourseCodeAttribute()
+    protected static function boot(): void
     {
-        return strtoupper($this->attributes['code']);
+        parent::boot();
+
+        self::creating(function ($model): void {
+            $model->code = mb_strtoupper((string) $model->code);
+        });
+
+        self::deleting(function ($model): void {
+            $model->Subjects()->delete();
+        });
     }
 }

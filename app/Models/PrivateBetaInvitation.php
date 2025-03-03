@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 // app/Models/PrivateBetaInvitation.php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PrivateBetaInvitation extends Model
+final class PrivateBetaInvitation extends Model
 {
     protected $fillable = [
         'email',

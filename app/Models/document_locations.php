@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /* CREATE TABLE laravel.document_locations (
     id                   int  NOT NULL  AUTO_INCREMENT  PRIMARY KEY,
@@ -17,15 +19,15 @@ use Illuminate\Database\Eloquent\Model;
  );
 
  */
-class document_locations extends Model
+final class document_locations extends Model
 {
     use HasFactory;
+
+    public $timestamps = false;
 
     protected $table = 'document_locations';
 
     protected $primaryKey = 'id';
-
-    public $timestamps = false;
 
     protected $fillable = [
         'birth_certificate',

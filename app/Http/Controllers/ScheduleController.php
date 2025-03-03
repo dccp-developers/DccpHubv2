@@ -4,37 +4,35 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Inertia\Inertia;
+use Inertia\Response;
 use App\Models\Classes;
 use App\Models\Schedule;
 use App\Models\Students;
 use App\Models\GeneralSettings;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Inertia\Response;
 
 final class ScheduleController extends Controller
 {
     public function index(): Response
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
-        // Ensure the user is a student.
-        if (! $user->student) {
-            abort(403, 'Only students can access this page.');
-        }
+        abort_unless($user->student, 403, 'Only students can access this page.');
 
         /** @var Students $student */
         $student = $user->student;
 
         // Get current semester and school year from settings
-        $settings = GeneralSettings::first();
+        $settings = \App\Models\GeneralSettings::query()->first();
         $currentSemester = $settings->semester;
         $currentSchoolYear = $settings->getSchoolYear();
 
         // Get the student's classes for the current semester and academic year
         $classes = Classes::query()
-            ->whereHas('ClassStudents', function ($query) use ($student) {
+            ->whereHas('ClassStudents', function ($query) use ($student): void {
                 $query->where('student_id', $student->id);
             })
             ->where('semester', $currentSemester)
@@ -44,35 +42,33 @@ final class ScheduleController extends Controller
                 'Subject',
                 'ShsSubject',
                 'Faculty',
-                'Room'
+                'Room',
             ])
             ->get();
 
         // Flatten and enhance the schedule data
-        $schedules = $classes->flatMap(function (Classes $class) {
-            return $class->Schedule->map(function (Schedule $schedule) use ($class) {
-                // Format the time in a more readable way
-                $startTime = $schedule->start_time->format('g:i A');
-                $endTime = $schedule->end_time->format('g:i A');
+        $schedules = $classes->flatMap(fn(Classes $class) => $class->Schedule->map(function (Schedule $schedule) use ($class): array {
+            // Format the time in a more readable way
+            $startTime = $schedule->start_time->format('g:i A');
+            $endTime = $schedule->end_time->format('g:i A');
 
-                return [
-                    'id' => $schedule->id,
-                    'day_of_week' => strtolower($schedule->day_of_week),
-                    'time' => "{$startTime} - {$endTime}",
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                    'subject' => $class->subject_title,
-                    'subject_code' => $class->formated_subject_code,
-                    'room' => $schedule->room?->name ?? "N/A",
-                    'teacher' => $class->faculty_full_name,
-                    'class_id' => $class->id,
-                    'section' => $class->section,
-                    'color' => $this->generateColorForSubject($class->subject_code),
-                ];
-            });
-        })->sortBy([
+            return [
+                'id' => $schedule->id,
+                'day_of_week' => mb_strtolower($schedule->day_of_week),
+                'time' => "{$startTime} - {$endTime}",
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'subject' => $class->subject_title,
+                'subject_code' => $class->formated_subject_code,
+                'room' => $schedule->room?->name ?? 'N/A',
+                'teacher' => $class->faculty_full_name,
+                'class_id' => $class->id,
+                'section' => $class->section,
+                'color' => $this->generateColorForSubject($class->subject_code),
+            ];
+        }))->sortBy([
             ['day_of_week', 'asc'],
-            ['start_time', 'asc']
+            ['start_time', 'asc'],
         ])->values()->all();
 
         return Inertia::render('Schedules/Index', [

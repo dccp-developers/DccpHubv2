@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /* CREATE  TABLE `laravel-v1`.student_tuition (
     id                   BIGINT    NOT NULL AUTO_INCREMENT  PRIMARY KEY,
@@ -25,7 +27,7 @@ ALTER TABLE `laravel-v1`.student_tuition ADD CONSTRAINT fk_student_tuition_stude
 
  */
 
-class StudentTuition extends Model
+final class StudentTuition extends Model
 {
     use HasFactory;
 

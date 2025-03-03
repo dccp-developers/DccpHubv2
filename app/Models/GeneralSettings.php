@@ -1,14 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\ClearResponseCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Joaopaulolndev\FilamentGeneralSettings\Models\GeneralSetting;
 
-class GeneralSettings extends Model
+final class GeneralSettings extends Model
 {
     // use ClearResponseCache;
     use HasFactory;
@@ -70,16 +71,7 @@ class GeneralSettings extends Model
         'curriculum_year' => 'string',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::saved(function ($settings) {
-            self::clearCache();
-        });
-    }
-
-    public static function clearCache()
+    public static function clearCache(): void
     {
         Cache::forget('general_settings');
     }
@@ -115,5 +107,14 @@ class GeneralSettings extends Model
             2 => '2nd Semester',
             default => '1st Semester',
         };
+    }
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        self::saved(function ($settings): void {
+            self::clearCache();
+        });
     }
 }
