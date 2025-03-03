@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Hashids\Hashids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Transaction extends Model
+final class Transaction extends Model
 {
     use HasFactory;
 
@@ -26,9 +27,7 @@ class Transaction extends Model
         'settlements' => 'array',
     ];
 
-
-
-    public function getTransactionTypeStringAttribute()
+    public function getTransactionTypeStringAttribute(): string
     {
         return ucwords(str_replace('_', ' ', $this->transaction_type));
     }
@@ -40,7 +39,7 @@ class Transaction extends Model
         return $student->full_name;
     }
 
-    public function getStudentCourseAttribute()
+    public function getStudentCourseAttribute(): string
     {
         $student = $this->student()->first();
 

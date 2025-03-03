@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\Classes;
-use App\Models\Students;
-use App\Models\Subject;
-use App\Models\SubjectEnrolled;
+use Carbon\Carbon;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Classes;
+use App\Models\Students;
+use App\Models\GeneralSettings;
+use App\Models\SubjectEnrolled;
+use Illuminate\Support\Facades\Auth;
 
 final class DashboardController extends Controller
 {
@@ -30,8 +31,8 @@ final class DashboardController extends Controller
         $student = $user->student;
 
         // Get the student's current enrollments.
-        $currentSemester = \App\Models\GeneralSettings::first()->semester;
-        $currentSchoolYear = \App\Models\GeneralSettings::first()->getSchoolYear();
+        $currentSemester = \App\Models\GeneralSettings::query()->first()->semester;
+        $currentSchoolYear = \App\Models\GeneralSettings::query()->first()->getSchoolYear();
 
         $enrollments = SubjectEnrolled::query()
             ->where('student_id', $student->id)
@@ -42,16 +43,16 @@ final class DashboardController extends Controller
 
         // Calculate stats.
         $gpa = SubjectEnrolled::calculateOverallGPA($student->id); // Get the overall GPA
-        $totalUnits = $enrollments->sum(fn (SubjectEnrolled $enrollment) => $enrollment->subject->units);
+        $enrollments->sum(fn (SubjectEnrolled $enrollment) => $enrollment->subject->units);
         $attendancePercentage = 100; // Placeholder, needs to be calculated based on attendance records.
 
         // Get today's classes.
         $today = now()->dayOfWeek; // Get the current day of the week (0 = Sunday, 6 = Saturday).
         $todaysClasses = Classes::query()
-            ->whereHas('ClassStudents', function ($query) use ($student) {
+            ->whereHas('ClassStudents', function ($query) use ($student): void {
                 $query->where('student_id', $student->id);
             })
-            ->whereHas('Schedule', function ($query) use ($today) {
+            ->whereHas('Schedule', function ($query) use ($today): void {
                 $query->where('day_of_week', $today);
             })
             ->with(['Subject', 'Faculty', 'Schedule', 'ShsSubject'])
@@ -59,15 +60,16 @@ final class DashboardController extends Controller
 
         // Find the *current* class.  This is more complex, as we need to check the time.
         $currentTime = now();
-        $currentClass = $todaysClasses->first(function (Classes $class) use ($currentTime) {
+        $currentClass = $todaysClasses->first(function (Classes $class) use ($currentTime): bool {
             foreach ($class->Schedule as $schedule) {
-                $startTime = \Carbon\Carbon::parse($schedule->time_start);
-                $endTime = \Carbon\Carbon::parse($schedule->time_end);
+                $startTime = Carbon::parse($schedule->time_start);
+                $endTime = Carbon::parse($schedule->time_end);
 
                 if ($currentTime->between($startTime, $endTime)) {
                     return true; // Found the current class!
                 }
             }
+
             return false; // Not this class.
         });
 
@@ -84,18 +86,16 @@ final class DashboardController extends Controller
 
         $statsData = [
             ['label' => 'GPA', 'value' => $gpa !== null ? number_format($gpa, 2) : 'N/A'],
-            ['label' => 'Attendance', 'value' => $attendancePercentage . '%'],
+            ['label' => 'Attendance', 'value' => $attendancePercentage.'%'],
             ['label' => 'Assignments Due', 'value' => 'Coming Soon'], // Placeholder
             ['label' => 'Upcoming Exams', 'value' => 'Coming Soon'], // Placeholder
         ];
 
-        $todaysClassesData = $todaysClasses->map(fn (Classes $class) => [
+        $todaysClassesData = $todaysClasses->map(fn (Classes $class): array => [
             'id' => $class->id,
             'subject' => $class->subject_title,
             'room' => $class->formated_assigned_rooms,
-            'time' => collect($class->Schedule)->map(function ($s){
-                return $s->time_start . ' - ' . $s->time_end;
-            })->join(', '), // Format time.
+            'time' => collect($class->Schedule)->map(fn($s): string => $s->time_start.' - '.$s->time_end)->join(', '), // Format time.
             'teacher' => $class->faculty_full_name,
         ]);
 
@@ -103,13 +103,11 @@ final class DashboardController extends Controller
             'id' => $currentClass->id,
             'subject' => $currentClass->subject_title,
             'room' => $currentClass->formated_assigned_rooms,
-            'time' => collect($currentClass->Schedule)->map(function ($s){
-                return $s->time_start . ' - ' . $s->time_end;
-            })->first(), // Format time.
+            'time' => collect($currentClass->Schedule)->map(fn($s): string => $s->time_start.' - '.$s->time_end)->first(), // Format time.
             'teacher' => $currentClass->faculty_full_name,
         ] : null; // Handle case where there's no current class
 
-        $recentGradesData = $recentGrades->map(fn (SubjectEnrolled $enrollment) => [
+        $recentGradesData = $recentGrades->map(fn (SubjectEnrolled $enrollment): array => [
             'id' => $enrollment->id,
             'subject' => $enrollment->subject->title,
             'assignment' => 'Coming Soon', // Placeholder - you might have an assignment relationship
@@ -127,7 +125,7 @@ final class DashboardController extends Controller
             'assignments' => 'Coming Soon', // Placeholder
             'exams' => 'Coming Soon',       // Placeholder
             'announcements' => 'Coming Soon', // Placeholder
-            'resources' => 'Coming Soon'
+            'resources' => 'Coming Soon',
         ]);
     }
 }

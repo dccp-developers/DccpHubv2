@@ -1,27 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use App\Models\Course;
-use App\Models\Faculty;
-use App\Models\Subject;
-use App\Models\Schedule;
-use App\Models\StrandSubjects;
-use App\Models\class_enrollments;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Classes extends Model
+final class Classes extends Model
 {
     use HasFactory;
+
+    public $timestamps = false;
 
     protected $table = 'classes';
 
     protected $primaryKey = 'id';
-
-    public $timestamps = false;
 
     protected $fillable = [
         'subject_code',
@@ -40,15 +36,6 @@ class Classes extends Model
     ];
 
     protected $with = ['Faculty'];
-
-    protected static function boot()
-    {
-        parent::boot();
-        self::deleting(function ($model) {
-            $model->Schedule()->delete();
-            $model->ClassStudents()->delete();
-        });
-    }
 
     /**
      * Get the posts associated with the class
@@ -82,7 +69,7 @@ class Classes extends Model
     public function Faculty(): BelongsTo
     {
         return $this->belongsTo(Faculty::class, 'faculty_id', 'id')
-                    ->withCasts(['id' => 'string']);
+            ->withCasts(['id' => 'string']);
     }
 
     /**
@@ -124,9 +111,10 @@ class Classes extends Model
     {
         if ($this->ShsSubject) {
             return $this->ShsSubject->title;
-        } else {
-            return $this->Subject->title ?? 'Unknown Subject';
         }
+
+        return $this->Subject->title ?? 'Unknown Subject';
+
     }
 
     /**
@@ -136,9 +124,10 @@ class Classes extends Model
     {
         if ($this->ShsSubject) {
             return $this->ShsSubject->code;
-        } else {
-            return $this->Subject->code ?? $this->subject_code;
         }
+
+        return $this->Subject->code ?? $this->subject_code;
+
     }
 
     /**
@@ -146,7 +135,7 @@ class Classes extends Model
      */
     public function getFacultyFullNameAttribute(): string
     {
-        return $this->Faculty->faculty_full_name?? 'N/A';
+        return $this->Faculty->faculty_full_name ?? 'N/A';
     }
 
     /**
@@ -162,7 +151,7 @@ class Classes extends Model
      */
     public function getAssignedRoomsAttribute(): array
     {
-        return rooms::whereIn('id', $this->assigned_room_ids)->pluck('name')->toArray();
+        return \App\Models\rooms::query()->whereIn('id', $this->assigned_room_ids)->pluck('name')->toArray();
     }
 
     /**
@@ -182,7 +171,7 @@ class Classes extends Model
             1 => '1st year',
             2 => '2nd year',
             3 => '3rd year',
-            4 => '4th year'
+            4 => '4th year',
         ];
 
         return $yearMapping[$this->academic_year] ?? 'Unknown year';
@@ -190,11 +179,20 @@ class Classes extends Model
 
     public function getFormatedTitleAttribute()
     {
-        if($this->ShsSubject){
+        if ($this->ShsSubject) {
             return $this->ShsSubject->title;
-        }else{
-            return $this->Subject->title;
         }
+
+        return $this->Subject->title;
+
     }
 
+    protected static function boot(): void
+    {
+        parent::boot();
+        self::deleting(function ($model): void {
+            $model->Schedule()->delete();
+            $model->ClassStudents()->delete();
+        });
+    }
 }

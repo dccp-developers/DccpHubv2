@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class RegistrationTest extends TestCase
+final class RegistrationTest extends TestCase
 {
     // use RefreshDatabase;
 
     /** @test */
-    public function it_checks_email_existence()
+    public function it_checks_email_existence(): void
     {
         $response = $this->postJson('/api/check-email', [
             'email' => 'test@example.com',
@@ -21,7 +23,7 @@ class RegistrationTest extends TestCase
     }
 
     /** @test */
-    public function it_checks_id_existence()
+    public function it_checks_id_existence(): void
     {
         $response = $this->postJson('/api/check-id', [
             'id' => '12345',

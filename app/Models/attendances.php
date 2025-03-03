@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class attendances extends Model
+final class attendances extends Model
 {
     use HasFactory;
 
@@ -17,9 +19,8 @@ class attendances extends Model
 
     ];
 
-    public function class_enrollment(){
+    public function class_enrollment()
+    {
         return $this->belongsTo(class_enrollments::class, 'class_enrollment_id');
     }
-
-
 }

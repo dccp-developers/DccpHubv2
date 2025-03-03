@@ -13,8 +13,6 @@ use App\Actions\Jetstream\DeleteUser;
 use App\Actions\Fortify\CreateNewUser;
 use Illuminate\Database\Eloquent\Collection;
 use App\Actions\Fortify\UpdateUserProfileInformation;
-use App\Models\Students;
-use App\Models\Faculty;
 
 /**
  * @group User management
@@ -94,6 +92,4 @@ final class ApiUserController extends Controller
 
         return response()->noContent();
     }
-
-   
 }

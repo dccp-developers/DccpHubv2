@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use App\Models\ShsStudents;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /* CREATE TABLE `class_enrollments` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
   CONSTRAINT `fk_class_enrollments_students` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci */
 
-class class_enrollments extends Model
+final class class_enrollments extends Model
 {
     use HasFactory;
 
@@ -68,9 +69,10 @@ class class_enrollments extends Model
     {
         if ($this->ShsStudent) {
             return $this->ShsStudent->fullname;
-        } else {
-            return $this->student->full_name;
         }
+
+        return $this->student->full_name;
+
     }
 
     /**
@@ -80,9 +82,10 @@ class class_enrollments extends Model
     {
         if ($this->ShsStudent) {
             return $this->ShsStudent->grade_level;
-        } else {
-            return $this->student->academic_year;
         }
+
+        return $this->student->academic_year;
+
     }
 
     /**
@@ -92,9 +95,10 @@ class class_enrollments extends Model
     {
         if ($this->ShsStudent) {
             return $this->ShsStudent->student_lrn;
-        } else {
-            return $this->student->id;
         }
+
+        return $this->student->id;
+
     }
 
     /**
@@ -104,9 +108,10 @@ class class_enrollments extends Model
     {
         if ($this->ShsStudent) {
             return $this->ShsStudent->track;
-        } else {
-            return $this->student->course->code;
         }
+
+        return $this->student->course->code;
+
     }
 
     /**
@@ -116,9 +121,10 @@ class class_enrollments extends Model
     {
         if ($this->ShsStudent) {
             return $this->ShsStudent;
-        } else {
-            return $this->student;
         }
+
+        return $this->student;
+
     }
 
     /**
@@ -146,6 +152,6 @@ class class_enrollments extends Model
      */
     public function getIsCompletedAttribute(): bool
     {
-        return !empty($this->completion_date);
+        return ! empty($this->completion_date);
     }
 }

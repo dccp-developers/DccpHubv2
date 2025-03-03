@@ -1,14 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use App\Models\Resource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class StudentEnrollment extends Model
+final class StudentEnrollment extends Model
 {
     use HasFactory;
     use SoftDeletes;
@@ -24,12 +25,12 @@ class StudentEnrollment extends Model
 
     // protected $dates = ['enrollment_date', 'completion_date'];
 
-    public static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
-        static::creating(function (self $model) {
-            $settings = GeneralSettings::first();
+        self::creating(function (self $model): void {
+            $settings = \App\Models\GeneralSettings::query()->first();
             $model->status = 'Pending';
             $model->school_year = $settings->getSchoolYearString();
             $model->semester = $settings->semester;
@@ -89,12 +90,14 @@ class StudentEnrollment extends Model
     public function getAssessmentUrlAttribute(): string
     {
         $resource = $this->resources()->where('type', 'assessment')->first();
+
         return $resource ? Storage::disk('public')->url($resource->file_path) : '';
     }
 
     public function getCertificateUrlAttribute(): string
     {
         $resource = $this->resources()->where('type', 'certificate')->first();
+
         return $resource ? Storage::disk('public')->url($resource->file_path) : '';
     }
 }

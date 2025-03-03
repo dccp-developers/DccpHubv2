@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class ShsStudents extends Model
+final class ShsStudents extends Model
 {
     use HasFactory;
 
@@ -34,7 +36,8 @@ class ShsStudents extends Model
 
     public function getCodeAttribute()
     {
-        $Strand = TracksStrands::where('id', $this->strand_id)->first();
+        $Strand = \App\Models\TracksStrands::query()->where('id', $this->strand_id)->first();
+
         return $Strand->code;
     }
 

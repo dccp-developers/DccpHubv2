@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /* CREATE TABLE test.students (
     id                   int  NOT NULL  ,
@@ -58,17 +60,17 @@ ALTER TABLE test.students ADD CONSTRAINT fk_students_document_locations FOREIGN 
 
  */
 
-class Students extends Model
+final class Students extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
+    public $timestamps = true;
 
     protected $table = 'students';
 
-    public $timestamps = true;
-
     // protected $primaryKey = 'id';
 
-    protected $autoIncrement = false;
+    private bool $autoIncrement = false;
 
     protected $fillable = [
         'id',
@@ -97,28 +99,6 @@ class Students extends Model
         'clearance_status',
 
     ];
-
-    protected static function boot()
-    {
-        parent::boot();
-        // static::creating(function (Students $model) {
-        //     $maxStudentId = Students::max('id');
-        //     $newId = max($maxStudentId, 1) + 1;
-        //     $model->student_id = $newId;
-        // });
-
-        static::forceDeleting(function ($student) {
-            $student->StudentTransactions()->delete();
-            $student->StudentTuition()->delete();
-            $student->StudentParentInfo()->delete();
-            $student->StudentEducationInfo()->delete();
-            $student->StudentContactsInfo()->delete();
-            $student->personalInfo()->delete();
-            $student->subjectEnrolled()->delete();
-            $student->DocumentLocation()->delete();
-            $student->Accounts()->delete();
-        });
-    }
 
     public function DocumentLocation()
     {
@@ -181,9 +161,10 @@ class Students extends Model
     {
         return $this->hasMany(class_enrollments::class, 'student_id', 'id');
     }
+
     // app/Models/Students.php
 
-    public function enrollInClasses()
+    public function enrollInClasses(): void
     {
         $subjectEnrollments = $this->subjectEnrolled;
 
@@ -192,7 +173,7 @@ class Students extends Model
 
             Log::info("Enrolling student {$this->id} in classes for subject: {$subject->code}");
 
-            $classes = Classes::where('subject_code', $subject->code)
+            $classes = \App\Models\Classes::query()->where('subject_code', $subject->code)
                 ->whereJsonContains('course_codes', "$this->course_id")
 
                 ->where('academic_year', $subjectEnrollment->academic_year)
@@ -203,14 +184,14 @@ class Students extends Model
 
             foreach ($classes as $class) {
                 // Check if the student is already enrolled in the class
-                $existingEnrollment = class_enrollments::where('class_id', $class->id)
+                $existingEnrollment = \App\Models\class_enrollments::query()->where('class_id', $class->id)
                     ->where('student_id', $this->id)
                     ->first();
 
                 if (! $existingEnrollment) {
                     Log::info("Enrolling student {$this->id} in class {$class->id}");
 
-                    class_enrollments::create([
+                    \App\Models\class_enrollments::query()->create([
                         'class_id' => $class->id,
                         'student_id' => $this->id,
                     ]);
@@ -228,9 +209,7 @@ class Students extends Model
         return $this->subjects()
             ->where('academic_year', $academicYear)
             ->get()
-            ->map(function ($subject) {
-                return "{$subject->title} (Code: {$subject->code}, Units: {$subject->units})";
-            })->join(', ');
+            ->map(fn($subject): string => "{$subject->title} (Code: {$subject->code}, Units: {$subject->units})")->join(', ');
     }
 
     public function StudentTuition()
@@ -243,14 +222,14 @@ class Students extends Model
         return $this->hasMany(StudentTransactions::class, 'student_id', 'id');
     }
 
-    public function StudentTransact($type, $amount, $description)
+    public function StudentTransact($type, $amount, $description): void
     {
-        StudentTransactions::create([
+        \App\Models\StudentTransactions::query()->create([
             'student_id' => $this->id,
             'type' => $type,
             'amount' => $amount,
             'description' => $description,
-            'balance' => $this->StudentTuition->balance + ($type == 'credit' ? $amount : -$amount),
+            'balance' => $this->StudentTuition->balance + ($type === 'credit' ? $amount : -$amount),
             'date' => now(),
         ]);
     }
@@ -262,7 +241,7 @@ class Students extends Model
     }
 
     // get Full name
-    public function getFullNameAttribute()
+    public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->middle_name} {$this->last_name}";
     }
@@ -278,13 +257,13 @@ class Students extends Model
         return $this->DocumentLocation->picture_1x1 ?? '';
     }
 
-public function hasRequestedEnrollment()
-{
-    return $this->StudentTuition()
-                ->where('semester', GeneralSettings::first()->semester)
-                ->where('school_year', GeneralSettings::first()->getSchoolYear())
-                ->exists();
-}
+    public function hasRequestedEnrollment()
+    {
+        return $this->StudentTuition()
+            ->where('semester', \App\Models\GeneralSettings::query()->first()->semester)
+            ->where('school_year', \App\Models\GeneralSettings::query()->first()->getSchoolYear())
+            ->exists();
+    }
 
     public function getStudentChecklistAttribute()
     {
@@ -299,5 +278,27 @@ public function hasRequestedEnrollment()
     public function getTotalUnitsAttribute()
     {
         return $this->subjectEnrolled()->sum('units');
+    }
+
+    protected static function boot(): void
+    {
+        parent::boot();
+        // static::creating(function (Students $model) {
+        //     $maxStudentId = Students::max('id');
+        //     $newId = max($maxStudentId, 1) + 1;
+        //     $model->student_id = $newId;
+        // });
+
+        self::forceDeleting(function ($student): void {
+            $student->StudentTransactions()->delete();
+            $student->StudentTuition()->delete();
+            $student->StudentParentInfo()->delete();
+            $student->StudentEducationInfo()->delete();
+            $student->StudentContactsInfo()->delete();
+            $student->personalInfo()->delete();
+            $student->subjectEnrolled()->delete();
+            $student->DocumentLocation()->delete();
+            $student->Accounts()->delete();
+        });
     }
 }

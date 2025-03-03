@@ -4,33 +4,26 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\Courses;
-use App\Models\Students;
-use App\Models\Subject;
-use App\Models\SubjectEnrolled;
-use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Subject;
+use App\Models\Students;
+use App\Models\SubjectEnrolled;
+use Illuminate\Support\Facades\Auth;
 
 final class SubjectsController extends Controller
 {
     public function index(): Response
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
-        // Ensure the user is a student.
-        if (! $user->student) {
-            abort(403, 'Only students can access this page.');
-        }
+        abort_unless($user->student, 403, 'Only students can access this page.');
 
         /** @var Students $student */
         $student = $user->student;
-        $course = $student->course; // Get the student's course
-
-        if (! $course) {
-            abort(404, 'Student course not found.');
-        }
+        $course = $student->course; abort_unless($course, 404, 'Student course not found.');
 
         // Get all subjects associated with the student's course
         $allCourseSubjects = Subject::query()
@@ -97,4 +90,4 @@ final class SubjectsController extends Controller
             'course' => $course, // Pass the course information
         ]);
     }
-} 
+}

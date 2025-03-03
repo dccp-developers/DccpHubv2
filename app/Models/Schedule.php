@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /* CREATE TABLE "schedule" (
   "id" int unsigned NOT NULL AUTO_INCREMENT,
@@ -17,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
   PRIMARY KEY ("id")
 ) */
 
-class Schedule extends Model
+final class Schedule extends Model
 {
     use HasFactory;
 
@@ -71,7 +73,7 @@ class Schedule extends Model
      */
     public function getDurationMinutesAttribute(): int
     {
-        if (!$this->start_time || !$this->end_time) {
+        if (! $this->start_time || ! $this->end_time) {
             return 0;
         }
 
@@ -88,16 +90,16 @@ class Schedule extends Model
         $remainingMinutes = $minutes % 60;
 
         if ($hours > 0) {
-            return $hours . 'h ' . ($remainingMinutes > 0 ? $remainingMinutes . 'm' : '');
+            return $hours.'h '.($remainingMinutes > 0 ? $remainingMinutes.'m' : '');
         }
 
-        return $remainingMinutes . 'm';
+        return $remainingMinutes.'m';
     }
 
     /**
      * Check if this schedule overlaps with another schedule
      */
-    public function overlaps(Schedule $otherSchedule): bool
+    public function overlaps(self $otherSchedule): bool
     {
         // Different days don't overlap
         if ($this->day_of_week !== $otherSchedule->day_of_week) {

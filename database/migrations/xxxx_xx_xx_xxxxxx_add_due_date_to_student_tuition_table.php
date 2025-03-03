@@ -1,8 +1,10 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -11,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('student_tuition', function (Blueprint $table) {
+        Schema::table('student_tuition', function (Blueprint $table): void {
             $table->date('due_date')->nullable()->after('status'); // Add after 'status'
         });
     }
@@ -21,8 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('student_tuition', function (Blueprint $table) {
+        Schema::table('student_tuition', function (Blueprint $table): void {
             $table->dropColumn('due_date');
         });
     }
-}; 
+};

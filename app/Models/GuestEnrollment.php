@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use App\Models\GeneralSettings;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -72,47 +73,90 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
   CONSTRAINT `fk_guest_enrollments_guests_parents_info` FOREIGN KEY (`guest_parents_id`) REFERENCES `guests_parents_info` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_guest_enrolments_guest_guardian_contact` FOREIGN KEY (`guest_guardian_id`) REFERENCES `guest_guardian_contact` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci */
-class GuestEnrollment extends Model
+final class GuestEnrollment extends Model
 {
     use HasFactory;
-    protected $table = "guest_enrollments";
-    protected $primaryKey = "id";
+
+    protected $table = 'guest_enrollments';
+
+    protected $primaryKey = 'id';
+
     protected $fillable = [
-        "selected_course",
-        "academic_year",
-        "selected_semester",
-        "guest_personal_info_id",
-        "geust_education_id",
-        "special_skills",
-        "guest_parents_id",
-        "guest_guardian_id",
-        "guest_documents_id",
-        "guest_tuition_id",
-        "student_id",
-        "guest_email",
-        "status",
-        "selected_subjects",
-        "type",
+        'selected_course',
+        'academic_year',
+        'selected_semester',
+        'guest_personal_info_id',
+        'geust_education_id',
+        'special_skills',
+        'guest_parents_id',
+        'guest_guardian_id',
+        'guest_documents_id',
+        'guest_tuition_id',
+        'student_id',
+        'guest_email',
+        'status',
+        'selected_subjects',
+        'type',
         'downpayment',
         'school_year',
         'semester',
     ];
-    protected static function boot()
+
+    public function personalInfo()
+    {
+        return $this->belongsTo(GuestPersonalInfo::class, 'guest_personal_info_id', 'id');
+    }
+
+    public function education()
+    {
+        return $this->belongsTo(GuestEducation::class, 'geust_education_id', 'id');
+    }
+
+    public function parentsInfo()
+    {
+        return $this->belongsTo(GuestParentsInfo::class, 'guest_parents_id', 'id');
+    }
+
+    public function guardianContact()
+    {
+        return $this->belongsTo(GuardianContact::class, 'guest_guardian_id', 'id');
+    }
+
+    public function tuition()
+    {
+        return $this->belongsTo(GuestTuition::class, 'guest_tuition_id', 'id');
+    }
+
+    public function documents()
+    {
+        return $this->hasOne(DocumentLocation::class, 'id', 'guest_documents_id');
+    }
+
+    public function SubjectsEnrolled()
+    {
+        return $this->hasMany(
+            SubjectEnrolled::class,
+            'student_id',
+            'student_id'
+        );
+    }
+
+    protected static function boot(): void
     {
         parent::boot();
 
-        static::creating(function ($guestEnrollment) {
-            $settings = GeneralSettings::first();
+        self::creating(function ($guestEnrollment): void {
+            $settings = \App\Models\GeneralSettings::query()->first();
             $highestStudentId = max(
-                Students::max('id') ?? 0,
-                GuestEnrollment::max('student_id') ?? 0
+                \App\Models\Students::query()->max('id') ?? 0,
+                \App\Models\GuestEnrollment::query()->max('student_id') ?? 0
             );
             $guestEnrollment->status = 'Pending';
             $guestEnrollment->school_year = $settings->getSchoolYear();
             $guestEnrollment->semester = $settings->semester;
             $guestEnrollment->student_id = $highestStudentId + 1;
         });
-        static::deleting(function ($guestEnrollment) {
+        self::deleting(function ($guestEnrollment): void {
             // Delete related personal info
             if ($guestEnrollment->personalInfo) {
                 $guestEnrollment->personalInfo->delete();
@@ -143,37 +187,5 @@ class GuestEnrollment extends Model
                 $guestEnrollment->documents->delete();
             }
         });
-    }
-    public function personalInfo()
-    {
-        return $this->belongsTo(GuestPersonalInfo::class, 'guest_personal_info_id', 'id');
-    }
-    public function education()
-    {
-        return $this->belongsTo(GuestEducation::class, 'geust_education_id', 'id');
-    }
-    public function parentsInfo()
-    {
-        return $this->belongsTo(GuestParentsInfo::class, 'guest_parents_id', 'id');
-    }
-    public function guardianContact()
-    {
-        return $this->belongsTo(GuardianContact::class, 'guest_guardian_id', 'id');
-    }
-    public function tuition()
-    {
-        return $this->belongsTo(GuestTuition::class, 'guest_tuition_id', 'id');
-    }
-    public function documents()
-    {
-        return $this->hasOne(DocumentLocation::class, 'id', 'guest_documents_id');
-    }
-    public function SubjectsEnrolled()
-    {
-        return $this->hasMany(
-            SubjectEnrolled::class,
-            'student_id',
-            'student_id'
-        );
     }
 }

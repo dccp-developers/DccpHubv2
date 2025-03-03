@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /* CREATE  TABLE test.student_parents_info (
     id                   INT    NOT NULL AUTO_INCREMENT  PRIMARY KEY,
@@ -13,17 +15,17 @@ use Illuminate\Database\Eloquent\Model;
 
  */
 
-class StudentParentInfo extends Model
+final class StudentParentInfo extends Model
 {
     use HasFactory;
+
+    public $timestamps = false;
 
     protected $table = 'student_parents_info';
 
     protected $fillable = [
         'fathers_name', 'mothers_name',
     ];
-
-    public $timestamps = false;
 
     protected $primaryKey = 'id';
 
