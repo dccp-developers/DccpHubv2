@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /*CREATE TABLE laravel.subject (
     id                   int  NOT NULL  AUTO_INCREMENT  PRIMARY KEY,
@@ -33,30 +36,78 @@ class Subject extends Model
 
     protected $casts = [
         'pre_riquisite' => 'array',
+        'units' => 'integer',
+        'lecture' => 'integer',
+        'laboratory' => 'integer',
+        'academic_year' => 'integer',
+        'semester' => 'integer',
     ];
 
     public $timestamps = false;
 
-    public function course()
+    /**
+     * Get the course associated with the subject
+     */
+    public function course(): BelongsTo
     {
         return $this->belongsTo(Courses::class, 'course_id', 'id');
     }
 
-    public static function getSubjectsDetailsByYear($subjects, $year)
+    /**
+     * Get the subject enrollments for this subject
+     */
+    public function subjectEnrolleds(): HasMany
+    {
+        return $this->hasMany(SubjectEnrolled::class, 'subject_id');
+    }
+
+    /**
+     * Get the classes for this subject
+     */
+    public function classes(): HasMany
+    {
+        return $this->hasMany(Classes::class, 'subject_code', 'code');
+    }
+
+    /**
+     * Get all prerequisites for this subject
+     */
+    public function getAllPreRequisitesAttribute(): array
+    {
+        return $this->pre_riquisite ?? [];
+    }
+
+    /**
+     * Get a formatted representation of the subject with code and units
+     */
+    public function getFormattedTitleAttribute(): string
+    {
+        return "{$this->title} ({$this->code}, {$this->units} units)";
+    }
+
+    /**
+     * Get subjects details by academic year
+     */
+    public static function getSubjectsDetailsByYear(Collection $subjects, int $year): string
     {
         return $subjects->where('academic_year', $year)->map(function ($subject) {
             return "{$subject->title} (Code: {$subject->code}, Units: {$subject->units})";
         })->join(', ');
     }
 
-    public function subjectEnrolleds()
+    /**
+     * Get the total hours per week (lecture + laboratory)
+     */
+    public function getTotalHoursPerWeekAttribute(): int
     {
-        return $this->hasMany(SubjectEnrolled::class, 'subject_id');
+        return ($this->lecture ?? 0) + ($this->laboratory ?? 0);
     }
 
-    // GEt pre requisites
-    public function getAllPreRequisitesAttribute()
+    /**
+     * Check if this subject has prerequisites
+     */
+    public function hasPrerequisites(): bool
     {
-        return $this->pre_riquisite;
+        return !empty($this->pre_riquisite);
     }
 }

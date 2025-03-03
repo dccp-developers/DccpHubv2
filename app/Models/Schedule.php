@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /* CREATE TABLE "schedule" (
   "id" int unsigned NOT NULL AUTO_INCREMENT,
@@ -36,12 +37,18 @@ class Schedule extends Model
         'room_id' => 'int',
     ];
 
-    public function room()
+    /**
+     * Get the room associated with the schedule
+     */
+    public function room(): BelongsTo
     {
         return $this->belongsTo(rooms::class, 'room_id');
     }
 
-    public function class()
+    /**
+     * Get the class associated with the schedule
+     */
+    public function class(): BelongsTo
     {
         return $this->belongsTo(Classes::class, 'class_id');
     }
@@ -51,9 +58,54 @@ class Schedule extends Model
     //     return implode(', ', $this->room()->get()->pluck('name')->toArray());
     // }
 
-    // get Schedule Subject title
-    public function getSubjectAttribute()
+    /**
+     * Get the subject title from the associated class
+     */
+    public function getSubjectAttribute(): string
     {
-        return $this->class->Subject->title;
+        return $this->class->subject_title ?? 'Unknown Subject';
+    }
+
+    /**
+     * Get the duration of the class in minutes
+     */
+    public function getDurationMinutesAttribute(): int
+    {
+        if (!$this->start_time || !$this->end_time) {
+            return 0;
+        }
+
+        return $this->start_time->diffInMinutes($this->end_time);
+    }
+
+    /**
+     * Get a formatted representation of the duration
+     */
+    public function getFormattedDurationAttribute(): string
+    {
+        $minutes = $this->duration_minutes;
+        $hours = floor($minutes / 60);
+        $remainingMinutes = $minutes % 60;
+
+        if ($hours > 0) {
+            return $hours . 'h ' . ($remainingMinutes > 0 ? $remainingMinutes . 'm' : '');
+        }
+
+        return $remainingMinutes . 'm';
+    }
+
+    /**
+     * Check if this schedule overlaps with another schedule
+     */
+    public function overlaps(Schedule $otherSchedule): bool
+    {
+        // Different days don't overlap
+        if ($this->day_of_week !== $otherSchedule->day_of_week) {
+            return false;
+        }
+
+        // Check time overlap
+        return $this->start_time < $otherSchedule->end_time &&
+               $this->end_time > $otherSchedule->start_time;
     }
 }

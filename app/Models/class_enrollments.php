@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Models\ShsStudents;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /* CREATE TABLE `class_enrollments` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -35,63 +37,115 @@ class class_enrollments extends Model
         'remarks',
     ];
 
-    public function class()
+    /**
+     * Get the class associated with the enrollment
+     */
+    public function class(): BelongsTo
     {
         return $this->belongsTo(Classes::class);
     }
 
-    public function student()
+    /**
+     * Get the student associated with the enrollment
+     */
+    public function student(): BelongsTo
     {
         return $this->belongsTo(Students::class);
     }
 
-    public function ShsStudent()
+    /**
+     * Get the SHS student associated with the enrollment
+     */
+    public function ShsStudent(): BelongsTo
     {
         return $this->belongsTo(ShsStudents::class, 'student_id', 'student_lrn');
     }
 
-    public function getStudentNameAttribute()
+    /**
+     * Get the name of the enrolled student
+     */
+    public function getStudentNameAttribute(): string
     {
-        if($this->ShsStudent){  
+        if ($this->ShsStudent) {
             return $this->ShsStudent->fullname;
-        }else{
+        } else {
             return $this->student->full_name;
         }
     }
 
-    public function getStudentYearStandingAttribute(){
-        if($this->ShsStudent){
+    /**
+     * Get the academic year or grade level of the student
+     */
+    public function getStudentYearStandingAttribute(): string
+    {
+        if ($this->ShsStudent) {
             return $this->ShsStudent->grade_level;
-        }else{
+        } else {
             return $this->student->academic_year;
         }
     }
 
-    public function getStudentIdNumAttribute(){
-        if($this->ShsStudent){
+    /**
+     * Get the student ID or LRN
+     */
+    public function getStudentIdNumAttribute(): string
+    {
+        if ($this->ShsStudent) {
             return $this->ShsStudent->student_lrn;
-        }else{
+        } else {
             return $this->student->id;
         }
     }
 
-    public function getCourseStrandAttribute(){
-        if($this->ShsStudent){
+    /**
+     * Get the course or strand of the student
+     */
+    public function getCourseStrandAttribute(): string
+    {
+        if ($this->ShsStudent) {
             return $this->ShsStudent->track;
-        }else{
+        } else {
             return $this->student->course->code;
         }
     }
 
-    public function EnrolledStudent(){
-        if ($this->ShsStudent){
+    /**
+     * Get the enrolled student model (either SHS or regular)
+     */
+    public function EnrolledStudent()
+    {
+        if ($this->ShsStudent) {
             return $this->ShsStudent;
-        }else{
+        } else {
             return $this->student;
         }
     }
 
-    public function Attendances(){
+    /**
+     * Get the attendance records for this enrollment
+     */
+    public function Attendances(): HasMany
+    {
         return $this->hasMany(Attendances::class, 'class_enrollment_id', 'id');
+    }
+
+    /**
+     * Get the current grade status
+     */
+    public function getGradeStatusAttribute(): string
+    {
+        if ($this->total_average) {
+            return $this->total_average >= 75 ? 'Passing' : 'Failing';
+        }
+
+        return 'Pending';
+    }
+
+    /**
+     * Check if the student has completed the class
+     */
+    public function getIsCompletedAttribute(): bool
+    {
+        return !empty($this->completion_date);
     }
 }
