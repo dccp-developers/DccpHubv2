@@ -54,6 +54,10 @@ const props = defineProps({
     resources: {
         type: String, // Keep as placeholders
         required: true
+    },
+    user: {
+      user: Object,
+      required: true
     }
 });
 
@@ -167,8 +171,8 @@ const pendingAssignments = computed(() => []);   // Return empty array
       <header class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
           <Avatar>
-            <AvatarImage :src="student.avatarUrl" alt="Student" />
-            <AvatarFallback>AJ</AvatarFallback>
+            <AvatarImage :src="user.profile_photo_url" alt="Student" />
+            <!-- <AvatarFallback>AJ</AvatarFallback> -->
           </Avatar>
           <div>
             <h1 class="font-bold text-xl">{{ student.name }}</h1>

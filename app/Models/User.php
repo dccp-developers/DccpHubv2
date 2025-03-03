@@ -183,17 +183,12 @@ final class User extends Authenticatable implements FilamentUser, MustVerifyEmai
         return $this->morphTo();
     }
 
-    public function getAvatarUrlAttribute()
-    {
-        if ($this->profile_photo_url) {
-            return $this->profile_photo_url;
-        }
-
-        $avatar = new Avatar();
-
-        return $avatar->create($this->name)->toBase64();
-
-    }
+    // public function getProfilePhotoUrlAttribute()
+    // {
+    //     return $this->profile_photo_path
+    //         ? Storage::disk('s3')->url($this->profile_photo_path)
+    //         : null;
+    // }
 
     public function UserPerson()
     {

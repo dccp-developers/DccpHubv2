@@ -126,6 +126,7 @@ final class DashboardController extends Controller
             'exams' => 'Coming Soon',       // Placeholder
             'announcements' => 'Coming Soon', // Placeholder
             'resources' => 'Coming Soon',
+            'user' => $user
         ]);
     }
 }

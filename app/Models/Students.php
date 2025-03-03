@@ -301,4 +301,9 @@ final class Students extends Model
             $student->Accounts()->delete();
         });
     }
+
+    public function getProfilePhotoUrlAttribute()
+    {
+        return $this->Accounts->profile_photo_url;
+    }
 }

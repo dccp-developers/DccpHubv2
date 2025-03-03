@@ -1,17 +1,18 @@
 <script setup>
-import FeaturesCard from '@/Components/FeaturesCard.vue'
-import PricingCard from '@/Components/PricingCard.vue'
-import Accordion from '@/Components/shadcn/ui/accordion/Accordion.vue'
-import AccordionContent from '@/Components/shadcn/ui/accordion/AccordionContent.vue'
-import AccordionItem from '@/Components/shadcn/ui/accordion/AccordionItem.vue'
-import AccordionTrigger from '@/Components/shadcn/ui/accordion/AccordionTrigger.vue'
-import Badge from '@/Components/shadcn/ui/badge/Badge.vue'
-import Button from '@/Components/shadcn/ui/button/Button.vue'
-import Terminal from '@/Components/Terminal.vue'
-import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
-import WebLayout from '@/Layouts/WebLayout.vue'
-import { Icon } from '@iconify/vue'
-import { Link } from '@inertiajs/vue3'
+import FeaturesCard from "@/Components/FeaturesCard.vue";
+import PricingCard from "@/Components/PricingCard.vue";
+import Accordion from "@/Components/shadcn/ui/accordion/Accordion.vue";
+import AccordionContent from "@/Components/shadcn/ui/accordion/AccordionContent.vue";
+import AccordionItem from "@/Components/shadcn/ui/accordion/AccordionItem.vue";
+import AccordionTrigger from "@/Components/shadcn/ui/accordion/AccordionTrigger.vue";
+import Badge from "@/Components/shadcn/ui/badge/Badge.vue";
+import Button from "@/Components/shadcn/ui/button/Button.vue";
+import Terminal from "@/Components/Terminal.vue";
+import { useSeoMetaTags } from "@/Composables/useSeoMetaTags.js";
+import WebLayout from "@/Layouts/WebLayout.vue";
+import { Icon } from "@iconify/vue";
+import { Link, router } from "@inertiajs/vue3";
+import { onMounted } from "vue";
 
 const props = defineProps({
   canLogin: {
@@ -24,99 +25,132 @@ const props = defineProps({
     type: Object,
     default: () => null,
   },
-})
+});
 
-useSeoMetaTags(props.seo)
+useSeoMetaTags(props.seo);
+
+// Function to detect if user is on mobile
+const isMobileDevice = () => {
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    ) || window.innerWidth <= 768
+  );
+};
+
+// Redirect to login if on mobile
+onMounted(() => {
+  if (isMobileDevice()) {
+    router.visit(route("login"));
+  }
+});
 
 const features = [
   {
-    icon: '📚',
-    title: 'Comprehensive Course Management',
-    description: 'Easily manage your courses, assignments, and grades with our intuitive interface designed for both faculty and students.',
+    icon: "📚",
+    title: "Comprehensive Course Management",
+    description:
+      "Easily manage your courses, assignments, and grades with our intuitive interface designed for both faculty and students.",
   },
   {
-    icon: '👩‍🏫',
-    title: 'Faculty Collaboration Tools',
-    description: 'Empower faculty members with tools for collaboration, communication, and resource sharing to enhance the learning experience.',
+    icon: "👩‍🏫",
+    title: "Faculty Collaboration Tools",
+    description:
+      "Empower faculty members with tools for collaboration, communication, and resource sharing to enhance the learning experience.",
   },
   {
-    icon: '🗓️',
-    title: 'Streamlined Scheduling',
-    description: 'Access a centralized calendar for classes, exams, and events, ensuring you never miss an important date.',
+    icon: "🗓️",
+    title: "Streamlined Scheduling",
+    description:
+      "Access a centralized calendar for classes, exams, and events, ensuring you never miss an important date.",
   },
   {
-    icon: '💬',
-    title: 'Real-time Communication',
-    description: 'Stay connected with peers and instructors through integrated messaging and notification systems.',
+    icon: "💬",
+    title: "Real-time Communication",
+    description:
+      "Stay connected with peers and instructors through integrated messaging and notification systems.",
   },
   {
-    icon: '📊',
-    title: 'Performance Tracking',
-    description: 'Monitor your academic progress with detailed analytics and reports, helping you stay on track for success.',
+    icon: "📊",
+    title: "Performance Tracking",
+    description:
+      "Monitor your academic progress with detailed analytics and reports, helping you stay on track for success.",
   },
   {
-    icon: '🔒',
-    title: 'Secure Access',
-    description: 'Your data is protected with top-notch security measures, ensuring a safe environment for all users.',
+    icon: "🔒",
+    title: "Secure Access",
+    description:
+      "Your data is protected with top-notch security measures, ensuring a safe environment for all users.",
   },
   {
-    icon: '🌐',
-    title: 'Accessible Anywhere',
-    description: "Access the portal from any device, whether you're at home, in class, or on the go, making learning flexible and convenient.",
+    icon: "🌐",
+    title: "Accessible Anywhere",
+    description:
+      "Access the portal from any device, whether you're at home, in class, or on the go, making learning flexible and convenient.",
   },
   {
-    icon: '🎓',
-    title: 'Community Engagement',
-    description: 'Join a vibrant community of learners and educators, fostering collaboration and support throughout your academic journey.',
+    icon: "🎓",
+    title: "Community Engagement",
+    description:
+      "Join a vibrant community of learners and educators, fostering collaboration and support throughout your academic journey.",
   },
   {
-    icon: '✨',
-    title: 'Continuous Improvement',
-    description: 'We are committed to evolving our platform based on user feedback, ensuring that DCCPHub meets the needs of our community.',
+    icon: "✨",
+    title: "Continuous Improvement",
+    description:
+      "We are committed to evolving our platform based on user feedback, ensuring that DCCPHub meets the needs of our community.",
   },
-]
+];
 
 const pricingFeatures = [
-  'Free access for all students and faculty',
-  'Comprehensive support and resources',
-  'Regular updates and new features',
-  'User-friendly interface',
-  'Dedicated community forums',
-]
+  "Free access for all students and faculty",
+  "Comprehensive support and resources",
+  "Regular updates and new features",
+  "User-friendly interface",
+  "Dedicated community forums",
+];
 const sponsorLinks = {
-  github: 'https://github.com/sponsors/pushpak1300',
-  x: 'https://x.com/pushpak1300',
-}
+  github: "https://github.com/sponsors/pushpak1300",
+  x: "https://x.com/pushpak1300",
+};
 
 const faqItems = [
   {
-    value: 'item-1',
-    title: 'Is DCCPHub really free?',
-    content: 'Yes! DCCPHub is completely free for all students and faculty members, providing essential tools without any hidden fees.',
+    value: "item-1",
+    title: "Is DCCPHub really free?",
+    content:
+      "Yes! DCCPHub is completely free for all students and faculty members, providing essential tools without any hidden fees.",
   },
   {
-    value: 'item-2',
-    title: 'How can I contribute?',
-    content: 'You can contribute by providing feedback, suggesting features, or participating in community discussions. Your input is invaluable!',
+    value: "item-2",
+    title: "How can I contribute?",
+    content:
+      "You can contribute by providing feedback, suggesting features, or participating in community discussions. Your input is invaluable!",
   },
   {
-    value: 'item-3',
-    title: 'Why should I use DCCPHub?',
-    content: 'DCCPHub simplifies your academic life, providing all the tools you need in one place, enhancing your learning experience and productivity.',
+    value: "item-3",
+    title: "Why should I use DCCPHub?",
+    content:
+      "DCCPHub simplifies your academic life, providing all the tools you need in one place, enhancing your learning experience and productivity.",
   },
-]
+];
 
-const githubUrl = 'https://github.com/pushpak1300/dccphub'
+const githubUrl = "https://github.com/pushpak1300/dccphub";
 </script>
 
 <template>
   <WebLayout :can-login="canLogin" :can-register="canRegister">
     <!-- Hero Section -->
-    <section class="relative overflow-hidden border-b bg-background py-20 sm:py-32">
+    <section
+      class="relative overflow-hidden border-b bg-background py-20 sm:py-32"
+    >
       <div class="container mx-auto px-4 text-center">
         <!-- Badge -->
         <div class="mb-8 inline-flex justify-center">
-          <Badge variant="outline" class="rounded-full border bg-primary/10 px-4 py-1 text-xs sm:text-sm">
+          <Badge
+            variant="outline"
+            class="rounded-full border bg-primary/10 px-4 py-1 text-xs sm:text-sm"
+          >
             ✨ Empowering Education with DCCPHub
           </Badge>
         </div>
@@ -142,19 +176,27 @@ const githubUrl = 'https://github.com/pushpak1300/dccphub'
           :style="{ contain: 'layout paint' }"
           fetchpriority="high"
         >
-          Seamlessly manage your academic journey with DCCPHub, designed for both faculty and students to enhance learning and collaboration.
+          Seamlessly manage your academic journey with DCCPHub, designed for
+          both faculty and students to enhance learning and collaboration.
         </p>
 
         <!-- CTA Buttons -->
         <div class="mt-10 flex items-center justify-center gap-4 flex-row">
           <Button
-            as="a" href="https://dccphub.com/dashboard" target="_blank" size="lg"
+            as="a"
+            href="https://dccphub.com/dashboard"
+            target="_blank"
+            size="lg"
             class="w-full sm:w-auto"
           >
             Explore DCCPHub
           </Button>
           <Button
-            as="a" :href="githubUrl" target="_blank" size="lg" variant="outline"
+            as="a"
+            :href="githubUrl"
+            target="_blank"
+            size="lg"
+            variant="outline"
             class="w-full sm:w-auto"
           >
             <Icon icon="lucide:github" class="size-4" aria-hidden="true" />
@@ -167,7 +209,9 @@ const githubUrl = 'https://github.com/pushpak1300/dccphub'
           <p class="text-sm text-muted-foreground">
             Trusted by educators and students alike
           </p>
-          <div class="mt-4 flex flex-wrap items-center justify-center gap-6 sm:gap-8">
+          <div
+            class="mt-4 flex flex-wrap items-center justify-center gap-6 sm:gap-8"
+          >
             <Icon
               icon="logos:laravel"
               class="size-8 opacity-75 grayscale transition-all hover:opacity-100 hover:grayscale-0"
@@ -202,22 +246,34 @@ const githubUrl = 'https://github.com/pushpak1300/dccphub'
         Features of DCCPHub 🌟
       </h2>
       <p class="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-        Discover the powerful features designed to enhance your educational experience.
+        Discover the powerful features designed to enhance your educational
+        experience.
       </p>
 
       <div class="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         <FeaturesCard
-          v-for="feature in features" :key="feature.title" :icon="feature.icon"
-          :title="feature.title" :description="feature.description"
+          v-for="feature in features"
+          :key="feature.title"
+          :icon="feature.icon"
+          :title="feature.title"
+          :description="feature.description"
         />
       </div>
       <div class="mt-6 flex justify-center gap-2">
-        <Button as="a" href="https://docs.dccphub.com" target="_blank" rel="noopener noreferrer">
+        <Button
+          as="a"
+          href="https://docs.dccphub.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Icon icon="lucide:book-open" class="size-4" aria-hidden="true" />
           Documentation
         </Button>
         <Button
-          variant="secondary" as="a" :href="`${githubUrl}/discussions/categories/roadmap`" target="_blank"
+          variant="secondary"
+          as="a"
+          :href="`${githubUrl}/discussions/categories/roadmap`"
+          target="_blank"
           rel="noopener noreferrer"
         >
           <Icon icon="lucide:construction" class="size-4" aria-hidden="true" />
@@ -234,32 +290,52 @@ const githubUrl = 'https://github.com/pushpak1300/dccphub'
             Always Free for Students and Faculty 🎓
           </h2>
           <p class="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-            DCCPHub is committed to providing essential tools for free, ensuring accessibility for all.
+            DCCPHub is committed to providing essential tools for free, ensuring
+            accessibility for all.
           </p>
         </div>
 
         <!-- Pricing Card -->
         <PricingCard
-          class="mx-auto mt-16" :features="pricingFeatures" :price="0" plan="What's included?"
+          class="mx-auto mt-16"
+          :features="pricingFeatures"
+          :price="0"
+          plan="What's included?"
           billing-period="Free Forever"
         >
           <template #action>
-            <Button :as="Link" :href="route('dashboard')">
-              Get Started
-            </Button>
+            <Button :as="Link" :href="route('dashboard')"> Get Started </Button>
           </template>
           <template #footer>
-            <div class="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <p class="text-sm">
-                Want to support the development?
-              </p>
+            <div
+              class="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <p class="text-sm">Want to support the development?</p>
               <div class="flex gap-4">
-                <Button variant="outline" as="a" :href="sponsorLinks.github" target="_blank">
-                  <Icon icon="mdi:github" class="mr-2 size-4" aria-hidden="true" />
+                <Button
+                  variant="outline"
+                  as="a"
+                  :href="sponsorLinks.github"
+                  target="_blank"
+                >
+                  <Icon
+                    icon="mdi:github"
+                    class="mr-2 size-4"
+                    aria-hidden="true"
+                  />
                   Sponsor
                 </Button>
-                <Button variant="outline" as="a" :href="sponsorLinks.x" target="_blank">
-                  <Icon icon="ri:twitter-x-line" class="mr-2 size-4" aria-hidden="true" />
+                <Button
+                  variant="outline"
+                  as="a"
+                  :href="sponsorLinks.x"
+                  target="_blank"
+                >
+                  <Icon
+                    icon="ri:twitter-x-line"
+                    class="mr-2 size-4"
+                    aria-hidden="true"
+                  />
                   Follow Us
                 </Button>
               </div>
@@ -268,11 +344,18 @@ const githubUrl = 'https://github.com/pushpak1300/dccphub'
         </PricingCard>
         <!-- FAQ Section -->
         <div class="mx-auto mt-16 text-center">
-          <h2 class="text-2xl font-bold">
-            Frequently Asked Questions
-          </h2>
-          <Accordion type="single" class="mt-8 w-full text-left" collapsible default-value="item-1">
-            <AccordionItem v-for="item in faqItems" :key="item.value" :value="item.value">
+          <h2 class="text-2xl font-bold">Frequently Asked Questions</h2>
+          <Accordion
+            type="single"
+            class="mt-8 w-full text-left"
+            collapsible
+            default-value="item-1"
+          >
+            <AccordionItem
+              v-for="item in faqItems"
+              :key="item.value"
+              :value="item.value"
+            >
               <AccordionTrigger class="text-lg">
                 {{ item.title }}
               </AccordionTrigger>
@@ -294,10 +377,16 @@ const githubUrl = 'https://github.com/pushpak1300/dccphub'
               Ready to Enhance Your Learning Experience?
             </h2>
             <p class="mx-auto mt-4 max-w-xl text-lg">
-              Join DCCPHub today and unlock the full potential of your academic journey. 🚀
+              Join DCCPHub today and unlock the full potential of your academic
+              journey. 🚀
             </p>
             <div class="mt-8 flex justify-center gap-4">
-              <Button as="a" :href="githubUrl" target="_blank" rel="noopener noreferrer">
+              <Button
+                as="a"
+                :href="githubUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 View on GitHub
               </Button>
             </div>

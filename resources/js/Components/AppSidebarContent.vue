@@ -6,59 +6,63 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-} from '@/Components/shadcn/ui/sidebar'
-import { Icon } from '@iconify/vue'
-import { Link } from '@inertiajs/vue3'
-import { useColorMode } from '@vueuse/core'
-import { computed, inject, ref } from 'vue'
-import { Button } from '@/Components/shadcn/ui/button'
+} from "@/Components/shadcn/ui/sidebar";
+import { Icon } from "@iconify/vue";
+import { Link } from "@inertiajs/vue3";
+import { useColorMode } from "@vueuse/core";
+import { computed, inject, ref } from "vue";
+import { Button } from "@/Components/shadcn/ui/button";
 import {
   Sheet,
   SheetContent,
-  SheetTrigger
-} from '@/Components/shadcn/ui/sheet'
-
-const route = inject('route')
+  SheetTrigger,
+} from "@/Components/shadcn/ui/sheet";
+import AppLogoIcon from "@/Components/AppLogoIcon.vue";
+const route = inject("route");
 const mode = useColorMode({
-  attribute: 'class',
-  modes: { light: '', dark: 'dark' },
-})
+  attribute: "class",
+  modes: { light: "", dark: "dark" },
+});
 
-const appName = 'DccpHub'
-const isMobileMenuOpen = ref(false)
+const appName = "DccpHub";
+const isMobileMenuOpen = ref(false);
 
 // Main navigation config - shared between sidebar and mobile navigation
 const navigationConfig = [
   {
-    label: 'Platform',
+    label: "Platform",
     items: [
-      { name: 'Dashboard', icon: 'lucide:layout-dashboard', route: 'dashboard' },
-      { name: 'Settings', icon: 'lucide:settings', route: 'profile.show' },
-      { name: 'Schedule', icon: 'lucide:calendar', route: 'schedule.index' },
-      { name: 'Tuition', icon: 'lucide:banknote', route: 'tuition.index' },
-      { name: 'Subjects', icon: 'lucide:book', route: 'subjects.index' },
+      {
+        name: "Dashboard",
+        icon: "lucide:layout-dashboard",
+        route: "dashboard",
+      },
+      { name: "Settings", icon: "lucide:settings", route: "profile.show" },
+      { name: "Schedule", icon: "lucide:calendar", route: "schedule.index" },
+      { name: "Tuition", icon: "lucide:banknote", route: "tuition.index" },
+      { name: "Subjects", icon: "lucide:book", route: "subjects.index" },
     ],
   },
 
   {
     label: null,
-    class: 'mt-auto',
+    class: "mt-auto",
     items: [
       {
-        name: 'Support',
-        icon: 'lucide:life-buoy',
-        href: 'https://github.com/yukazakiri/DccpHubv2/issues',
+        name: "Support",
+        icon: "lucide:life-buoy",
+        href: "https://github.com/yukazakiri/DccpHubv2/issues",
         external: true,
       },
       {
-        name: 'Change-Log',
-        icon: 'lucide:file-text',
-        route: 'changelog.index',
+        name: "Change-Log",
+        icon: "lucide:file-text",
+        route: "changelog.index",
         external: false,
       },
     ],
   },
-]
+];
 
 // Selected items for mobile bottom navigation
 const mobileNavItems = computed(() => {
@@ -67,69 +71,69 @@ const mobileNavItems = computed(() => {
     navigationConfig[0].items[2], // Schedule
     navigationConfig[0].items[3], // Tuition
     navigationConfig[0].items[4], // Subjects
-    { name: 'Menu', icon: 'lucide:menu', action: 'toggleMenu' }
-  ]
-})
+    { name: "Menu", icon: "lucide:menu", action: "toggleMenu" },
+  ];
+});
 
-const isDarkMode = computed(() => mode.value === 'dark')
+const isDarkMode = computed(() => mode.value === "dark");
 
 // Get current route information for breadcrumbs
-const currentRouteName = computed(() => route().current())
+const currentRouteName = computed(() => route().current());
 
 // Get breadcrumbs based on current route
 const breadcrumbs = computed(() => {
-  const currentRoute = currentRouteName.value
-  const paths = []
+  const currentRoute = currentRouteName.value;
+  const paths = [];
 
   // Base path is always visible
-  paths.push({ name: 'Home', route: 'dashboard', icon: 'lucide:home' })
+  paths.push({ name: "Home", route: "dashboard", icon: "lucide:home" });
 
   // Find the current navigation item
-  navigationConfig.forEach(group => {
-    group.items.forEach(item => {
+  navigationConfig.forEach((group) => {
+    group.items.forEach((item) => {
       if (!item.external && item.route === currentRoute) {
-        paths.push({ name: item.name, route: item.route, icon: item.icon })
+        paths.push({ name: item.name, route: item.route, icon: item.icon });
       }
-    })
-  })
+    });
+  });
 
-  return paths
-})
+  return paths;
+});
 
 // Get current page title for mobile header
 const currentPageTitle = computed(() => {
-  const lastCrumb = breadcrumbs.value[breadcrumbs.value.length - 1]
-  return lastCrumb ? lastCrumb.name : appName
-})
+  const lastCrumb = breadcrumbs.value[breadcrumbs.value.length - 1];
+  return lastCrumb ? lastCrumb.name : appName;
+});
 
 function handleMobileNavClick(item) {
-  if (item.action === 'toggleMenu') {
-    isMobileMenuOpen.value = !isMobileMenuOpen.value
+  if (item.action === "toggleMenu") {
+    isMobileMenuOpen.value = !isMobileMenuOpen.value;
   }
 }
 
 function renderLink(item) {
   if (item.external) {
     return {
-      is: 'a',
+      is: "a",
       href: item.href || route(item.route),
-      target: '_blank',
-    }
+      target: "_blank",
+    };
   }
   return {
     is: Link,
     href: route(item.route),
-  }
+  };
 }
 </script>
 
 <template>
   <!-- Mobile Top Navigation Bar -->
-  <div class="fixed top-0 left-0 right-0 h-14 border-b bg-background z-40 md:hidden flex items-center justify-between px-4">
+  <div
+    class="fixed top-0 left-0 right-0 h-14 border-b bg-background z-40 md:hidden flex items-center justify-between px-4"
+  >
     <div class="flex items-center space-x-2">
-      <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-        {{ appName.charAt(0) }}
-      </div>
+      <AppLogoIcon class="w-7 h-7" />
       <span class="font-bold">{{ appName }}</span>
     </div>
 
@@ -145,16 +149,19 @@ function renderLink(item) {
         <div class="py-4">
           <!-- App Name and Logo -->
           <div class="p-4 mb-2 flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-              {{ appName.charAt(0) }}
-            </div>
-            <span class="text-lg font-bold">{{ appName }}</span>
+            <!-- <AppLogoIcon /> -->
           </div>
 
           <!-- All navigation items for mobile slide-out menu -->
           <div class="space-y-6">
-            <div v-for="(group, groupIndex) in navigationConfig" :key="groupIndex">
-              <h3 v-if="group.label" class="px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            <div
+              v-for="(group, groupIndex) in navigationConfig"
+              :key="groupIndex"
+            >
+              <h3
+                v-if="group.label"
+                class="px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2"
+              >
                 {{ group.label }}
               </h3>
               <div class="space-y-1">
@@ -165,10 +172,15 @@ function renderLink(item) {
                     'flex items-center px-4 py-2 text-sm font-medium rounded-md',
                     !item.external && route().current(item.route)
                       ? 'bg-secondary text-primary'
-                      : 'text-foreground hover:bg-secondary/50'
+                      : 'text-foreground hover:bg-secondary/50',
                   ]"
                 >
-                  <component v-bind="renderLink(item)" :is="item.external ? 'a' : Link" class="flex items-center w-full" prefetch>
+                  <component
+                    v-bind="renderLink(item)"
+                    :is="item.external ? 'a' : Link"
+                    class="flex items-center w-full"
+                    prefetch
+                  >
                     <Icon :icon="item.icon" class="mr-3 h-5 w-5" />
                     {{ item.name }}
                   </component>
@@ -181,8 +193,11 @@ function renderLink(item) {
               class="flex items-center px-4 py-2 text-sm font-medium cursor-pointer text-foreground hover:bg-secondary/50 rounded-md"
               @click="mode = isDarkMode ? 'light' : 'dark'"
             >
-              <Icon :icon="isDarkMode ? 'lucide:moon' : 'lucide:sun'" class="mr-3 h-5 w-5" />
-              {{ isDarkMode ? 'Dark' : 'Light' }} Mode
+              <Icon
+                :icon="isDarkMode ? 'lucide:moon' : 'lucide:sun'"
+                class="mr-3 h-5 w-5"
+              />
+              {{ isDarkMode ? "Dark" : "Light" }} Mode
             </div>
           </div>
         </div>
@@ -194,9 +209,7 @@ function renderLink(item) {
   <SidebarContent>
     <!-- App Name and Logo -->
     <div class="p-4 mb-2 flex items-center space-x-2">
-      <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-        {{ appName.charAt(0) }}
-      </div>
+      <AppLogoIcon class="w-7 h-7" />
       <span class="text-lg font-bold">{{ appName }}</span>
     </div>
 
@@ -204,8 +217,16 @@ function renderLink(item) {
     <div class="px-3 mb-3">
       <div class="text-xs text-muted-foreground">
         <div class="flex items-center flex-wrap">
-          <div v-for="(crumb, index) in breadcrumbs" :key="index" class="flex items-center">
-            <Link v-if="index < breadcrumbs.length - 1" :href="route(crumb.route)" class="flex items-center hover:text-primary">
+          <div
+            v-for="(crumb, index) in breadcrumbs"
+            :key="index"
+            class="flex items-center"
+          >
+            <Link
+              v-if="index < breadcrumbs.length - 1"
+              :href="route(crumb.route)"
+              class="flex items-center hover:text-primary"
+            >
               <Icon :icon="crumb.icon" class="w-3 h-3 mr-1" />
               {{ crumb.name }}
             </Link>
@@ -228,7 +249,11 @@ function renderLink(item) {
     <div class="h-px bg-border mx-3 mb-4"></div>
 
     <!-- Navigation Groups -->
-    <SidebarGroup v-for="(group, index) in navigationConfig" :key="index" :class="group.class">
+    <SidebarGroup
+      v-for="(group, index) in navigationConfig"
+      :key="index"
+      :class="group.class"
+    >
       <SidebarGroupLabel v-if="group.label">
         {{ group.label }}
       </SidebarGroupLabel>
@@ -236,10 +261,17 @@ function renderLink(item) {
         <SidebarMenuItem
           v-for="item in group.items"
           :key="item.name"
-          :class="{ 'font-semibold text-primary bg-secondary rounded': !item.external && route().current(item.route) }"
+          :class="{
+            'font-semibold text-primary bg-secondary rounded':
+              !item.external && route().current(item.route),
+          }"
         >
           <SidebarMenuButton as-child>
-            <component v-bind="renderLink(item)" :is="item.external ? 'a' : Link" prefetch>
+            <component
+              v-bind="renderLink(item)"
+              :is="item.external ? 'a' : Link"
+              prefetch
+            >
               <Icon :icon="item.icon" />
               {{ item.name }}
             </component>
@@ -248,7 +280,7 @@ function renderLink(item) {
         <SidebarMenuItem v-if="index === navigationConfig.length - 1">
           <SidebarMenuButton @click="mode = isDarkMode ? 'light' : 'dark'">
             <Icon :icon="isDarkMode ? 'lucide:moon' : 'lucide:sun'" />
-            {{ isDarkMode ? 'Dark' : 'Light' }} Mode
+            {{ isDarkMode ? "Dark" : "Light" }} Mode
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -256,14 +288,18 @@ function renderLink(item) {
   </SidebarContent>
 
   <!-- Mobile Bottom Navigation Bar -->
-  <div class="fixed bottom-0 left-0 right-0 border-t bg-background z-40 md:hidden">
+  <div
+    class="fixed bottom-0 left-0 right-0 border-t bg-background z-40 md:hidden"
+  >
     <div class="grid grid-cols-5">
       <Link
         v-for="item in mobileNavItems.slice(0, 4)"
         :key="item.name"
         :href="item.route ? route(item.route) : '#'"
         class="flex flex-col items-center py-2 text-xs"
-        :class="route().current(item.route) ? 'text-primary' : 'text-muted-foreground'"
+        :class="
+          route().current(item.route) ? 'text-primary' : 'text-muted-foreground'
+        "
         prefetch
       >
         <Icon :icon="item.icon" class="h-5 w-5 mb-1" />
