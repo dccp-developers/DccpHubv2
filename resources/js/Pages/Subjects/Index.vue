@@ -257,4 +257,4 @@ const getStatusBadgeVariant = (status) => {
             </Table>
         </div>
     </AppLayout>
-</template> 
+</template>

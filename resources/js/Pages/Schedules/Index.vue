@@ -71,36 +71,18 @@ function scrollToCurrentTime() {
   const hour = now.getHours()
   const minute = now.getMinutes()
 
-  // Only scroll if within schedule range (7am - 9pm)
-  if (hour >= 7 && hour < 21) {
-    const topPos = ((hour - 7) * 60 + minute) * (1/1.5) // Scale factor to match our UI
-    scrollContainer.value.scrollTo({
-      top: topPos,
-      behavior: 'smooth'
-    })
+  // Calculate position based on time (6AM to 9PM)
+  const startHour = 6
+  const totalHours = 15
+  const hourOffset = (hour - startHour) + (minute / 60)
+
+  if (hourOffset >= 0 && hourOffset <= totalHours) {
+    const position = (hourOffset / totalHours) * scrollContainer.value.scrollHeight
+    scrollContainer.value.scrollTop = position - 100
   }
 }
 
-// Group schedules by subject for better organization
-const schedulesBySubject = computed(() => {
-  const grouped = {}
-
-  props.schedules.forEach(schedule => {
-    if (!grouped[schedule.subject_code]) {
-      grouped[schedule.subject_code] = {
-        subject: schedule.subject,
-        subject_code: schedule.subject_code,
-        color: schedule.color,
-        schedules: []
-      }
-    }
-    grouped[schedule.subject_code].schedules.push(schedule)
-  })
-
-  return Object.values(grouped)
-})
-
-// Filter schedules based on selected day
+// Filter schedules by selected day
 const filteredSchedules = computed(() => {
   if (selectedDay.value === 'all') {
     return props.schedules
@@ -108,245 +90,205 @@ const filteredSchedules = computed(() => {
   return props.schedules.filter(schedule => schedule.day_of_week === selectedDay.value)
 })
 
-// Get unique subjects for the filter
+// Calculate schedule statistics
+const totalClasses = computed(() => filteredSchedules.value.length)
+
 const uniqueSubjects = computed(() => {
-  const subjects = new Set()
-  props.schedules.forEach(schedule => {
-    subjects.add(schedule.subject)
-  })
-  return [...subjects]
+  const subjects = new Set(filteredSchedules.value.map(s => s.subject))
+  return subjects.size
 })
 
-// Get count of classes by day
 const classCountByDay = computed(() => {
   const counts = {}
   daysOfWeek.forEach(day => {
-    counts[day] = props.schedules.filter(s => s.day_of_week === day).length
+    counts[day] = filteredSchedules.value.filter(s => s.day_of_week === day).length
   })
   return counts
 })
 
-// Calculate the busiest day
 const busiestDay = computed(() => {
-  let maxDay = daysOfWeek[0]
-  let maxCount = classCountByDay.value[maxDay]
-
-  daysOfWeek.forEach(day => {
-    if (classCountByDay.value[day] > maxCount) {
-      maxDay = day
-      maxCount = classCountByDay.value[day]
+  const dayWithMostClasses = daysOfWeek.reduce((busiest, day) => {
+    const count = classCountByDay.value[day]
+    if (!busiest || count > busiest.count) {
+      return { day, count }
     }
-  })
+    return busiest
+  }, null)
 
-  return { day: maxDay, count: maxCount }
+  return dayWithMostClasses || { day: 'None', count: 0 }
 })
 
-// Time slots for timeline view
+// Generate time slots from 6 AM to 9 PM
 const timeSlots = computed(() => {
   const slots = []
-  for (let hour = 7; hour <= 21; hour++) {
-    const ampm = hour >= 12 ? 'PM' : 'AM'
-    const hour12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour)
-    slots.push({
-      time: `${hour12}:00 ${ampm}`,
-      hour: hour
-    })
+  for (let hour = 6; hour <= 21; hour++) {
+    const formattedHour = hour > 12 ? hour - 12 : hour
+    const period = hour >= 12 ? 'PM' : 'AM'
+    slots.push(`${formattedHour}:00 ${period}`)
   }
   return slots
 })
 
-// Current time position in timeline
-const currentTimePosition = computed(() => {
+// Calculate position for schedule blocks in timeline view
+function getSchedulePosition(schedule) {
+  // Parse time (e.g., "8:00 AM" to hours and minutes)
+  const startParts = schedule.start_time.split(' ')
+  const startTime = startParts[0].split(':')
+  const startHour = parseInt(startTime[0])
+  const startMin = parseInt(startTime[1])
+  const startAmPm = startParts[1]
+
+  // Calculate hours from 6 AM (our start time)
+  let adjustedStartHour = startHour
+  if (startAmPm === 'PM' && startHour !== 12) adjustedStartHour += 12
+  if (startAmPm === 'AM' && startHour === 12) adjustedStartHour = 0
+
+  // Calculate position and height
+  const hoursSince6Am = adjustedStartHour - 6 + (startMin / 60)
+  const topPosition = hoursSince6Am * 64 // Each hour is 64px tall
+
+  // Calculate duration
+  const endParts = schedule.end_time.split(' ')
+  const endTime = endParts[0].split(':')
+  const endHour = parseInt(endTime[0])
+  const endMin = parseInt(endTime[1])
+  const endAmPm = endParts[1]
+
+  let adjustedEndHour = endHour
+  if (endAmPm === 'PM' && endHour !== 12) adjustedEndHour += 12
+  if (endAmPm === 'AM' && endHour === 12) adjustedEndHour = 0
+
+  const durationHours = (adjustedEndHour + (endMin/60)) - (adjustedStartHour + (startMin/60))
+  const height = durationHours * 64
+
+  return {
+    top: `${topPosition}px`,
+    height: `${height}px`
+  }
+}
+
+// Check if a schedule is currently happening
+function isScheduleNow(schedule) {
+  const now = new Date()
+  const currentDay = daysOfWeek[now.getDay() - 1] // Convert JS day (1-7) to our format
+
+  if (schedule.day_of_week !== currentDay) return false
+
+  const currentHour = now.getHours()
+  const currentMinute = now.getMinutes()
+
+  // Parse start time
+  const startParts = schedule.start_time.split(' ')
+  const startTime = startParts[0].split(':')
+  let startHour = parseInt(startTime[0])
+  const startMin = parseInt(startTime[1])
+  const startAmPm = startParts[1]
+
+  if (startAmPm === 'PM' && startHour !== 12) startHour += 12
+  if (startAmPm === 'AM' && startHour === 12) startHour = 0
+
+  // Parse end time
+  const endParts = schedule.end_time.split(' ')
+  const endTime = endParts[0].split(':')
+  let endHour = parseInt(endTime[0])
+  const endMin = parseInt(endTime[1])
+  const endAmPm = endParts[1]
+
+  if (endAmPm === 'PM' && endHour !== 12) endHour += 12
+  if (endAmPm === 'AM' && endHour === 12) endHour = 0
+
+  // Convert all to minutes for easier comparison
+  const currentTimeInMinutes = currentHour * 60 + currentMinute
+  const startTimeInMinutes = startHour * 60 + startMin
+  const endTimeInMinutes = endHour * 60 + endMin
+
+  return currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes <= endTimeInMinutes
+}
+
+// Get current timeline position
+const getCurrentTimePosition = computed(() => {
   const now = new Date()
   const hour = now.getHours()
   const minute = now.getMinutes()
 
-  // Only show between 7am and 9pm
-  if (hour < 7 || hour >= 21) return null
-
-  const topPos = (hour - 7) * 60 + minute
-  return `${topPos}px`
-})
-
-// Check if we should show the current time indicator
-const showCurrentTimeIndicator = computed(() => {
-  const now = new Date()
-  const hour = now.getHours()
-  return hour >= 7 && hour < 21
-})
-
-// Check if current day has classes
-const currentDayHasClasses = computed(() => {
-  const now = new Date()
-  const dayIndex = now.getDay() // 0 = Sunday, 1 = Monday, ...
-
-  // Convert to our day format
-  const day = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayIndex]
-
-  return props.schedules.some(s => s.day_of_week === day)
-})
-
-// Get current day name
-const currentDayName = computed(() => {
-  const now = new Date()
-  const dayIndex = now.getDay() // 0 = Sunday, 1 = Monday, ...
-  return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayIndex]
-})
-
-function capitalizeFirstLetter(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1)
-}
-
-function getSchedulePosition(schedule) {
-  // Parse the schedule time to determine position in timeline
-  const startTime = schedule.start_time
-  const endTime = schedule.end_time
-
-  // Extract hours and minutes
-  const startHourMatch = startTime.match(/(\d+):(\d+)\s+(AM|PM)/)
-  const endHourMatch = endTime.match(/(\d+):(\d+)\s+(AM|PM)/)
-
-  if (!startHourMatch || !endHourMatch) return { top: '0px', height: '60px' }
-
-  let startHour = parseInt(startHourMatch[1])
-  const startMin = parseInt(startHourMatch[2])
-  const startAmPm = startHourMatch[3]
-
-  let endHour = parseInt(endHourMatch[1])
-  const endMin = parseInt(endHourMatch[2])
-  const endAmPm = endHourMatch[3]
-
-  // Convert to 24-hour format
-  if (startAmPm === 'PM' && startHour !== 12) startHour += 12
-  if (startAmPm === 'AM' && startHour === 12) startHour = 0
-
-  if (endAmPm === 'PM' && endHour !== 12) endHour += 12
-  if (endAmPm === 'AM' && endHour === 12) endHour = 0
-
-  // Calculate top position (7:00 AM = 0)
-  const topPos = (startHour - 7) * 60 + startMin
-
-  // Calculate duration in minutes
-  const durationMins = (endHour * 60 + endMin) - (startHour * 60 + startMin)
-
-  return {
-    top: `${topPos}px`,
-    height: `${durationMins}px`
-  }
-}
-
-// Detect overlapping schedules and adjust positioning
-function getScheduleWidth(schedule, day) {
-  // Find all schedules for this day that overlap with this one
-  const daySchedules = props.schedules.filter(s => s.day_of_week === day)
-  const overlapping = daySchedules.filter(s => {
-    if (s.id === schedule.id) return false
-
-    // Check time overlap
-    const pos1 = getSchedulePosition(schedule)
-    const pos2 = getSchedulePosition(s)
-
-    const top1 = parseInt(pos1.top)
-    const bottom1 = top1 + parseInt(pos1.height)
-    const top2 = parseInt(pos2.top)
-    const bottom2 = top2 + parseInt(pos2.height)
-
-    return (top1 < bottom2 && bottom1 > top2)
-  })
-
-  // If overlapping, make it narrower
-  if (overlapping.length > 0) {
-    const index = overlapping.findIndex(s => s.id === schedule.id) || 0
-    const leftPos = 5 + (index * 45) // Stagger horizontally
-    return { width: '50%', left: `${leftPos}%` }
+  // If outside of our display hours (6am-9pm), return null
+  if (hour < 6 || hour > 21) {
+    return null
   }
 
-  return { width: '90%', left: '5%' }
-}
+  const hoursSince6Am = (hour - 6) + (minute / 60)
+  return hoursSince6Am * 64 // Each hour is 64px tall
+})
 
-// Format duration nicely
+// Format duration text
 function formatDuration(startTime, endTime) {
-  // Extract hours and minutes
-  const startMatch = startTime.match(/(\d+):(\d+)\s+(AM|PM)/)
-  const endMatch = endTime.match(/(\d+):(\d+)\s+(AM|PM)/)
+  const startParts = startTime.split(' ')
+  const startTimeParts = startParts[0].split(':')
+  let startHour = parseInt(startTimeParts[0])
+  const startMin = parseInt(startTimeParts[1])
+  const startAmPm = startParts[1]
 
-  if (!startMatch || !endMatch) return "Unknown duration"
-
-  let startHour = parseInt(startMatch[1])
-  const startMin = parseInt(startMatch[2])
-  const startAmPm = startMatch[3]
-
-  let endHour = parseInt(endMatch[1])
-  const endMin = parseInt(endMatch[2])
-  const endAmPm = endMatch[3]
-
-  // Convert to 24-hour format
   if (startAmPm === 'PM' && startHour !== 12) startHour += 12
   if (startAmPm === 'AM' && startHour === 12) startHour = 0
+
+  const endParts = endTime.split(' ')
+  const endTimeParts = endParts[0].split(':')
+  let endHour = parseInt(endTimeParts[0])
+  const endMin = parseInt(endTimeParts[1])
+  const endAmPm = endParts[1]
 
   if (endAmPm === 'PM' && endHour !== 12) endHour += 12
   if (endAmPm === 'AM' && endHour === 12) endHour = 0
 
   // Calculate duration in minutes
-  const durationMins = (endHour * 60 + endMin) - (startHour * 60 + startMin)
-  const hours = Math.floor(durationMins / 60)
-  const minutes = durationMins % 60
+  const startTotalMinutes = (startHour * 60) + startMin
+  const endTotalMinutes = (endHour * 60) + endMin
+  const durationMinutes = endTotalMinutes - startTotalMinutes
+
+  // Format duration
+  const hours = Math.floor(durationMinutes / 60)
+  const minutes = durationMinutes % 60
 
   if (hours > 0) {
     return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`
   }
-
   return `${minutes}m`
 }
 
-// Is the schedule happening now?
-function isScheduleNow(schedule) {
-  const now = new Date()
-  const currentDay = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][now.getDay()]
+// Group schedules by subject for list view
+const schedulesBySubject = computed(() => {
+  const grouped = {}
 
-  if (schedule.day_of_week !== currentDay) return false
+  filteredSchedules.value.forEach(schedule => {
+    if (!grouped[schedule.subject]) {
+      grouped[schedule.subject] = {
+        subject: schedule.subject,
+        code: schedule.subject_code,
+        color: schedule.color,
+        instances: []
+      }
+    }
 
-  // Parse schedule times
-  const startMatch = schedule.start_time.match(/(\d+):(\d+)\s+(AM|PM)/)
-  const endMatch = schedule.end_time.match(/(\d+):(\d+)\s+(AM|PM)/)
+    grouped[schedule.subject].instances.push(schedule)
+  })
 
-  if (!startMatch || !endMatch) return false
-
-  let startHour = parseInt(startMatch[1])
-  const startMin = parseInt(startMatch[2])
-  const startAmPm = startMatch[3]
-
-  let endHour = parseInt(endMatch[1])
-  const endMin = parseInt(endMatch[2])
-  const endAmPm = endMatch[3]
-
-  // Convert to 24-hour format
-  if (startAmPm === 'PM' && startHour !== 12) startHour += 12
-  if (startAmPm === 'AM' && startHour === 12) startHour = 0
-
-  if (endAmPm === 'PM' && endHour !== 12) endHour += 12
-  if (endAmPm === 'AM' && endHour === 12) endHour = 0
-
-  const startDate = new Date()
-  startDate.setHours(startHour, startMin, 0)
-
-  const endDate = new Date()
-  endDate.setHours(endHour, endMin, 0)
-
-  return now >= startDate && now <= endDate
-}
+  return Object.values(grouped)
+})
 </script>
 
 <template>
-  <AppLayout title="My Schedule">
-    <div class="md:container mx-auto px-4 py-6">
+  <AppLayout :title="`My Schedule - ${currentSemester} ${currentSchoolYear}`">
+    <div class="md:container mx-auto px-4 py-6 space-y-6">
+      <!-- Header section with controls -->
       <div class="flex flex-col sm:flex-row justify-between mb-6 gap-4">
         <div>
-          <h1 class="text-2xl font-bold">Academic Schedule</h1>
-          <p class="text-gray-500">{{ currentSemester }} Semester, School Year {{ currentSchoolYear }}</p>
+          <h1 class="text-2xl font-bold mb-1">My Class Schedule</h1>
+          <p class="text-muted-foreground text-sm">
+            {{ currentSemester }} Semester, School Year {{ currentSchoolYear }}
+          </p>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3">
           <Select v-model="selectedDay" class="w-36">
             <SelectTrigger>
               <SelectValue placeholder="Filter by day" />
@@ -354,7 +296,7 @@ function isScheduleNow(schedule) {
             <SelectContent>
               <SelectItem value="all">All Days</SelectItem>
               <SelectItem v-for="day in daysOfWeek" :key="day" :value="day">
-                {{ capitalizeFirstLetter(day) }} ({{ classCountByDay[day] }})
+                {{ day.charAt(0).toUpperCase() + day.slice(1) }}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -368,18 +310,18 @@ function isScheduleNow(schedule) {
             <CardTitle class="text-lg">Total Classes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="text-3xl font-bold">{{ props.schedules.length }}</div>
-            <p class="text-sm text-gray-500">Scheduled this semester</p>
+            <div class="text-3xl font-bold">{{ totalClasses }}</div>
+            <p class="text-sm text-gray-500">Classes this semester</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader class="pb-2">
-            <CardTitle class="text-lg">Unique Subjects</CardTitle>
+            <CardTitle class="text-lg">Subjects</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="text-3xl font-bold">{{ uniqueSubjects.length }}</div>
-            <p class="text-sm text-gray-500">Enrolled this semester</p>
+            <div class="text-3xl font-bold">{{ uniqueSubjects }}</div>
+            <p class="text-sm text-gray-500">Unique subjects enrolled</p>
           </CardContent>
         </Card>
 
@@ -395,7 +337,7 @@ function isScheduleNow(schedule) {
       </div>
 
       <!-- Main schedule view -->
-      <Tabs :default-value="viewMode" @update-value="viewMode = $event" class="w-full">
+      <Tabs v-model="viewMode" class="w-full">
         <div class="flex justify-between items-center mb-6">
           <TabsList>
             <TabsTrigger value="timeline">Timeline View</TabsTrigger>
@@ -404,207 +346,183 @@ function isScheduleNow(schedule) {
           </TabsList>
 
           <Button
-            v-if="viewMode === 'timeline' && showCurrentTimeIndicator"
+            v-if="viewMode === 'timeline' && getCurrentTimePosition !== null"
             variant="outline"
             size="sm"
             @click="scrollToCurrentTime"
             class="text-xs"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            Scroll to now
+            <Icon icon="lucide:clock" class="h-3 w-3 mr-1" />
+            Scroll to Now
           </Button>
         </div>
 
-        <!-- Enhanced Timeline View -->
+        <!-- Timeline View -->
         <TabsContent value="timeline" class="mt-0">
           <Card>
-            <CardHeader class="pb-2">
-              <div class="flex justify-between items-start">
-                <div>
-                  <CardTitle>Schedule Timeline</CardTitle>
-                  <CardDescription>
-                    View your classes across time slots
-                  </CardDescription>
-                </div>
+            <CardContent class="p-0">
+              <div
+                ref="scrollContainer"
+                class="timeline-container relative overflow-y-auto max-h-[calc(100vh-260px)] md:max-h-[600px]"
+              >
+                <div class="flex">
+                  <!-- Time column (fixed) -->
+                  <div class="sticky left-0 z-20 bg-background/95 backdrop-blur-sm min-w-[60px] border-r">
+                    <div class="h-16 border-b flex items-end justify-center">
+                      <span class="text-sm font-medium mb-2">Time</span>
+                    </div>
 
-                <div v-if="showCurrentTimeIndicator" class="hidden sm:flex items-center text-sm">
-                  <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-2"></div>
-                  <div>
-                    <span class="font-medium">{{ currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</span>
-                    <span class="ml-1 text-gray-500 capitalize">{{ currentDayName }}</span>
-                  </div>
-                </div>
-              </div>
+                    <!-- Time slots -->
+                    <div class="relative">
+                      <div v-for="(time, index) in timeSlots" :key="time" class="h-16 flex items-center justify-center text-xs text-muted-foreground">
+                        {{ time }}
+                      </div>
 
-              <div v-if="currentDayHasClasses && showCurrentTimeIndicator" class="mt-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md text-amber-800 dark:text-amber-200 text-xs md:text-sm">
-                You have {{ props.schedules.filter(s => s.day_of_week === currentDayName).length }} classes scheduled today.
-                <span v-if="props.schedules.some(s => isScheduleNow(s))">
-                  You have a class ongoing right now.
-                </span>
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              <div class="flex overflow-x-auto pb-4 timeline-container" ref="scrollContainer">
-                <!-- Time column -->
-                <div class="w-[70px] md:w-[90px] flex-shrink-0 bg-muted/50 backdrop-blur-sm sticky left-0 z-20 shadow-md border-r">
-                  <div class="h-16 border-b flex items-center justify-center">
-                    <span class="text-xs md:text-sm font-semibold text-gray-600 dark:text-gray-300">Time</span>
-                  </div>
-                  <div v-for="slot in timeSlots" :key="slot.time" class="h-16 flex items-center justify-center border-b border-gray-100 dark:border-gray-800">
-                    <span class="text-xs md:text-sm text-gray-500 dark:text-gray-400 font-medium">{{ slot.time }}</span>
-                  </div>
-                </div>
-
-                <!-- Day columns -->
-                <div v-for="day in daysOfWeek" :key="day" class="min-w-[160px] md:min-w-[200px] flex-1 flex-shrink-0">
-                  <div class="h-16 border-b pb-2 flex items-end justify-center sticky top-0 z-10 bg-background/90 backdrop-blur-sm">
-                    <div class="flex flex-col items-center">
-                      <span class="text-sm md:text-base font-medium capitalize">{{ day }}</span>
-                      <Badge variant="outline" class="mt-1">{{ classCountByDay[day] }}</Badge>
+                      <!-- Current time indicator on time column -->
+                      <div
+                        v-if="getCurrentTimePosition !== null"
+                        class="absolute left-0 right-0 h-0.5 bg-primary z-30"
+                        :style="{ top: `${getCurrentTimePosition}px` }"
+                      ></div>
                     </div>
                   </div>
 
-                  <div class="relative" style="height: 840px;"> <!-- 15 hours * 56px height -->
-                    <!-- Time slot grid lines -->
-                    <div
-                      v-for="(slot, index) in timeSlots"
-                      :key="slot.time"
-                      class="absolute w-full h-16 border-b border-gray-100 "
-                      :style="{ top: `${index * 56}px` }"
-                      :class="{'bg-background': index % 2 === 0}"
-                    ></div>
+                  <!-- Days columns with schedule blocks (scrollable) -->
+                  <div class="flex-1 overflow-x-auto">
+                    <div class="w-max min-w-full flex">
+                      <div v-for="day in daysOfWeek" :key="day" class="min-w-[160px] md:min-w-[200px] flex-1 flex-shrink-0">
+                        <div class="h-16 border-b pb-2 flex items-end justify-center sticky top-0 z-10 bg-background/90 backdrop-blur-sm">
+                          <div class="flex flex-col items-center">
+                            <span class="text-sm md:text-base font-medium capitalize">{{ day }}</span>
+                            <Badge variant="outline" class="mt-1">{{ classCountByDay[day] }}</Badge>
+                          </div>
+                        </div>
 
-                    <!-- Current time indicator -->
-                    <div
-                      v-if="day === currentDayName && showCurrentTimeIndicator"
-                      class="absolute w-full h-0.5 bg-red-500 z-10"
-                      :style="{ top: currentTimePosition }"
-                    >
-                      <div class="absolute -left-1 -top-1.5 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
-                        <div class="w-2 h-2 bg-muted rounded-full"></div>
+                        <!-- Day content -->
+                        <div class="relative">
+                          <!-- Time slot lines -->
+                          <div
+                            v-for="(slot, index) in timeSlots"
+                            :key="slot.time"
+                            class="absolute w-full h-16 border-b border-gray-100"
+                            :style="{ top: `${index * 64}px` }"
+                            :class="{'bg-background': index % 2 === 0}"
+                          ></div>
+
+                          <!-- Current time indicator line -->
+                          <div
+                            v-if="getCurrentTimePosition !== null && day === daysOfWeek[new Date().getDay() - 1]"
+                            class="absolute left-0 right-0 h-px bg-primary z-30 pointer-events-none"
+                            :style="{ top: `${getCurrentTimePosition}px` }"
+                            ref="currentTimeRef"
+                          >
+                            <div class="absolute -left-1 -top-1.5 flex items-center">
+                              <div class="w-3 h-3 rounded-full bg-primary"></div>
+                            </div>
+                          </div>
+
+                          <!-- Schedule blocks -->
+                          <Tooltip v-for="schedule in filteredSchedules.filter(s => s.day_of_week === day)" :key="schedule.id">
+                            <TooltipTrigger asChild>
+                              <div
+                                class="absolute w-[90%] left-[5%] rounded-md p-2 shadow-sm transition-all hover:shadow-md z-10"
+                                :class="[
+                                  schedule.color,
+                                  isScheduleNow(schedule) ? 'ring-2 ring-primary animate-pulse' : '',
+                                ]"
+                                :style="getSchedulePosition(schedule)"
+                              >
+                                <div class="text-xs">{{ schedule.time }}</div>
+                                <div class="font-bold text-sm truncate">{{ schedule.subject }}</div>
+                                <div class="text-xs mt-1">{{ schedule.room }}</div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" class="max-w-xs">
+                              <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                                <div class="col-span-2 font-bold text-base mb-1">{{ schedule.subject }}</div>
+
+                                <div class="font-semibold">Time:</div>
+                                <div>{{ schedule.time }}</div>
+
+                                <div class="font-semibold">Room:</div>
+                                <div>{{ schedule.room }}</div>
+
+                                <div class="font-semibold">Teacher:</div>
+                                <div>{{ schedule.teacher }}</div>
+
+                                <div class="font-semibold">Section:</div>
+                                <div>{{ schedule.section }}</div>
+
+                                <div class="font-semibold">Duration:</div>
+                                <div>{{ formatDuration(schedule.start_time, schedule.end_time) }}</div>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       </div>
                     </div>
-
-                    <!-- Schedule blocks -->
-                    <Tooltip v-for="schedule in filteredSchedules.filter(s => s.day_of_week === day)" :key="schedule.id">
-                      <TooltipTrigger as-child>
-                        <div
-                          class="absolute rounded-md p-2 shadow-sm transition-all hover:shadow-md z-10 border border-transparent hover:border-primary"
-                          :class="[
-                            schedule.color,
-                            isScheduleNow(schedule) ? 'ring-2 ring-primary animate-pulse' : '',
-                          ]"
-                          :style="{
-                            ...getSchedulePosition(schedule),
-                            ...getScheduleWidth(schedule, day)
-                          }"
-                        >
-                          <div class="flex flex-col h-full overflow-hidden">
-                            <div class="font-medium text-xs md:text-sm line-clamp-2">{{ schedule.subject }}</div>
-                            <div class="text-xs opacity-90 mt-1 flex justify-between">
-                              <div>{{ schedule.time }}</div>
-                              <div class="hidden sm:block font-bold">{{ formatDuration(schedule.start_time, schedule.end_time) }}</div>
-                            </div>
-                            <div class="flex items-center mt-auto space-x-1 pt-1">
-                              <div class="inline-flex text-xs">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 mr-1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                                <span class="truncate">{{ schedule.room }}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent class="w-72 p-0 overflow-hidden">
-                        <div class="p-3" :class="schedule.color">
-                          <h4 class="font-bold">{{ schedule.subject }}</h4>
-                          <div class="text-xs">{{ schedule.subject_code }}</div>
-                        </div>
-                        <div class="p-3 space-y-2">
-                          <div class="grid grid-cols-2 gap-1 text-sm">
-                            <div class="font-semibold">Time:</div>
-                            <div>{{ schedule.time }}</div>
-
-                            <div class="font-semibold">Room:</div>
-                            <div>{{ schedule.room }}</div>
-
-                            <div class="font-semibold">Teacher:</div>
-                            <div>{{ schedule.teacher }}</div>
-
-                            <div class="font-semibold">Section:</div>
-                            <div>{{ schedule.section }}</div>
-
-                            <div class="font-semibold">Duration:</div>
-                            <div>{{ formatDuration(schedule.start_time, schedule.end_time) }}</div>
-                          </div>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
                   </div>
                 </div>
-              </div>
 
-              <!-- Mobile note about scrolling -->
-              <div class="md:hidden text-xs text-gray-500 text-center mt-2">
-                Swipe left/right to view all days
+                <!-- Mobile note about scrolling -->
+                <div class="md:hidden text-xs text-gray-500 text-center mt-2">
+                  Swipe left/right to view all days
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <!-- List View (Kept the original) -->
+        <!-- List View -->
         <TabsContent value="list" class="mt-0">
           <Card>
-            <CardHeader>
-              <CardTitle>Schedule List</CardTitle>
-              <CardDescription>
-                Organized view of your weekly schedule
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div class="space-y-6">
-                <div v-for="subject in schedulesBySubject" :key="subject.subject_code" class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all">
-                  <div :class="subject.color" class="p-4 flex justify-between items-center">
-                    <div>
-                      <h3 class="font-bold text-lg">{{ subject.subject }}</h3>
-                      <div class="text-sm opacity-90">{{ subject.subject_code }}</div>
-                    </div>
-                    <Badge variant="outline" class="text-xs">
-                      {{ subject.schedules.length }} session{{ subject.schedules.length !== 1 ? 's' : '' }}
-                    </Badge>
-                  </div>
+            <CardContent class="p-0">
+              <div class="max-h-[calc(100vh-260px)] md:max-h-[600px] overflow-y-auto">
+                <div v-if="schedulesBySubject.length === 0" class="py-12 text-center text-muted-foreground">
+                  No classes scheduled
+                </div>
 
-                  <div class="p-4 space-y-3">
-                    <div
-                      v-for="schedule in subject.schedules.filter(s => selectedDay.value === 'all' || s.day_of_week === selectedDay.value)"
-                      :key="schedule.id"
-                      class="flex flex-col sm:flex-row sm:justify-between p-4 bg-muted rounded-lg hover:bg-gray-100 transition-colors border-l-4"
-                      :style="`border-color: ${schedule.color ? schedule.color.split(' ')[0].replace('bg-', '--').replace('-100', '-500') : 'var(--primary)'}`"
-                    >
-                      <div class="flex items-start mb-2 sm:mb-0">
-                        <div class="w-24 font-medium capitalize flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                          {{ schedule.day_of_week }}
-                        </div>
-                        <div>
-                          <div class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            <span class="font-medium">{{ schedule.time }}</span>
-                          </div>
-                          <div class="text-sm text-gray-500 flex items-center mt-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                            Room: {{ schedule.room }}
-                          </div>
-                        </div>
+                <div v-else>
+                  <div v-for="group in schedulesBySubject" :key="group.subject" class="border-b last:border-0">
+                    <div class="p-4 cursor-pointer hover:bg-muted/50 flex justify-between items-center">
+                      <div>
+                        <h3 class="font-bold text-base">{{ group.subject }}</h3>
+                        <p class="text-sm text-muted-foreground">{{ group.code }} • {{ group.instances.length }} sessions</p>
                       </div>
-                      <div class="flex flex-col">
-                        <div class="text-sm flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                          <span>{{ schedule.teacher }}</span>
+                      <Badge :class="group.color.replace('bg-', 'bg-opacity-20 ').replace('text-', '')">
+                        {{ group.instances.length }} classes
+                      </Badge>
+                    </div>
+
+                    <div class="pl-4 pr-2 pb-4 grid gap-2">
+                      <div
+                        v-for="schedule in group.instances"
+                        :key="schedule.id"
+                        class="p-3 rounded-md border flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
+                      >
+                        <div class="flex gap-2 items-center sm:w-1/4">
+                          <div class="w-8 h-8 rounded-full flex items-center justify-center" :class="schedule.color">
+                            <span class="uppercase font-bold text-xs">{{ schedule.day_of_week.slice(0, 2) }}</span>
+                          </div>
+                          <div>
+                            <div class="capitalize font-medium">{{ schedule.day_of_week }}</div>
+                            <div class="text-xs text-muted-foreground">{{ schedule.time }}</div>
+                          </div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-1 flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 mr-1"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-                          <span>{{ formatDuration(schedule.start_time, schedule.end_time) }}</span>
+
+                        <div class="sm:w-1/4">
+                          <div class="text-sm font-medium">Room</div>
+                          <div class="text-sm">{{ schedule.room }}</div>
+                        </div>
+
+                        <div class="sm:w-1/4">
+                          <div class="text-sm font-medium">Teacher</div>
+                          <div class="text-sm">{{ schedule.teacher }}</div>
+                        </div>
+
+                        <div class="sm:w-1/4">
+                          <div class="text-sm font-medium">Section</div>
+                          <div class="text-sm">{{ schedule.section }}</div>
                         </div>
                       </div>
                     </div>
@@ -615,41 +533,42 @@ function isScheduleNow(schedule) {
           </Card>
         </TabsContent>
 
-        <!-- Grid View (Kept the original) -->
+        <!-- Grid View -->
         <TabsContent value="grid" class="mt-0">
           <Card>
-            <CardHeader>
-              <CardTitle>Weekly Calendar</CardTitle>
-              <CardDescription>
-                View your schedule in a weekly grid format
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
-                <div v-for="day in daysOfWeek" :key="day" class="p-4 border rounded-lg">
-                  <div class="flex justify-between items-center mb-3">
-                    <h2 class="font-semibold text-lg capitalize">{{ day }}</h2>
-                    <Badge variant="outline">{{ classCountByDay[day] }}</Badge>
-                  </div>
+            <CardContent class="p-0">
+              <div class="max-h-[calc(100vh-260px)] md:max-h-[600px] overflow-y-auto p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div v-for="day in daysOfWeek" :key="day" class="border rounded-lg overflow-hidden">
+                    <div class="bg-muted/30 p-3 border-b flex justify-between items-center">
+                      <div class="capitalize font-bold">{{ day }}</div>
+                      <Badge>{{ classCountByDay[day] }}</Badge>
+                    </div>
 
-                  <div v-if="filteredSchedules.some(s => s.day_of_week === day)" class="space-y-3">
-                    <div
-                      v-for="schedule in filteredSchedules.filter(s => s.day_of_week === day)"
-                      :key="schedule.id"
-                      class="p-3 rounded-md transition-all hover:shadow-md"
-                      :class="schedule.color"
-                    >
-                      <div class="text-xs mb-1">{{ schedule.time }}</div>
-                      <div class="font-bold text-sm">{{ schedule.subject }}</div>
-                      <div class="text-xs mt-2 flex justify-between">
-                        <span>Room: {{ schedule.room }}</span>
-                        <span class="truncate ml-2">{{ schedule.teacher }}</span>
+                    <div class="p-3 space-y-2">
+                      <div
+                        v-if="filteredSchedules.filter(s => s.day_of_week === day).length > 0"
+                        class="space-y-2"
+                      >
+                        <div
+                          v-for="schedule in filteredSchedules.filter(s => s.day_of_week === day)"
+                          :key="schedule.id"
+                          class="p-3 rounded-md transition-all hover:shadow-md"
+                          :class="schedule.color"
+                        >
+                          <div class="text-xs mb-1">{{ schedule.time }}</div>
+                          <div class="font-bold text-sm">{{ schedule.subject }}</div>
+                          <div class="text-xs mt-2 flex justify-between">
+                            <span>Room: {{ schedule.room }}</span>
+                            <span class="truncate ml-2">{{ schedule.teacher }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div v-else class="h-24 flex items-center justify-center border border-dashed rounded-md text-gray-400 text-sm">
+                        No classes
                       </div>
                     </div>
-                  </div>
-
-                  <div v-else class="h-24 flex items-center justify-center border border-dashed rounded-md text-gray-400 text-sm">
-                    No classes
                   </div>
                 </div>
               </div>
@@ -669,6 +588,7 @@ function isScheduleNow(schedule) {
 
 .timeline-container::-webkit-scrollbar {
   height: 8px;
+  width: 8px;
 }
 
 .timeline-container::-webkit-scrollbar-track {
@@ -688,6 +608,7 @@ function isScheduleNow(schedule) {
 @media (max-width: 640px) {
   .timeline-container::-webkit-scrollbar {
     height: 4px;
+    width: 4px;
   }
 }
 
