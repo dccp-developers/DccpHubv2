@@ -181,12 +181,20 @@ final class User extends Authenticatable implements FilamentUser
     {
         return $this->morphTo();
     }
-
     public function getProfilePhotoUrlAttribute()
     {
-        return $this->profile_photo_path
-            ? Storage::disk('s3')->url($this->profile_photo_path)
-            : null;
+        if (!$this->profile_photo_path) {
+            return null;
+        }
+
+        // If profile_photo_path starts with http:// or https://, it's already a URL
+        if (str_starts_with($this->profile_photo_path, 'http://') ||
+            str_starts_with($this->profile_photo_path, 'https://')) {
+            return $this->profile_photo_path;
+        }
+
+        // Otherwise get URL from S3
+        return Storage::disk('s3')->url($this->profile_photo_path);
     }
 
     public function UserPerson()

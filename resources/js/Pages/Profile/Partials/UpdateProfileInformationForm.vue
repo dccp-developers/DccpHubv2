@@ -100,7 +100,7 @@ function clearPhotoFileInput() {
                 <input id="photo" ref="photoInput" type="file" class="hidden" @change="updatePhotoPreview">
                 <Label for="photo">Photo</Label>
                 <div v-show="!photoPreview" class="mt-2">
-                    <img :src="user.profile_photo_path" :alt="user.name" class="size-20 rounded-full object-cover">
+                    <img :src="user.profile_photo_url" :alt="user.name" class="size-20 rounded-full object-cover">
                 </div>
                 <div v-show="photoPreview" class="mt-2">
                     <span class="block size-20 rounded-full bg-cover bg-center bg-no-repeat"
@@ -109,7 +109,7 @@ function clearPhotoFileInput() {
                 <Button variant="secondary" class="me-2 mt-2" type="button" @click.prevent="selectNewPhoto">
                     Select A New Photo
                 </Button>
-                <Button v-if="user.profile_photo_path" variant="secondary" type="button" class="mt-2"
+                <Button v-if="user.profile_photo_url" variant="secondary" type="button" class="mt-2"
                     @click.prevent="deletePhoto">
                     Remove Photo
                 </Button>
