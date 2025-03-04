@@ -37,15 +37,7 @@ final class Classes extends Model
 
     protected $with = ['Faculty'];
 
-    /**
-     * Get the posts associated with the class
-     */
-    public function Posts(): HasMany
-    {
-        return $this->hasMany(ClassPost::class, 'class_id', 'id')
-            ->latest()
-            ->orderBy('created_at', 'desc');
-    }
+
 
     /**
      * Get the subject associated with the class

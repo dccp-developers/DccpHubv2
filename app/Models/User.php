@@ -92,7 +92,7 @@ use function Illuminate\Events\queueable;
  *
  * @mixin \Eloquent
  */
-final class User extends Authenticatable implements FilamentUser, MustVerifyEmail
+final class User extends Authenticatable implements FilamentUser
 {
     use Billable;
     use HasApiTokens;
