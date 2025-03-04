@@ -222,11 +222,11 @@ const mobileNavConfig = computed(() => ({
                             </h3>
                             <div class="space-y-1">
                                 <component v-for="item in mobileNavConfig.mainMenu" :key="item.name"
-                                    v-bind="renderLink(item)" :class="[
+                                    v-bind="renderLink(item)" :is="item.external ? 'a' : Link"
+                                    class="flex items-center w-full" :class="[
                                         'flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors',
                                         !item.external && route().current(item.route)
-                                            ? 'bg-secondary text-primary'
-                                            : 'hover:bg-secondary/50'
+                                            ? 'bg-secondary text-primary' : 'hover:bg-secondary/50'
                                     ]">
                                     <Icon :icon="item.icon" class="mr-3 h-5 w-5" />
                                     {{ item.name }}
