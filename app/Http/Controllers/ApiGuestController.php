@@ -59,24 +59,30 @@ final class ApiGuestController extends Controller
 
     public function checkId(Request $request)
     {
-        $request->validate(['id' => 'required']);
+        $request->validate(['id' => 'required', 'email' => 'required']);
 
         $id = $request->id;
+        $email = $request->email;
         $userType = $request->userType;
 
         if ($userType === 'student') {
             $student = \App\Models\Students::query()->where('id', $id)->first();
-            if ($student) {
+            if (!$student) {
                 return response()->json([
-                    'success' => 'ID is valid.',
-                    'fullName' => $student->getFullNameAttribute(),
+                    'error' => 'ID not found in Student records.',
+                ]);
+            }
+
+            if ($student->email !== $email) {
+                return response()->json([
+                    'error' => 'The provided email does not match the student ID. Please use the email associated with your student account.',
                 ]);
             }
 
             return response()->json([
-                'error' => 'ID not found in Student records.',
+                'success' => 'ID and email match.',
+                'fullName' => $student->getFullNameAttribute(),
             ]);
-
         }
 
         if ($userType === 'instructor') {
