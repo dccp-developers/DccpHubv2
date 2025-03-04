@@ -36,7 +36,7 @@ final class ShsStudents extends Model
 
     public function getCodeAttribute()
     {
-        $Strand = \App\Models\TracksStrands::query()->where('id', $this->strand_id)->first();
+        $Strand = TracksStrands::query()->where('id', $this->strand_id)->first();
 
         return $Strand->code;
     }

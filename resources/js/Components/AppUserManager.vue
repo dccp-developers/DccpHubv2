@@ -41,7 +41,7 @@ const TriggerComponent = computed(() => {
                     : 'justify-start'
             ]">
                 <Avatar class="h-8 w-8 rounded-lg">
-                    <AvatarImage :src="$page.props.auth.user.profile_photo_url ?? ''"
+                    <AvatarImage :src="$page.props.auth.user.profile_photo_path ?? ''"
                         :alt="$page.props.auth.user.name" />
                     <AvatarFallback class="rounded-lg">
                         {{ $page.props.auth.user.name.charAt(0) }}
@@ -63,7 +63,7 @@ const TriggerComponent = computed(() => {
             <DropdownMenuLabel class="p-0 font-normal">
                 <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar class="h-8 w-8 rounded-lg">
-                        <AvatarImage :src="$page.props.auth.user.profile_photo_url ?? ''"
+                        <AvatarImage :src="$page.props.auth.user.profile_photo_path ?? ''"
                             :alt="$page.props.auth.user.name" />
                         <AvatarFallback class="rounded-lg">
                             {{ $page.props.auth.user.name.charAt(0) }}

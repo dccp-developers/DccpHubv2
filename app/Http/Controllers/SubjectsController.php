@@ -23,7 +23,8 @@ final class SubjectsController extends Controller
 
         /** @var Students $student */
         $student = $user->student;
-        $course = $student->course; abort_unless($course, 404, 'Student course not found.');
+        $course = $student->course;
+        abort_unless($course, 404, 'Student course not found.');
 
         // Get all subjects associated with the student's course
         $allCourseSubjects = Subject::query()

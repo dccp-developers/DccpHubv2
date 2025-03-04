@@ -26,8 +26,8 @@ final class TuitionController extends Controller
         $student = $user->student;
 
         // Get the student's tuition for the current semester and academic year.
-        $currentSemester = \App\Models\GeneralSettings::query()->first()->semester;
-        $currentSchoolYear = \App\Models\GeneralSettings::query()->first()->getSchoolYear();
+        $currentSemester = GeneralSettings::query()->first()->semester;
+        $currentSchoolYear = GeneralSettings::query()->first()->getSchoolYear();
 
         $tuition = StudentTuition::query()
             ->where('student_id', $student->id)

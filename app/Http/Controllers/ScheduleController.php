@@ -26,7 +26,7 @@ final class ScheduleController extends Controller
         $student = $user->student;
 
         // Get current semester and school year from settings
-        $settings = \App\Models\GeneralSettings::query()->first();
+        $settings = GeneralSettings::query()->first();
         $currentSemester = $settings->semester;
         $currentSchoolYear = $settings->getSchoolYear();
 
@@ -47,7 +47,7 @@ final class ScheduleController extends Controller
             ->get();
 
         // Flatten and enhance the schedule data
-        $schedules = $classes->flatMap(fn(Classes $class) => $class->Schedule->map(function (Schedule $schedule) use ($class): array {
+        $schedules = $classes->flatMap(fn (Classes $class) => $class->Schedule->map(function (Schedule $schedule) use ($class): array {
             // Format the time in a more readable way
             $startTime = $schedule->start_time->format('g:i A');
             $endTime = $schedule->end_time->format('g:i A');

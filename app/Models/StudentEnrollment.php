@@ -23,25 +23,6 @@ final class StudentEnrollment extends Model
         'academic_year',
     ];
 
-    // protected $dates = ['enrollment_date', 'completion_date'];
-
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        self::creating(function (self $model): void {
-            $settings = \App\Models\GeneralSettings::query()->first();
-            $model->status = 'Pending';
-            $model->school_year = $settings->getSchoolYearString();
-            $model->semester = $settings->semester;
-        });
-
-        // delete also the subjects enrolled
-        // static::deleting(function (self $model) {
-        //     $model->subjectsEnrolled()->delete();
-        // });
-    }
-
     public function signature()
     {
         return $this->morphOne(EnrollmentSignatures::class, 'enrollment');
@@ -99,5 +80,24 @@ final class StudentEnrollment extends Model
         $resource = $this->resources()->where('type', 'certificate')->first();
 
         return $resource ? Storage::disk('public')->url($resource->file_path) : '';
+    }
+
+    // protected $dates = ['enrollment_date', 'completion_date'];
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        self::creating(function (self $model): void {
+            $settings = GeneralSettings::query()->first();
+            $model->status = 'Pending';
+            $model->school_year = $settings->getSchoolYearString();
+            $model->semester = $settings->semester;
+        });
+
+        // delete also the subjects enrolled
+        // static::deleting(function (self $model) {
+        //     $model->subjectsEnrolled()->delete();
+        // });
     }
 }

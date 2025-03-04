@@ -18,7 +18,6 @@ use Laravel\Sanctum\PersonalAccessToken;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Collection;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -146,9 +145,9 @@ final class User extends Authenticatable implements FilamentUser
      *
      * @var array<int, string>
      */
-    protected $appends = [
-        'profile_photo_url',
-    ];
+    // protected $appends = [
+    //     'profile_photo_url',
+    // ];
 
     /**
      * Get the team that the invitation belongs to.
@@ -183,12 +182,12 @@ final class User extends Authenticatable implements FilamentUser
         return $this->morphTo();
     }
 
-    // public function getProfilePhotoUrlAttribute()
-    // {
-    //     return $this->profile_photo_path
-    //         ? Storage::disk('s3')->url($this->profile_photo_path)
-    //         : null;
-    // }
+    public function getProfilePhotoUrlAttribute()
+    {
+        return $this->profile_photo_path
+            ? Storage::disk('s3')->url($this->profile_photo_path)
+            : null;
+    }
 
     public function UserPerson()
     {

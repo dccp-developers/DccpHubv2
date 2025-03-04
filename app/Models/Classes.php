@@ -37,8 +37,6 @@ final class Classes extends Model
 
     protected $with = ['Faculty'];
 
-
-
     /**
      * Get the subject associated with the class
      */
@@ -143,7 +141,7 @@ final class Classes extends Model
      */
     public function getAssignedRoomsAttribute(): array
     {
-        return \App\Models\rooms::query()->whereIn('id', $this->assigned_room_ids)->pluck('name')->toArray();
+        return rooms::query()->whereIn('id', $this->assigned_room_ids)->pluck('name')->toArray();
     }
 
     /**

@@ -146,10 +146,10 @@ final class GuestEnrollment extends Model
         parent::boot();
 
         self::creating(function ($guestEnrollment): void {
-            $settings = \App\Models\GeneralSettings::query()->first();
+            $settings = GeneralSettings::query()->first();
             $highestStudentId = max(
-                \App\Models\Students::query()->max('id') ?? 0,
-                \App\Models\GuestEnrollment::query()->max('student_id') ?? 0
+                Students::query()->max('id') ?? 0,
+                GuestEnrollment::query()->max('student_id') ?? 0
             );
             $guestEnrollment->status = 'Pending';
             $guestEnrollment->school_year = $settings->getSchoolYear();

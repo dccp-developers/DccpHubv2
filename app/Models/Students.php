@@ -64,13 +64,10 @@ final class Students extends Model
 {
     use HasFactory;
     use SoftDeletes;
+
     public $timestamps = true;
 
     protected $table = 'students';
-
-    // protected $primaryKey = 'id';
-
-    private bool $autoIncrement = false;
 
     protected $fillable = [
         'id',
@@ -99,6 +96,10 @@ final class Students extends Model
         'clearance_status',
 
     ];
+
+    // protected $primaryKey = 'id';
+
+    private bool $autoIncrement = false;
 
     public function DocumentLocation()
     {
@@ -173,7 +174,7 @@ final class Students extends Model
 
             Log::info("Enrolling student {$this->id} in classes for subject: {$subject->code}");
 
-            $classes = \App\Models\Classes::query()->where('subject_code', $subject->code)
+            $classes = Classes::query()->where('subject_code', $subject->code)
                 ->whereJsonContains('course_codes', "$this->course_id")
 
                 ->where('academic_year', $subjectEnrollment->academic_year)
@@ -184,14 +185,14 @@ final class Students extends Model
 
             foreach ($classes as $class) {
                 // Check if the student is already enrolled in the class
-                $existingEnrollment = \App\Models\class_enrollments::query()->where('class_id', $class->id)
+                $existingEnrollment = class_enrollments::query()->where('class_id', $class->id)
                     ->where('student_id', $this->id)
                     ->first();
 
                 if (! $existingEnrollment) {
                     Log::info("Enrolling student {$this->id} in class {$class->id}");
 
-                    \App\Models\class_enrollments::query()->create([
+                    class_enrollments::query()->create([
                         'class_id' => $class->id,
                         'student_id' => $this->id,
                     ]);
@@ -209,7 +210,7 @@ final class Students extends Model
         return $this->subjects()
             ->where('academic_year', $academicYear)
             ->get()
-            ->map(fn($subject): string => "{$subject->title} (Code: {$subject->code}, Units: {$subject->units})")->join(', ');
+            ->map(fn ($subject): string => "{$subject->title} (Code: {$subject->code}, Units: {$subject->units})")->join(', ');
     }
 
     public function StudentTuition()
@@ -224,7 +225,7 @@ final class Students extends Model
 
     public function StudentTransact($type, $amount, $description): void
     {
-        \App\Models\StudentTransactions::query()->create([
+        StudentTransactions::query()->create([
             'student_id' => $this->id,
             'type' => $type,
             'amount' => $amount,
@@ -260,8 +261,8 @@ final class Students extends Model
     public function hasRequestedEnrollment()
     {
         return $this->StudentTuition()
-            ->where('semester', \App\Models\GeneralSettings::query()->first()->semester)
-            ->where('school_year', \App\Models\GeneralSettings::query()->first()->getSchoolYear())
+            ->where('semester', GeneralSettings::query()->first()->semester)
+            ->where('school_year', GeneralSettings::query()->first()->getSchoolYear())
             ->exists();
     }
 
@@ -278,6 +279,11 @@ final class Students extends Model
     public function getTotalUnitsAttribute()
     {
         return $this->subjectEnrolled()->sum('units');
+    }
+
+    public function getProfilePhotoUrlAttribute()
+    {
+        return $this->Accounts->profile_photo_url;
     }
 
     protected static function boot(): void
@@ -300,10 +306,5 @@ final class Students extends Model
             $student->DocumentLocation()->delete();
             $student->Accounts()->delete();
         });
-    }
-
-    public function getProfilePhotoUrlAttribute()
-    {
-        return $this->Accounts->profile_photo_url;
     }
 }

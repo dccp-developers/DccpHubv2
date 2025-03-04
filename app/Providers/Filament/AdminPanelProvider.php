@@ -10,6 +10,7 @@ use Filament\Widgets;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Http\Middleware\Authenticate;
+use TomatoPHP\FilamentPWA\FilamentPWAPlugin;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Routing\Middleware\SubstituteBindings;
@@ -43,7 +44,7 @@ final class AdminPanelProvider extends PanelProvider
                 Widgets\FilamentInfoWidget::class,
             ])
             ->plugins([
-                \TomatoPHP\FilamentPWA\FilamentPWAPlugin::make(),
+                FilamentPWAPlugin::make(),
             ])
             ->middleware([
                 EncryptCookies::class,

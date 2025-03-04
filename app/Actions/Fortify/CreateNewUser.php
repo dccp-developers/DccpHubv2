@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Actions\Fortify;
 
-use App\Models\Team;
 use App\Models\User;
 use Stripe\Customer;
 use App\Models\Faculty;
@@ -77,15 +76,15 @@ final class CreateNewUser implements CreatesNewUsers
      */
     private function determinePersonType(string $studentId): ?string
     {
-        if (\App\Models\Students::query()->where('id', $studentId)->exists()) {
+        if (Students::query()->where('id', $studentId)->exists()) {
             return Students::class;
         }
 
-        if (\App\Models\Faculty::query()->where('id', $studentId)->exists()) {
+        if (Faculty::query()->where('id', $studentId)->exists()) {
             return Faculty::class;
         }
 
-        if (\App\Models\ShsStudents::query()->where('student_lrn', $studentId)->exists()) {
+        if (ShsStudents::query()->where('student_lrn', $studentId)->exists()) {
             return ShsStudents::class;
         }
 

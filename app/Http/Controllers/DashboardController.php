@@ -31,8 +31,8 @@ final class DashboardController extends Controller
         $student = $user->student;
 
         // Get the student's current enrollments.
-        $currentSemester = \App\Models\GeneralSettings::query()->first()->semester;
-        $currentSchoolYear = \App\Models\GeneralSettings::query()->first()->getSchoolYear();
+        $currentSemester = GeneralSettings::query()->first()->semester;
+        $currentSchoolYear = GeneralSettings::query()->first()->getSchoolYear();
 
         $enrollments = SubjectEnrolled::query()
             ->where('student_id', $student->id)
@@ -95,7 +95,7 @@ final class DashboardController extends Controller
             'id' => $class->id,
             'subject' => $class->subject_title,
             'room' => $class->formated_assigned_rooms,
-            'time' => collect($class->Schedule)->map(fn($s): string => $s->time_start.' - '.$s->time_end)->join(', '), // Format time.
+            'time' => collect($class->Schedule)->map(fn ($s): string => $s->time_start.' - '.$s->time_end)->join(', '), // Format time.
             'teacher' => $class->faculty_full_name,
         ]);
 
@@ -103,7 +103,7 @@ final class DashboardController extends Controller
             'id' => $currentClass->id,
             'subject' => $currentClass->subject_title,
             'room' => $currentClass->formated_assigned_rooms,
-            'time' => collect($currentClass->Schedule)->map(fn($s): string => $s->time_start.' - '.$s->time_end)->first(), // Format time.
+            'time' => collect($currentClass->Schedule)->map(fn ($s): string => $s->time_start.' - '.$s->time_end)->first(), // Format time.
             'teacher' => $currentClass->faculty_full_name,
         ] : null; // Handle case where there's no current class
 
@@ -126,7 +126,7 @@ final class DashboardController extends Controller
             'exams' => 'Coming Soon',       // Placeholder
             'announcements' => 'Coming Soon', // Placeholder
             'resources' => 'Coming Soon',
-            'user' => $user
+            'user' => $user,
         ]);
     }
 }

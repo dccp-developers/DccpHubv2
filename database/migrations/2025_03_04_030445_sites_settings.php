@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
 
-class SitesSettings extends SettingsMigration
+final class SitesSettings extends SettingsMigration
 {
     public function up(): void
     {

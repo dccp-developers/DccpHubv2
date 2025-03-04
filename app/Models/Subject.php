@@ -52,7 +52,7 @@ final class Subject extends Model
      */
     public static function getSubjectsDetailsByYear(Collection $subjects, int $year): string
     {
-        return $subjects->where('academic_year', $year)->map(fn($subject): string => "{$subject->title} (Code: {$subject->code}, Units: {$subject->units})")->join(', ');
+        return $subjects->where('academic_year', $year)->map(fn ($subject): string => "{$subject->title} (Code: {$subject->code}, Units: {$subject->units})")->join(', ');
     }
 
     /**

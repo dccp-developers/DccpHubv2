@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
 
-class PWASettings extends SettingsMigration
+final class PWASettings extends SettingsMigration
 {
     public function up(): void
     {

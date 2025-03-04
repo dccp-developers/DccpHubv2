@@ -18,7 +18,7 @@ final class ApiGuestController extends Controller
         $email = $request->email;
         $userType = $request->userType;
         // Check if the email exists in User records first
-        if (\App\Models\User::query()->where('email', $email)->exists()) {
+        if (User::query()->where('email', $email)->exists()) {
             return response()->json([
                 'error' => 'Email already exists in User records.',
             ]);
@@ -26,7 +26,7 @@ final class ApiGuestController extends Controller
 
         // Check if the email exists in Student records
         if ($userType === 'student') {
-            if (\App\Models\Students::query()->where('email', $email)->exists()) {
+            if (Students::query()->where('email', $email)->exists()) {
                 return response()->json([
                     'success' => 'Email is valid.',
                 ]);
@@ -40,7 +40,7 @@ final class ApiGuestController extends Controller
 
         // Check if the email exists in Faculty records
         if ($userType === 'instructor') {
-            if (\App\Models\Faculty::query()->where('email', $email)->exists()) {
+            if (Faculty::query()->where('email', $email)->exists()) {
                 return response()->json([
                     'success' => 'Email is valid.',
                 ]);
@@ -66,8 +66,8 @@ final class ApiGuestController extends Controller
         $userType = $request->userType;
 
         if ($userType === 'student') {
-            $student = \App\Models\Students::query()->where('id', $id)->first();
-            if (!$student) {
+            $student = Students::query()->where('id', $id)->first();
+            if (! $student) {
                 return response()->json([
                     'error' => 'ID not found in Student records.',
                 ]);
@@ -86,7 +86,7 @@ final class ApiGuestController extends Controller
         }
 
         if ($userType === 'instructor') {
-            $faculty = \App\Models\Faculty::query()->where('id', $id)->first();
+            $faculty = Faculty::query()->where('id', $id)->first();
             if ($faculty) {
                 return response()->json([
                     'success' => 'ID is valid.',
