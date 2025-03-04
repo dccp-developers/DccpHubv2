@@ -78,6 +78,6 @@ return [
     |
     */
 
-    'profile_photo_disk' => env('FILESYSTEM_DISK'),
+    'profile_photo_disk' => 'public',
 
 ];
