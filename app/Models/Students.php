@@ -286,6 +286,202 @@ final class Students extends Model
         return $this->Accounts->profile_photo_url;
     }
 
+    /**
+     * Get the student's classes scheduled for today
+     *
+     * @param bool $withRelationships Whether to load relationships
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getTodaysClasses($withRelationships = true)
+    {
+        // Get current day of week (0 = Sunday, 6 = Saturday)
+        $today = now()->dayOfWeek;
+        $dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        $todayName = $dayNames[$today];
+
+        // Get current semester and school year from settings
+        $settings = GeneralSettings::query()->first();
+        $currentSemester = $settings->semester;
+        $currentSchoolYear = $settings->getSchoolYear();
+
+        // Build the query
+        $query = Classes::query()
+            ->whereHas('ClassStudents', function ($query) {
+                $query->where('student_id', $this->id);
+            })
+            ->whereHas('Schedule', function ($query) use ($todayName) {
+                $query->where('day_of_week', $todayName);
+            })
+            ->where('semester', $currentSemester)
+            ->where('school_year', $currentSchoolYear);
+
+        // Add relationships if requested
+        if ($withRelationships) {
+            $query->with([
+                'Subject',
+                'Faculty',
+                'Schedule.room',
+                'ShsSubject',
+                'ClassStudents' => function ($query) {
+                    $query->where('student_id', $this->id);
+                }
+            ]);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get the student's current class (the one happening right now)
+     *
+     * @return \App\Models\Classes|null
+     */
+    public function getCurrentClass()
+    {
+        $currentTime = now();
+        $todaysClasses = $this->getTodaysClasses();
+        $dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        $todayName = $dayNames[now()->dayOfWeek];
+
+        foreach ($todaysClasses as $class) {
+            foreach ($class->Schedule as $schedule) {
+                if ($schedule->day_of_week !== $todayName) {
+                    continue;
+                }
+
+                $startTime = \Carbon\Carbon::parse($schedule->start_time);
+                $endTime = \Carbon\Carbon::parse($schedule->end_time);
+
+                if ($currentTime->between($startTime, $endTime)) {
+                    return [
+                        'class' => $class,
+                        'schedule' => $schedule
+                    ];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Format the student's classes for the dashboard
+     *
+     * @return array
+     */
+    public function getFormattedTodaysClasses()
+    {
+        $todaysClasses = $this->getTodaysClasses();
+        $formattedClasses = [];
+        $dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        $todayName = $dayNames[now()->dayOfWeek];
+
+        foreach ($todaysClasses as $class) {
+            // Get the schedules for today
+            $todaySchedules = $class->Schedule->filter(function ($schedule) use ($todayName) {
+                return $schedule->day_of_week == $todayName;
+            });
+
+            // Get enrollment data for this class
+            $enrollment = $class->ClassStudents->first();
+
+            // Process each schedule for this class
+            foreach ($todaySchedules as $schedule) {
+                $startTime = \Carbon\Carbon::parse($schedule->start_time)->format('g:i A');
+                $endTime = \Carbon\Carbon::parse($schedule->end_time)->format('g:i A');
+
+                $formattedClasses[] = [
+                    'id' => $class->id,
+                    'subject' => $class->subject_title,
+                    'subject_code' => $class->formated_subject_code,
+                    'room' => $schedule->room ? $schedule->room->name : $class->formated_assigned_rooms,
+                    'time' => "$startTime - $endTime",
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'duration' => $schedule->formatted_duration,
+                    'teacher' => $class->faculty_full_name,
+                    'section' => $class->section,
+                    'grade_status' => $enrollment ? $enrollment->grade_status : 'Pending',
+                    'day_of_week' => $schedule->day_of_week,
+                    'schedule_id' => $schedule->id,
+                ];
+            }
+        }
+
+        // Sort classes by start time
+        usort($formattedClasses, function ($a, $b) {
+            // Convert times to comparable format
+            $timeA = strtotime(date('Y-m-d ') . str_replace(' ', '', $a['start_time']));
+            $timeB = strtotime(date('Y-m-d ') . str_replace(' ', '', $b['start_time']));
+            return $timeA - $timeB;
+        });
+
+        return $formattedClasses;
+    }
+
+    /**
+     * Get the formatted current class data for the dashboard
+     *
+     * @return array|null
+     */
+    public function getFormattedCurrentClass()
+    {
+        $currentClassData = $this->getCurrentClass();
+        if (!$currentClassData) {
+            return null;
+        }
+
+        $currentClass = $currentClassData['class'];
+        $currentSchedule = $currentClassData['schedule'];
+        $currentTime = now();
+
+        $startTime = \Carbon\Carbon::parse($currentSchedule->start_time);
+        $endTime = \Carbon\Carbon::parse($currentSchedule->end_time);
+        $timeRemaining = $currentTime->diffInMinutes($endTime);
+        $totalDuration = $startTime->diffInMinutes($endTime);
+        $progressPercentage = $totalDuration > 0
+            ? round((($totalDuration - $timeRemaining) / $totalDuration) * 100)
+            : 0;
+
+        // Get enrollment data for this class
+        $enrollment = $currentClass->ClassStudents->first();
+
+        $formattedCurrentClass = [
+            'id' => $currentClass->id,
+            'subject' => $currentClass->subject_title,
+            'subject_code' => $currentClass->formated_subject_code,
+            'room' => $currentSchedule->room ? $currentSchedule->room->name : 'N/A',
+            'time' => \Carbon\Carbon::parse($currentSchedule->start_time)->format('g:i A') . ' - ' . \Carbon\Carbon::parse($currentSchedule->end_time)->format('g:i A'),
+            'teacher' => $currentClass->faculty_full_name,
+            'section' => $currentClass->section,
+            'time_remaining' => $timeRemaining,
+            'progress' => $progressPercentage,
+            'duration' => $currentSchedule->formatted_duration,
+            'grade_status' => $enrollment ? $enrollment->grade_status : 'Pending',
+        ];
+
+        // Find the next class
+        $todaysClasses = $this->getFormattedTodaysClasses();
+        $currentEndTime = strtotime(date('Y-m-d ') . str_replace(' ', '', \Carbon\Carbon::parse($currentSchedule->end_time)->format('g:i A')));
+
+        foreach ($todaysClasses as $index => $classData) {
+            $classStartTime = strtotime(date('Y-m-d ') . str_replace(' ', '', $classData['start_time']));
+            if ($classStartTime > $currentEndTime) {
+                $nextClass = $classData;
+                $nextStartTime = \Carbon\Carbon::createFromFormat('g:i A', $nextClass['start_time']);
+
+                $formattedCurrentClass['next_class'] = [
+                    'subject' => $nextClass['subject'],
+                    'time' => $nextClass['time'],
+                    'time_until' => $endTime->diffForHumans($nextStartTime, true)
+                ];
+                break;
+            }
+        }
+
+        return $formattedCurrentClass;
+    }
+
     protected static function boot(): void
     {
         parent::boot();

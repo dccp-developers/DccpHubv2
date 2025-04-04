@@ -71,7 +71,7 @@ final class Schedule extends Model
     /**
      * Get the duration of the class in minutes
      */
-    public function getDurationMinutesAttribute(): int
+    public function getDurationMinutesAttribute(): float
     {
         if (! $this->start_time || ! $this->end_time) {
             return 0;

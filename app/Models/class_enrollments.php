@@ -132,7 +132,7 @@ final class class_enrollments extends Model
      */
     public function Attendances(): HasMany
     {
-        return $this->hasMany(Attendances::class, 'class_enrollment_id', 'id');
+        return $this->hasMany(attendances::class, 'class_enrollment_id', 'id');
     }
 
     /**

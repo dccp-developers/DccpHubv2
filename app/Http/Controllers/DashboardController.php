@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
 use App\Models\User;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\Classes;
 use App\Models\Students;
 use App\Models\GeneralSettings;
 use App\Models\SubjectEnrolled;
@@ -16,105 +14,62 @@ use Illuminate\Support\Facades\Auth;
 
 final class DashboardController extends Controller
 {
+    // Define constant for placeholder text
+    private const COMING_SOON = 'Coming Soon';
+
+    /**
+     * Main dashboard action
+     */
     public function __invoke(): Response
     {
         /** @var User $user */
         $user = Auth::user();
 
-        // Ensure the user is a student.  If not, you might want to redirect or show an error.
+        // Ensure the user is a student
         if (! $user->student) {
-            // Handle the case where the user is not a student.  Maybe redirect to a different page?
-            abort(403, 'Only students can access the dashboard.'); // Or redirect, or show a different view.
+            abort(403, 'Only students can access the dashboard.');
         }
 
         /** @var Students $student */
         $student = $user->student;
 
-        // Get the student's current enrollments.
-        $currentSemester = GeneralSettings::query()->first()->semester;
-        $currentSchoolYear = GeneralSettings::query()->first()->getSchoolYear();
+        // Get current semester and school year
+        $settings = $this->getSettings();
+        $currentSemester = $settings['semester'];
+        $currentSchoolYear = $settings['schoolYear'];
 
-        $enrollments = SubjectEnrolled::query()
-            ->where('student_id', $student->id)
-            ->where('semester', $currentSemester)
-            ->where('school_year', $currentSchoolYear)
-            ->with(['subject', 'class']) // Eager load related data
-            ->get();
+        // Get enrollments and calculate stats
+        $enrollmentData = $this->getEnrollmentData($student, $currentSemester, $currentSchoolYear);
+        $enrollments = $enrollmentData['enrollments'];
+        $classEnrollments = $enrollmentData['classEnrollments'];
 
-        // Calculate stats.
-        $gpa = SubjectEnrolled::calculateOverallGPA($student->id); // Get the overall GPA
-        $enrollments->sum(fn (SubjectEnrolled $enrollment) => $enrollment->subject->units);
-        $attendancePercentage = 100; // Placeholder, needs to be calculated based on attendance records.
+        // Calculate stats for the dashboard
+        $statsData = $this->calculateStats($student, $enrollments, $classEnrollments);
 
-        // Get today's classes.
-        $today = now()->dayOfWeek; // Get the current day of the week (0 = Sunday, 6 = Saturday).
-        $todaysClasses = Classes::query()
-            ->whereHas('ClassStudents', function ($query) use ($student): void {
-                $query->where('student_id', $student->id);
-            })
-            ->whereHas('Schedule', function ($query) use ($today): void {
-                $query->where('day_of_week', $today);
-            })
-            ->with(['Subject', 'Faculty', 'Schedule', 'ShsSubject'])
-            ->get();
-
-        // Find the *current* class.  This is more complex, as we need to check the time.
-        $currentTime = now();
-        $currentClass = $todaysClasses->first(function (Classes $class) use ($currentTime): bool {
-            foreach ($class->Schedule as $schedule) {
-                $startTime = Carbon::parse($schedule->time_start);
-                $endTime = Carbon::parse($schedule->time_end);
-
-                if ($currentTime->between($startTime, $endTime)) {
-                    return true; // Found the current class!
-                }
-            }
-
-            return false; // Not this class.
-        });
-
-        // Get recent grades (example - last 3 grades)
-        $recentGrades = $enrollments->sortByDesc('created_at')->take(3);
-
-        // Prepare data for the view.
+        // Prepare student data
         $studentData = [
             'name' => $student->full_name,
-            'grade' => $student->academic_year, // Or use a formatted string like "10th Grade"
-            'avatarUrl' => $student->profile_url, // Assuming you have a method to get the URL
-            'streak' => 5, // Example - you'd likely have a way to calculate this
+            'grade' => $student->academic_year,
+            'avatarUrl' => $student->profile_url,
+            'streak' => 5, // Example value
         ];
 
-        $statsData = [
-            ['label' => 'GPA', 'value' => $gpa !== null ? number_format($gpa, 2) : 'N/A'],
-            ['label' => 'Attendance', 'value' => $attendancePercentage.'%'],
-            ['label' => 'Assignments Due', 'value' => 'Coming Soon'], // Placeholder
-            ['label' => 'Upcoming Exams', 'value' => 'Coming Soon'], // Placeholder
-        ];
+        // Get formatted today's classes using the helper method
+        $todaysClassesData = $student->getFormattedTodaysClasses();
 
-        $todaysClassesData = $todaysClasses->map(fn (Classes $class): array => [
-            'id' => $class->id,
-            'subject' => $class->subject_title,
-            'room' => $class->formated_assigned_rooms,
-            'time' => collect($class->Schedule)->map(fn ($s): string => $s->time_start.' - '.$s->time_end)->join(', '), // Format time.
-            'teacher' => $class->faculty_full_name,
-        ]);
+        // Add color to each class
+        foreach ($todaysClassesData as &$classData) {
+            $classData['color'] = $this->generateColorForSubject($classData['subject_code']);
+        }
 
-        $currentClassData = $currentClass ? [
-            'id' => $currentClass->id,
-            'subject' => $currentClass->subject_title,
-            'room' => $currentClass->formated_assigned_rooms,
-            'time' => collect($currentClass->Schedule)->map(fn ($s): string => $s->time_start.' - '.$s->time_end)->first(), // Format time.
-            'teacher' => $currentClass->faculty_full_name,
-        ] : null; // Handle case where there's no current class
+        // Get current class data
+        $currentClassData = $student->getFormattedCurrentClass();
 
-        $recentGradesData = $recentGrades->map(fn (SubjectEnrolled $enrollment): array => [
-            'id' => $enrollment->id,
-            'subject' => $enrollment->subject->title,
-            'assignment' => 'Coming Soon', // Placeholder - you might have an assignment relationship
-            'grade' => $enrollment->grade ?? 'N/A', // Display the grade
-            'score' => 'Coming Soon', // Placeholder
-            'date' => $enrollment->created_at->format('Y-m-d'), // Format the date
-        ]);
+        // Get recent grades
+        $recentGradesData = $this->getRecentGrades($enrollments);
+
+        // Get course information
+        $courseInfo = $this->getCourseInfo($student);
 
         return Inertia::render('Dashboard', [
             'student' => $studentData,
@@ -122,11 +77,169 @@ final class DashboardController extends Controller
             'todaysClasses' => $todaysClassesData,
             'currentClass' => $currentClassData,
             'recentGrades' => $recentGradesData,
-            'assignments' => 'Coming Soon', // Placeholder
-            'exams' => 'Coming Soon',       // Placeholder
-            'announcements' => 'Coming Soon', // Placeholder
-            'resources' => 'Coming Soon',
+            'assignments' => self::COMING_SOON, // Placeholder
+            'exams' => self::COMING_SOON,       // Placeholder
+            'announcements' => self::COMING_SOON, // Placeholder
+            'resources' => self::COMING_SOON,
             'user' => $user,
+            'courseInfo' => $courseInfo,
+            'semester' => $currentSemester,
+            'schoolYear' => $currentSchoolYear,
         ]);
+    }
+
+    /**
+     * Get application settings
+     */
+    private function getSettings(): array
+    {
+        $settings = GeneralSettings::query()->first();
+        return [
+            'semester' => $settings->semester,
+            'schoolYear' => $settings->getSchoolYear(),
+        ];
+    }
+
+    /**
+     * Get enrollment data for the student
+     */
+    private function getEnrollmentData(Students $student, int $currentSemester, string $currentSchoolYear): array
+    {
+        // Get subject enrollments
+        $enrollments = SubjectEnrolled::query()
+            ->where('student_id', $student->id)
+            ->whereHas('class', function ($query) use ($currentSemester): void {
+                $query->where('semester', $currentSemester);
+            })
+            ->where('school_year', $currentSchoolYear)
+            ->with(['subject', 'class']) // Eager load related data
+            ->get();
+
+        // Get class enrollments with attendance data
+        $classEnrollments = $student->classEnrollments()
+            ->whereHas('class', function ($query) use ($currentSemester): void {
+                $query->where('semester', $currentSemester);
+            })
+            ->with('Attendances') // Eager load the Attendances relationship
+            ->get();
+
+        return [
+            'enrollments' => $enrollments,
+            'classEnrollments' => $classEnrollments,
+        ];
+    }
+
+    /**
+     * Calculate stats for the dashboard
+     */
+    private function calculateStats(Students $student, $enrollments, $classEnrollments): array
+    {
+        // Calculate GPA and units
+        $gpa = SubjectEnrolled::calculateOverallGPA($student->id);
+        $totalUnits = $enrollments->sum(fn (SubjectEnrolled $enrollment) => $enrollment->subject->units);
+
+        // Calculate attendance percentage
+        $attendanceRecords = 0;
+        $attendancePresent = 0;
+
+        foreach ($classEnrollments as $enrollment) {
+            $attendances = $enrollment->Attendances;
+            $attendanceRecords += $attendances->count();
+            $attendancePresent += $attendances->where('status', 'present')->count();
+        }
+
+        $attendancePercentage = $attendanceRecords > 0
+            ? round(($attendancePresent / $attendanceRecords) * 100)
+            : 100; // Default to 100% if no records
+
+        return [
+            ['label' => 'GPA', 'value' => $gpa !== null ? number_format($gpa, 2) : 'N/A', 'description' => 'Overall Grade Point Average'],
+            ['label' => 'Attendance', 'value' => $attendancePercentage.'%', 'description' => 'Your attendance rate this semester'],
+            ['label' => 'Enrolled Units', 'value' => $totalUnits, 'description' => 'Total units this semester'],
+            ['label' => 'Enrolled Classes', 'value' => $classEnrollments->count(), 'description' => 'Number of classes this semester'],
+        ];
+    }
+
+    /**
+     * Get recent grades for the student
+     */
+    private function getRecentGrades($enrollments): array
+    {
+        $recentGrades = $enrollments->sortByDesc('created_at')->take(3);
+
+        return $recentGrades->map(function (SubjectEnrolled $enrollment): array {
+            // Calculate letter grade based on numeric grade
+            $letterGrade = 'N/A';
+            if ($enrollment->grade !== null) {
+                if ($enrollment->grade >= 90) {
+                    $letterGrade = 'A';
+                } elseif ($enrollment->grade >= 80) {
+                    $letterGrade = 'B';
+                } elseif ($enrollment->grade >= 70) {
+                    $letterGrade = 'C';
+                } elseif ($enrollment->grade >= 60) {
+                    $letterGrade = 'D';
+                } else {
+                    $letterGrade = 'F';
+                }
+            }
+
+            return [
+                'id' => $enrollment->id,
+                'subject' => $enrollment->subject->title,
+                'subject_code' => $enrollment->subject->code,
+                'assignment' => $enrollment->subject->title, // Using subject title as placeholder
+                'grade' => $letterGrade,
+                'numeric_grade' => $enrollment->grade,
+                'score' => $enrollment->grade ? $enrollment->grade . '/100' : 'N/A',
+                'date' => $enrollment->updated_at->format('M d, Y'),
+                'status' => $this->getGradeStatus($enrollment->grade),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get course information for the student
+     */
+    private function getCourseInfo(Students $student): ?array
+    {
+        return $student->course ? [
+            'code' => $student->course->code,
+            'title' => $student->course->title,
+            'department' => $student->course->department,
+        ] : null;
+    }
+
+    /**
+     * Generate a consistent color for a subject based on its code
+     */
+    private function generateColorForSubject(string $subjectCode): string
+    {
+        // Create a hash of the subject code
+        $hash = crc32($subjectCode);
+
+        // Define a set of pleasant colors
+        $colors = [
+            'blue-500', 'green-500', 'purple-500', 'amber-500', 'rose-500',
+            'indigo-500', 'emerald-500', 'violet-500', 'orange-500', 'pink-500',
+            'cyan-500', 'teal-500', 'fuchsia-500', 'yellow-500', 'red-500',
+        ];
+
+        // Use the hash to select a color
+        $colorIndex = abs($hash) % count($colors);
+
+        return $colors[$colorIndex];
+    }
+
+    /**
+     * Determine the grade status based on the numeric grade
+     */
+    private function getGradeStatus(?int $grade): string
+    {
+        if ($grade === null) {
+            return 'Pending';
+        }
+
+        return $grade >= 75 ? 'Passing' : 'Failing';
     }
 }
