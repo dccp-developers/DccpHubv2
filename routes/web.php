@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\TuitionController;
 use App\Http\Controllers\WelcomeController;
@@ -15,6 +16,11 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\User\LoginLinkController;
 
 Route::get('/', [WelcomeController::class, 'home'])->name('home');
+
+// PWA Offline Route
+Route::get('/offline', function () {
+    return view('vendor.laravelpwa.offline');
+})->name('offline');
 
 Route::prefix('auth')->group(
     function () {

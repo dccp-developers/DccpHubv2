@@ -5,7 +5,8 @@
     "build": "vite build",
     "dev": "vite",
     "lint": "eslint .",
-    "lint:fix": "eslint --fix ."
+    "lint:fix": "eslint --fix .",
+    "generate-sw": "workbox generateSW workbox-config.cjs"
   },
   "dependencies": {
     "@ai-sdk/vue": "^1.1.19",
@@ -25,6 +26,7 @@
     "@vueuse/core": "^12.7.0",
     "@vueuse/integrations": "^12.7.0",
     "axios": "^1.8.1",
+    "caniuse-lite": "^1.0.30001712",
     "change-case": "^5.4.4",
     "chokidar": "^4.0.3",
     "class-variance-authority": "^0.7.1",
@@ -54,6 +56,7 @@
     "eslint-plugin-format": "^0.1.3",
     "eslint-plugin-tailwindcss": "^3.18.0",
     "eslint-plugin-vue": "^9.32.0",
-    "laravel-vite-plugin": "^1.2.0"
+    "laravel-vite-plugin": "^1.2.0",
+    "workbox-cli": "^7.0.0"
   }
 }

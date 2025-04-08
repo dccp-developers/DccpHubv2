@@ -1,0 +1,7 @@
+tunnel: cf0c488e-0425-4c49-af28-8e91a31ffc91
+credentials-file: /home/dccp/.cloudflared/cf0c488e-0425-4c49-af28-8e91a31ffc91.json
+
+ingress:
+  - hostname: dccphubv2.koamishin.org
+    service: http://localhost:8721
+  - service: http_status:404 

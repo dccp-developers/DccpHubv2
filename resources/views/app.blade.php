@@ -4,16 +4,20 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ config('app.name', 'DCCPHub') }}</title>
 
     <link rel="canonical" href="{{ url()->current() }}">
 
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="DCCPHub - Your academic hub for DCCP">
+
     <!-- Favicon & App Icons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
 
-    <!-- Structured Data (Example: JSON-LD Schema.org) -->
+    @laravelPWA
+
+
     <script type="application/ld+json">
         {
             "@context": "https://schema.org",
@@ -32,7 +36,6 @@
             }
         }
     </script>
-
     <!-- Scripts -->
     @routes
     @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
@@ -41,6 +44,7 @@
 
 <body class="font-sans antialiased">
     @inertia
+
 </body>
 
 </html>

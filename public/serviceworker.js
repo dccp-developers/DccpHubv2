@@ -1,9 +1,8 @@
 var staticCacheName = "pwa-v" + new Date().getTime();
 var filesToCache = [
     '/offline',
-    '/css/app.css',
-    '/js/app.js',
-"
+    '/build/assets/app.css',
+    '/build/assets/app.js'
 ];
 
 // Cache on install

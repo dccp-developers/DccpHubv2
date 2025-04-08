@@ -25,6 +25,7 @@
     "quix-labs/laravel-supabase-flysystem": "^1.0",
     "resend/resend-php": "^0.14.0",
     "sentry/sentry-laravel": "^4.10",
+    "silviolleite/laravelpwa": "^2.0",
     "spatie/laravel-sitemap": "^7.3",
     "symfony/mailer": "~7.1.0",
     "tightenco/ziggy": "^2.0",
