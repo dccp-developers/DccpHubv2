@@ -1,0 +1,14 @@
+diff --git a/src/HtmlRenderer.php b/src/HtmlRenderer.php
+--- a/src/HtmlRenderer.php
++++ b/src/HtmlRenderer.php
+@@ -35,9 +35,9 @@
+             return Termwind::span($html);
+         }
+
+         $html = '<?xml encoding="UTF-8">'.trim($html);
+-        $dom->loadHTML($html, LIBXML_NOERROR | LIBXML_COMPACT | LIBXML_HTML_NODEFDTD | LIBXML_NOBLANKS | LIBXML_NOXMLDECL);
++        $dom->loadHTML($html, LIBXML_NOERROR | LIBXML_COMPACT | LIBXML_HTML_NODEFDTD | LIBXML_NOBLANKS);
+
+         /** @var DOMNode $body */
+         $body = $dom->getElementsByTagName('body')->item(0);
+         $el = $this->convert(new Node($body));

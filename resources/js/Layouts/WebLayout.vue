@@ -25,6 +25,7 @@ const mode = useColorMode({
 const navLinks = [
   { label: 'Features', href: '/#features', external: false },
   { label: 'Pricing', href: '/#pricing', external: false },
+  { label: 'Enroll Online', href: route('enroll'), external: false }, // Added Enrollment Link
   { label: 'Docs', href: 'https://docs.larasonic.com/introduction', external: true },
 ]
 

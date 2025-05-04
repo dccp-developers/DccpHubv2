@@ -17,6 +17,9 @@ use App\Http\Controllers\User\LoginLinkController;
 
 Route::get('/', [WelcomeController::class, 'home'])->name('home');
 
+// Online Enrollment Route
+Route::get('/enroll', fn () => Inertia::render('OnlineEnrollment'))->name('enroll');
+
 // PWA Offline Route
 Route::get('/offline', function () {
     return view('vendor.laravelpwa.offline');

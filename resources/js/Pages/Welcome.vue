@@ -399,3 +399,7 @@ const githubUrl = "https://github.com/pushpak1300/dccphub";
     </section>
   </WebLayout>
 </template>
+
+<style scoped>
+      /* Styles removed for simplicity to resolve errors */
+</style>

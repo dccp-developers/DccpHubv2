@@ -1,124 +1,131 @@
 {
-  "name": "pushpak1300/larasonic",
-  "type": "project",
-  "description": "The Simple, Fast & Smart Laravel Fullstack Kit. \ud83d\ude80",
-  "keywords": [
-    "sass",
-    "starter kit",
-    "laeavel"
-  ],
-  "license": "MIT",
-  "require": {
-    "php": "^8.3",
-    "echolabsdev/prism": "^0.26.0",
-    "filament/filament": "^3.2",
-    "inertiajs/inertia-laravel": "^2.0",
-    "laravel/cashier": "^15.5",
-    "laravel/framework": "^11.9",
-    "laravel/jetstream": "^5.3",
-    "laravel/octane": "^2.5",
-    "laravel/sanctum": "^4.0",
-    "laravel/socialite": "^5.16",
-    "laravel/tinker": "^2.9",
-    "league/flysystem-aws-s3-v3": "^3.0",
-    "pinkary-project/type-guard": "^0.1.0",
-    "quix-labs/laravel-supabase-flysystem": "^1.0",
-    "resend/resend-php": "^0.14.0",
-    "sentry/sentry-laravel": "^4.10",
-    "silviolleite/laravelpwa": "^2.0",
-    "spatie/laravel-sitemap": "^7.3",
-    "symfony/mailer": "~7.1.0",
-    "tightenco/ziggy": "^2.0",
-    "tomatophp/filament-pwa": "^1.0"
-  },
-  "require-dev": {
-    "barryvdh/laravel-ide-helper": "^3.2",
-    "driftingly/rector-laravel": "^2.0",
-    "fakerphp/faker": "^1.23",
-    "knuckleswtf/scribe": "^4.38",
-    "larastan/larastan": "^3.0",
-    "laravel/pail": "^1.1",
-    "laravel/pint": "^1.13",
-    "laravel/sail": "^1.26",
-    "laravel/telescope": "^5.2",
-    "mockery/mockery": "^1.6",
-    "nunomaduro/collision": "^8.1",
-    "pestphp/pest": "^3.5",
-    "pestphp/pest-plugin-laravel": "^3.0",
-    "pestphp/pest-plugin-type-coverage": "^3.2",
-    "rector/rector": "^2.0",
-    "soloterm/solo": "^0.4.0"
-  },
-  "autoload": {
-    "psr-4": {
-      "App\\": "app/",
-      "Database\\Factories\\": "database/factories/",
-      "Database\\Seeders\\": "database/seeders/"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Tests\\": "tests/"
-    }
-  },
-  "scripts": {
-    "post-autoload-dump": [
-      "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-      "@php artisan package:discover --ansi",
-      "@php artisan filament:upgrade"
+    "name": "pushpak1300/larasonic",
+    "type": "project",
+    "description": "The Simple, Fast & Smart Laravel Fullstack Kit. 🚀",
+    "keywords": [
+        "sass",
+        "starter kit",
+        "laeavel"
     ],
-    "post-update-cmd": [
-      "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
-      "@php artisan ide-helper:generate",
-      "@php artisan ide-helper:meta"
-    ],
-    "post-root-package-install": [
-      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
-    ],
-    "post-create-project-cmd": [
-      "@php artisan key:generate --ansi",
-      "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
-      "@php artisan migrate --graceful --ansi"
-    ],
-    "dev": [
-      "Composer\\Config::disableProcessTimeout",
-      "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve --host=192.168.100.29 --port=80\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"bun run dev --host\" --names=server,queue,logs,vite"
-    ],
-    "setup": [
-      "@php artisan key:generate",
-      "touch database/database.sqlite",
-      "php artisan migrate:fresh --seed --force --ansi",
-      "bun install",
-      "bun run build",
-      "@php artisan scribe:generate"
-    ],
-    "analyse": [
-      "./vendor/bin/phpstan analyse -c phpstan.neon --ansi"
-    ],
-    "test": [
-      "./vendor/bin/pest --parallel"
-    ],
-    "format": [
-      "./vendor/bin/pint --ansi",
-      "./vendor/bin/rector --ansi"
-    ]
-  },
-  "extra": {
-    "laravel": {
-      "dont-discover": [
-        "laravel/telescope"
-      ]
-    }
-  },
-  "config": {
-    "optimize-autoloader": true,
-    "preferred-install": "dist",
-    "sort-packages": true,
-    "allow-plugins": {
-      "pestphp/pest-plugin": true,
-      "php-http/discovery": true
-    }
-  },
-  "minimum-stability": "stable",
-  "prefer-stable": true
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "cweagans/composer-patches": "*",
+        "echolabsdev/prism": "^0.26.0",
+        "filament/filament": "^3.2",
+        "inertiajs/inertia-laravel": "^2.0",
+        "laravel/cashier": "^15.5",
+        "laravel/framework": "^11.9",
+        "laravel/jetstream": "^5.3",
+        "laravel/octane": "^2.5",
+        "laravel/sanctum": "^4.0",
+        "laravel/socialite": "^5.16",
+        "laravel/tinker": "^2.9",
+        "league/flysystem-aws-s3-v3": "^3.0",
+        "pinkary-project/type-guard": "^0.1.0",
+        "quix-labs/laravel-supabase-flysystem": "^1.0",
+        "resend/resend-php": "^0.14.0",
+        "sentry/sentry-laravel": "^4.10",
+        "silviolleite/laravelpwa": "^2.0",
+        "spatie/laravel-sitemap": "^7.3",
+        "symfony/mailer": "~7.1.0",
+        "tightenco/ziggy": "^2.0",
+        "tomatophp/filament-pwa": "^1.0"
+    },
+    "require-dev": {
+        "barryvdh/laravel-ide-helper": "^3.2",
+        "driftingly/rector-laravel": "^2.0",
+        "fakerphp/faker": "^1.23",
+        "knuckleswtf/scribe": "^4.38",
+        "larastan/larastan": "^3.0",
+        "laravel/pail": "^1.1",
+        "laravel/pint": "^1.13",
+        "laravel/sail": "^1.26",
+        "laravel/telescope": "^5.2",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.1",
+        "pestphp/pest": "^3.5",
+        "pestphp/pest-plugin-laravel": "^3.0",
+        "pestphp/pest-plugin-type-coverage": "^3.2",
+        "rector/rector": "^2.0",
+        "soloterm/solo": "^0.4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php artisan ide-helper:generate",
+            "@php artisan ide-helper:meta"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve --host=192.168.100.29 --port=80\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"bun run dev --host\" --names=server,queue,logs,vite"
+        ],
+        "setup": [
+            "@php artisan key:generate",
+            "touch database/database.sqlite",
+            "php artisan migrate:fresh --seed --force --ansi",
+            "bun install",
+            "bun run build",
+            "@php artisan scribe:generate"
+        ],
+        "analyse": [
+            "./vendor/bin/phpstan analyse -c phpstan.neon --ansi"
+        ],
+        "test": [
+            "./vendor/bin/pest --parallel"
+        ],
+        "format": [
+            "./vendor/bin/pint --ansi",
+            "./vendor/bin/rector --ansi"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": [
+                "laravel/telescope"
+            ]
+        },
+        "patches": {
+            "nunomaduro/termwind": {
+                "Patches issue with libxml": "./patches/termwind.patch"
+            }
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "cweagans/composer-patches": true,
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }
