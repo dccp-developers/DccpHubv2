@@ -1,11 +1,24 @@
 <?php
 
-declare(strict_types=1);
-
+use App\Http\Controllers\CourseController; // Added
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ApiUserController;
-use App\Http\Controllers\ApiGuestController;
 
-Route::apiResource('user', ApiUserController::class);
-Route::post('check-email', [ApiGuestController::class, 'checkEmail'])->name('api.checkEmail');
-Route::post('check-id', [ApiGuestController::class, 'checkId'])->name('api.checkId');
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group. Make something great!
+|
+*/
+
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+// Route to get course details
+Route::get('/courses/{course}/details', [CourseController::class, 'getDetails'])
+    ->name('api.courses.details'); // Added name for potential use

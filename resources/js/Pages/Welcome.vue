@@ -68,10 +68,7 @@ const features = [
     icon: "💬",
     title: "Real-time Communication",
     description:
-      "Stay connected with peers and instructors through integrated messaging and notification systems.",
-  },
-  {
-    icon: "📊",
+   f"📊",
     title: "Performance Tracking",
     description:
       "Monitor your academic progress with detailed analytics and reports, helping you stay on track for success.",
