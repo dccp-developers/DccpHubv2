@@ -12,15 +12,24 @@ use App\Models\StudentTuition;
 use App\Models\GeneralSettings;
 use App\Models\StudentTransactions;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
 
 final class TuitionController extends Controller
 {
-    public function index(): Response
+    public function index(): Response|RedirectResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
-        abort_unless($user->student, 403, 'Only students can access this page.');
+        if (!$user->student) {
+            return redirect()->back()
+                ->with('error', 'Only students can access this page.')
+                ->with('toast', [
+                    'title' => 'Access Denied',
+                    'description' => 'Only students can access this page.',
+                    'type' => 'error'
+                ]);
+        }
 
         /** @var Students $student */
         $student = $user->student;
@@ -35,7 +44,15 @@ final class TuitionController extends Controller
             ->where('school_year', $currentSchoolYear)
             ->first();
 
-        abort_unless($tuition, 404, 'Tuition information not found for the current semester.');
+        if (!$tuition) {
+            return redirect()->back()
+                ->with('error', 'Tuition information not found for the current semester.')
+                ->with('toast', [
+                    'title' => 'Tuition Not Found',
+                    'description' => 'Tuition information not found for the current semester.',
+                    'type' => 'error'
+                ]);
+        }
 
         // Get the student's transactions.
         $transactions = StudentTransactions::query()

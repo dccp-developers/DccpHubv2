@@ -94,15 +94,13 @@ use function Illuminate\Events\queueable;
 final class User extends Authenticatable implements FilamentUser
 {
     use Billable;
-    use HasApiTokens;
+
 
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
     use HasProfilePhoto;
-    use HasTeams  {
-        ownedTeams as public ownedTeamsBase;
-    }
+    use HasApiTokens;
     use Notifiable;
     use TwoFactorAuthenticatable;
 
@@ -254,5 +252,20 @@ final class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the user's approved pending enrollment if the user is a guest.
+     */
+    public function getApprovedPendingEnrollmentAttribute()
+    {
+        if ($this->role !== 'guest') {
+            return null;
+        }
+        $enrollment = \App\Models\PendingEnrollment::where(function ($query) {
+            $query->whereJsonContains('data->email', $this->email)
+                  ->orWhereJsonContains('data->enrollment_google_email', $this->email);
+        })->where('status', 'approved')->first();
+        return $enrollment;
     }
 }

@@ -7,6 +7,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\GuestEnrollment;
+use App\Models\Classes;
+use App\Models\Subject;
+use App\Models\Student;
 
 /* CREATE  TABLE `laravel-v1`.subject_enrollments (
     id                   BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
@@ -33,29 +37,52 @@ ALTER TABLE `laravel-v1`.subject_enrollments ADD CONSTRAINT fk_subject_enrollmen
 final class SubjectEnrolled extends Model
 {
     use HasFactory;
-
     protected $table = 'subject_enrollments';
-
-    protected $primaryKey = 'id';
-
-    protected $fillable = [
-        'subject_id',
-        'student_id',
-        'grade',
-        'midterm_grade',
-        'completion_grade',
-        're_exam_grade',
-        'remarks',
-    ];
 
     protected $casts = [
         'subject_id' => 'int',
-        'grade' => 'int',
+        'class_id' => 'int',
+        'grade' => 'float',
         'student_id' => 'int',
-        'academic_year' => 'int',
         'semester' => 'int',
-
+        'enrollment_id' => 'int',
+        'is_credited' => 'bool',
+        'credited_subject_id' => 'int',
+        'is_modular' => 'bool',
+        'lecture_fee' => 'float',
+        'laboratory_fee' => 'float'
     ];
+
+    protected $fillable = [
+        'subject_id',
+        'class_id',
+        'grade',
+        'instructor',
+        'student_id',
+        'academic_year',
+        'school_year',
+        'semester',
+        'enrollment_id',
+        'remarks',
+        'classification',
+        'school_name',
+        'is_credited',
+        'credited_subject_id',
+        'section',
+        'is_modular',
+        'lecture_fee',
+        'laboratory_fee'
+    ];
+
+    protected static function boot()
+    {
+        parent::boot();
+      
+        static::creating(function ($model) {
+            $highestId = static::max('id');
+            $model->id = $highestId ? $highestId + 1 : 1;
+        });
+    }
 
     /**
      * Calculate the average grade for a specific semester and academic year.
@@ -92,7 +119,6 @@ final class SubjectEnrolled extends Model
         }
 
         return null; // No grades for either semester
-
     }
 
     /**
@@ -116,12 +142,6 @@ final class SubjectEnrolled extends Model
         }
 
         return null; // No grades available for any year.
-
-    }
-
-    public function class(): BelongsTo
-    {
-        return $this->belongsTo(Classes::class, 'class_id');
     }
 
     public function guestEnrollment(): BelongsTo
@@ -129,18 +149,18 @@ final class SubjectEnrolled extends Model
         return $this->belongsTo(GuestEnrollment::class, 'enrollment_id', 'id');
     }
 
+    public function class(): BelongsTo
+    {
+        return $this->belongsTo(Classes::class, 'class_id');
+    }
+
     public function subject(): BelongsTo
     {
-        return $this->belongsTo(Subject::class, 'subject_id', 'id');
+        return $this->belongsTo(Subject::class, 'subject_id');
     }
 
     public function student(): BelongsTo
     {
-        return $this->belongsTo(Students::class, 'student_id', 'id');
-    }
-
-    public function classEnrollment()
-    {
-        return $this->belongsTo(class_enrollments::class, 'class_id', 'class_id');
+        return $this->belongsTo(Student::class, 'student_id');
     }
 }

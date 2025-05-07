@@ -7,3 +7,4 @@ export { default as ExamsCard } from './ExamsCard.vue';
 export { default as GradesCard } from './GradesCard.vue';
 export { default as AnnouncementsCard } from './AnnouncementsCard.vue';
 export { default as ResourcesCard } from './ResourcesCard.vue';
+export { default as GuestApprovedModal } from './GuestApprovedModal.vue';

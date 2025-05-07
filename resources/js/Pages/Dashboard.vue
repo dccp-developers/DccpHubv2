@@ -11,6 +11,7 @@ import {
   AnnouncementsCard,
   ResourcesCard
 } from './Dashboard/Components';
+import EnrollmentNotice from '@/Components/Dashboard/EnrollmentNotice.vue';
 
 // Define props
 const props = defineProps({
@@ -53,6 +54,14 @@ const props = defineProps({
   user: {
     type: Object,
     required: true
+  },
+  generalSettings: {
+    type: Object,
+    required: true
+  },
+  studentEnrollment: {
+    type: Object,
+    required: true
   }
 });
 
@@ -67,7 +76,24 @@ const currentDate = new Date().toLocaleDateString('en-US', {
 
 <template>
   <AppLayout>
-    <div class="md:container mx-auto px-4 py-6 space-y-6">
+    <div v-if="user.role === 'guest'" class="flex flex-col items-center justify-center min-h-[60vh]">
+      <div class="bg-white dark:bg-gray-900 border border-primary/30 rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
+        <h2 class="text-2xl font-bold mb-4 text-primary">Enrollment Approved!</h2>
+        <p class="mb-6 text-muted-foreground">Your enrollment request has been approved. Please continue with the rest of the enrollment process below.</p>
+        <!-- Placeholder for guest dashboard modal and next steps -->
+        <p class="mb-4">(Guest Dashboard coming soon...)</p>
+        <!-- You can add a button to continue to the next step or show available subjects here -->
+      </div>
+    </div>
+    <div v-else class="md:container mx-auto px-4 py-6 space-y-6">
+      <!-- Enrollment Notice -->
+      <EnrollmentNotice 
+        v-if="user.role === 'student'"
+        :general-settings="generalSettings"
+        :user="user"
+        :student-enrollment="studentEnrollment"
+      />
+      
       <!-- Student Header -->
       <StudentHeader
         :student="student"

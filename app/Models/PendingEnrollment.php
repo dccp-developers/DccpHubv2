@@ -81,4 +81,14 @@ class PendingEnrollment extends Model
         return $this->belongsTo(Courses::class)->whereRaw('1 = 0'); // Example: always returns empty
     }
 
+    // Add a static method to get pending enrollment by email
+    public static function findByEmail(string $email)
+    {
+        // Search for a pending enrollment where either email or enrollment_google_email matches
+        return self::where(function ($query) use ($email) {
+            $query->whereJsonContains('data->email', $email)
+                  ->orWhereJsonContains('data->enrollment_google_email', $email);
+        })->where('status', 'approved')->first();
+    }
+
 }

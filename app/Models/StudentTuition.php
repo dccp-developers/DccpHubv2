@@ -49,12 +49,27 @@ final class StudentTuition extends Model
         'enrollment_id',
         'discount',
         'downpayment',
+        'payment_method',
         'overall_tuition',
         'due_date',
     ];
 
+    protected $casts = [
+        'total_tuition' => 'float',
+        'total_balance' => 'float',
+        'total_lectures' => 'float',
+        'total_laboratory' => 'float',
+        'total_miscelaneous_fees' => 'float',
+        'semester' => 'integer',
+        'academic_year' => 'integer',
+        'downpayment' => 'float',
+        'payment_method' => 'string',
+        'overall_tuition' => 'float',
+        'due_date' => 'date',
+    ];
+
     public function student()
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(Students::class);
     }
 }

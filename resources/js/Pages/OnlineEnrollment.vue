@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, nextTick, watch, onMounted } from 'vue';
 import EnrollmentLayout from '@/Layouts/EnrollmentLayout.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3'; // Added Link
 import { Button } from '@/Components/shadcn/ui/button';
@@ -46,6 +46,7 @@ const props = defineProps({
     googleName: String,
     googleAvatar: String,
     flash: Object,
+    courses: Array,
 });
 
 // --- Constants ---
@@ -103,11 +104,8 @@ const fieldDefinitions = ref([
     { majorStep: MAJOR_STEPS.EDUCATION, key: 'senior_high_address', label: "Senior High School Address", type: FIELD_TYPES.TEXT, placeholder: "If applicable" },
     { majorStep: MAJOR_STEPS.EDUCATION, key: 'senior_high_graduate_year', label: "Senior High Graduation Year", type: FIELD_TYPES.NUMBER, placeholder: "If applicable", min: 1950, max: new Date().getFullYear() + 1 },
     { majorStep: MAJOR_STEPS.EDUCATION, key: 'lrn', label: "Learner Reference Number (LRN)", type: FIELD_TYPES.TEXT, placeholder: "Optional" },
-    { majorStep: MAJOR_STEPS.COURSE, key: 'course_id', label: "Course/Track Applying For", type: FIELD_TYPES.SELECT, required: true, options: [
-        { value: 1, label: 'BS Information Technology'}, { value: 2, label: 'BS Computer Science'}, { value: 3, label: 'BS Electronics Engineering'}, { value: 4, label: 'BS Business Administration'},
-        { value: 101, label: 'SHS - STEM'}, { value: 102, label: 'SHS - ABM'}, { value: 103, label: 'SHS - HUMSS'}, { value: 104, label: 'SHS - GAS'}, { value: 105, label: 'SHS - TVL-ICT'}
-    ]},
-    { majorStep: MAJOR_STEPS.COURSE, key: 'academic_year', label: "Academic Year Applying For", type: FIELD_TYPES.SELECT, required: true, options: ['2025-2026', '2026-2027'] },
+    { majorStep: MAJOR_STEPS.COURSE, key: 'course_id', label: "Course/Track Applying For", type: FIELD_TYPES.SELECT, required: true, options: props.courses },
+    // { majorStep: MAJOR_STEPS.COURSE, key: 'academic_year', label: "Academic Year Applying For", type: FIELD_TYPES.SELECT, required: true, options: ['2025-2026', '2026-2027'] },
     { majorStep: MAJOR_STEPS.REVIEW, key: 'review', type: FIELD_TYPES.REVIEW },
     { majorStep: MAJOR_STEPS.SUBMITTED, key: 'submitted', type: FIELD_TYPES.SUBMITTED },
 ]);
@@ -127,11 +125,47 @@ const stepperData = computed(() => Object.entries(MAJOR_STEPS)
     .map(([key, value]) => ({ id: value, title: getStepTitle(value), icon: getStepIcon(value), status: getStepStatus(value) }))
 );
 
+const LOCAL_STORAGE_KEY = 'online-enrollment-form';
+
 // --- State ---
 const currentMajorStep = ref(MAJOR_STEPS.STUDENT_TYPE_SELECTION);
-const form = useForm( /* ... */
+const form = useForm(
     fieldDefinitions.value.reduce((acc, field) => { if (field.key && ![FIELD_TYPES.WELCOME, FIELD_TYPES.REVIEW, FIELD_TYPES.SUBMITTED].includes(field.type)) { acc[field.key] = ''; } return acc; }, {})
 );
+
+// Load from localStorage on mount
+onMounted(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (parsed.form) {
+                Object.entries(parsed.form).forEach(([key, value]) => {
+                    if (key in form) form[key] = value;
+                });
+            }
+            if (typeof parsed.currentMajorStep === 'number') {
+                currentMajorStep.value = parsed.currentMajorStep;
+            }
+        } catch (e) { /* ignore */ }
+    }
+});
+
+// Persist to localStorage on change
+watch(
+    [form, currentMajorStep],
+    () => {
+        localStorage.setItem(
+            LOCAL_STORAGE_KEY,
+            JSON.stringify({
+                form: { ...form.data() },
+                currentMajorStep: currentMajorStep.value,
+            })
+        );
+    },
+    { deep: true }
+);
+
 if (props.googleEmail) { /* ... */
     form.defaults({ enrollment_google_email: props.googleEmail, email: props.googleEmail }); form.reset();
 }
@@ -183,6 +217,8 @@ const submitEnrollmentForm = () => {
     const payload = { ...form.data() };
     // Ensure the linked google email is included, even if the form field was somehow cleared
     payload.enrollment_google_email = props.googleEmail;
+    // Add subjects from the selected course/year/semester to the payload
+    payload.subjects = selectedCourseDetails.value?.subjects || [];
 
     console.log("Submitting payload to pending:", payload);
     form.post(route('pending-enrollment.store'), {
@@ -192,6 +228,7 @@ const submitEnrollmentForm = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             form.reset();
             selectedCourseDetails.value = null;
+            localStorage.removeItem(LOCAL_STORAGE_KEY); // <-- clear on success
         },
         onError: (errors) => {
             console.error('Submission Error:', errors);

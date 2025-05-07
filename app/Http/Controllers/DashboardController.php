@@ -11,6 +11,7 @@ use App\Models\Students;
 use App\Models\GeneralSettings;
 use App\Models\SubjectEnrolled;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
 
 final class DashboardController extends Controller
 {
@@ -20,10 +21,15 @@ final class DashboardController extends Controller
     /**
      * Main dashboard action
      */
-    public function __invoke(): Response
+    public function __invoke(): Response|RedirectResponse
     {
         /** @var User $user */
         $user = Auth::user();
+
+        // Redirect guest users to the guest dashboard
+        if (isset($user->role) && $user->role === 'guest') {
+            return redirect()->route('enrolee.dashboard');
+        }
 
         // Ensure the user is a student
         if (! $user->student) {
@@ -33,6 +39,9 @@ final class DashboardController extends Controller
         /** @var Students $student */
         $student = $user->student;
 
+        // Get general settings
+        $generalSettings = GeneralSettings::first();
+        
         // Get current semester and school year
         $settings = $this->getSettings();
         $currentSemester = $settings['semester'];
@@ -71,6 +80,13 @@ final class DashboardController extends Controller
         // Get course information
         $courseInfo = $this->getCourseInfo($student);
 
+        // Fetch the current student enrollment for this academic period
+        $studentEnrollment = \App\Models\StudentEnrollment::query()
+            ->where('student_id', $student->id)
+            ->currentAcademicPeriod()
+            ->latest('created_at')
+            ->first();
+
         return Inertia::render('Dashboard', [
             'student' => $studentData,
             'stats' => $statsData,
@@ -85,6 +101,8 @@ final class DashboardController extends Controller
             'courseInfo' => $courseInfo,
             'semester' => $currentSemester,
             'schoolYear' => $currentSchoolYear,
+            'generalSettings' => $generalSettings,
+            'studentEnrollment' => $studentEnrollment,
         ]);
     }
 

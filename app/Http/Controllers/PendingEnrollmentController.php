@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PendingEnrollment;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
+use App\Models\Courses;
+use Illuminate\Http\Request;
+use App\Models\GeneralSettings;
+use App\Models\PendingEnrollment;
+use App\Services\EnrollmentService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redirect;
 // Removed duplicate Request import
 
 class PendingEnrollmentController extends Controller
@@ -26,6 +30,19 @@ class PendingEnrollmentController extends Controller
      */
     public function create(Request $request)
     {
+        // Fetch allowed course IDs for online enrollment from GeneralSettings
+        $settings = GeneralSettings::query()->first();
+        $allowedCourseIds = $settings?->enrollment_courses ?? [];
+        // Query only the allowed courses
+        $courses = Courses::query()
+            ->whereIn('id', $allowedCourseIds)
+            ->get()
+            ->map(fn($course) => [
+                'value' => $course->id,
+                'label' => $course->title,
+                'code' => $course->code,
+                'department' => $course->department,
+            ]);
         return Inertia::render('OnlineEnrollment', [
             'googleEmail' => $request->session()->get('enrollment_google_email'),
             'googleName' => $request->session()->get('enrollment_google_name'),   // Pass name
@@ -36,8 +53,7 @@ class PendingEnrollmentController extends Controller
                 'error' => $request->session()->get('error'),
                 'warning' => $request->session()->get('warning'),
             ],
-            // Add other necessary props like course options if fetched here
-            // 'courses' => Courses::all()->map(fn($course) => ['value' => $course->id, 'label' => $course->title]),
+            'courses' => $courses,
         ]);
     }
 
@@ -57,6 +73,8 @@ class PendingEnrollmentController extends Controller
             'course_id' => 'required|integer', // Example validation
             // Add other critical fields as needed
             'enrollment_google_email' => 'nullable|email|max:255', // Validate if present
+            'subjects' => 'required|array|min:1',
+            'subjects.*.id' => 'required|integer',
         ]);
 
         // Check for duplicate based on the *form's* email field first,
@@ -108,13 +126,13 @@ class PendingEnrollmentController extends Controller
 
             // return Redirect::back()->with('success', 'Application submitted successfully!');
             // Let's return a success response that the Inertia handler expects
-             return response()->json(['message' => 'Application submitted successfully!'], 201); // 201 Created status
+             return Redirect::back()->with('success', 'Application submitted successfully!'); // 201 Created status
 
 
         } catch (\Exception $e) {
             Log::error('Error creating pending enrollment: ' . $e->getMessage());
             // Return an error response that the onError handler in Vue can catch
-            return response()->json(['message' => 'Failed to submit application. Please try again later.'], 500);
+            return Redirect::back()->with('error', 'Failed to submit application due to a server error. Please try again later.');
         }
     }
 
@@ -154,5 +172,59 @@ class PendingEnrollmentController extends Controller
     public function destroy(PendingEnrollment $pendingEnrollment)
     {
         // Logic for admin deleting a pending enrollment
+    }
+
+    /**
+     * Confirm and process a pending enrollment.
+     * This is called after the student confirms their subjects and payment.
+     */
+    public function confirm(Request $request, EnrollmentService $enrollmentService)
+    {
+        $request->validate([
+            // 'pending_enrollment_id' => 'required|integer|exists:pending_enrollments,id',
+            'downpayment' => 'required|numeric|min:0',
+            'payment_method' => 'required|string',
+            'subjects' => 'required|array|min:1',
+            'totalLectureFee' => 'required|numeric',
+            'totalLabFee' => 'required|numeric',
+            'totalMiscFee' => 'required|numeric',
+            'overallTuition' => 'required|numeric',
+            'semester' => 'required|integer',
+            'academic_year' => 'required|integer',
+            'school_year' => 'required|string',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $pending = $user->approved_pending_enrollment;
+            $paymentData = [
+                'downpayment' => $request->downpayment,
+                'payment_method' => $request->payment_method,
+                'subjects' => $request->subjects,
+                'totalLectureFee' => $request->totalLectureFee,
+                'totalLabFee' => $request->totalLabFee,
+                'totalMiscFee' => $request->totalMiscFee,
+                'overallTuition' => $request->overallTuition,
+                'semester' => $request->semester,
+                'academic_year' => $request->academic_year,
+                'school_year' => $request->school_year,
+            ];
+            [$student, $enrollment] = $enrollmentService->process($pending, $paymentData);
+
+            // Optionally, mark the pending enrollment as processed/approved
+            $pending->status = 'processed';
+            $pending->processed_at = now();
+            $pending->save();
+
+            // Return Inertia response with enrollment status/info
+            return Inertia::render('DashboardGuest', [
+                'enrollmentStatus' => 'processing',
+                'enrollment' => $enrollment,
+                'student' => $student,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Enrollment confirmation failed: ' . $e->getMessage());
+            return back()->withErrors(['enrollment' => 'Failed to process enrollment. Please try again later.']);
+        }
     }
 }

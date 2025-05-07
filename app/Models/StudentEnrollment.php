@@ -1,36 +1,92 @@
 <?php
 
-declare(strict_types=1);
+/**
+ * Created by Reliese Model.
+ */
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder; // Import Builder
+use Illuminate\Support\Facades\Cache; // Import Cache
 
-final class StudentEnrollment extends Model
+/**
+ * Class StudentEnrollment
+ *
+ * @property int $id
+ * @property string $student_id
+ * @property string $course_id
+ * @property string $status
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property int|null $semester
+ * @property int|null $academic_year
+ * @property string|null $school_year
+ * @property string|null $deleted_at
+ * @property float|null $downpayment
+ * @property string|null $remarks
+ *
+ * @package App\Models
+ */
+class StudentEnrollment extends Model
 {
-    use HasFactory;
     use SoftDeletes;
+    // use HasFactory;
+    // use SoftDeletes;
 
     protected $table = 'student_enrollment';
 
     protected $fillable = [
         'student_id',
         'course_id',
-        'downpayment',
+        'status',
+        'semester',
         'academic_year',
+        'school_year',
+        'downpayment',
+        'payment_method',
+        'remarks',
     ];
 
-    public function signature()
+    protected $casts = [
+        'id' => 'integer',
+        'semester' => 'integer',
+        'academic_year' => 'integer',
+        'downpayment' => 'float',
+        'payment_method' => 'string',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime'
+    ];
+
+    public static function boot()
     {
-        return $this->morphOne(EnrollmentSignatures::class, 'enrollment');
+        parent::boot();
+
+        static::creating(function (self $model) {
+            $settings = GeneralSettings::first();
+            $model->status = 'Pending';
+            $model->school_year = $settings->getSchoolYearString();
+            $model->semester = $settings->semester;
+        });
+
+        // delete also the subjects enrolled
+        static::forceDeleted(function (self $model) {
+            $model->subjectsEnrolled()->delete();
+            $model->studentTuition()->delete();
+        });
     }
+
+
 
     public function student()
     {
-        return $this->belongsTo(Students::class, 'student_id', 'id');
+        return $this->belongsTo(Students::class, 'student_id', 'id')
+            ->withoutGlobalScopes()
+            ->withDefault();
     }
 
     public function getStudentNameAttribute(): string
@@ -60,44 +116,50 @@ final class StudentEnrollment extends Model
 
     public function getAssessmentPathAttribute(): string
     {
-        return $this->resources()->where('type', 'assessment')->first()->file_path;
+        return $this->resources()->where('type', 'assessment')->latest()->first()->file_path;
     }
 
     public function getCertificatePathAttribute(): string
     {
-        return $this->resources()->where('type', 'certificate')->first()->file_path;
+        return $this->resources()->where('type', 'certificate')->latest()->first()->file_path;
     }
 
     public function getAssessmentUrlAttribute(): string
     {
-        $resource = $this->resources()->where('type', 'assessment')->first();
-
+        $resource = $this->resources()->where('type', 'assessment')->latest()->first();
         return $resource ? Storage::disk('public')->url($resource->file_path) : '';
     }
 
     public function getCertificateUrlAttribute(): string
     {
-        $resource = $this->resources()->where('type', 'certificate')->first();
-
+        $resource = $this->resources()->where('type', 'certificate')->latest()->first();
         return $resource ? Storage::disk('public')->url($resource->file_path) : '';
     }
 
-    // protected $dates = ['enrollment_date', 'completion_date'];
-
-    protected static function boot(): void
+    /**
+     * Scope a query to only include enrollments for the current school year and semester.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeCurrentAcademicPeriod(Builder $query): Builder
     {
-        parent::boot();
-
-        self::creating(function (self $model): void {
-            $settings = GeneralSettings::query()->first();
-            $model->status = 'Pending';
-            $model->school_year = $settings->getSchoolYearString();
-            $model->semester = $settings->semester;
+        // Fetch settings dynamically using cache
+        $settings = Cache::remember('general_settings', 3600, function () {
+            return GeneralSettings::first();
         });
 
-        // delete also the subjects enrolled
-        // static::deleting(function (self $model) {
-        //     $model->subjectsEnrolled()->delete();
-        // });
+        if ($settings) {
+            $schoolYear = $settings->getSchoolYearString(); // e.g., "2024 - 2025"
+            $semester = $settings->semester;
+
+            return $query
+                ->where('school_year', $schoolYear)
+                ->where('semester', $semester);
+        }
+
+        // If no settings found, return the original query
+        // Log::warning('General settings not found for scoping Student Enrollments.'); // Optional logging
+        return $query;
     }
 }

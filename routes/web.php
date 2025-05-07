@@ -17,12 +17,28 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\User\LoginLinkController;
 use App\Http\Controllers\PendingEnrollmentController;
 use App\Http\Controllers\EnrollmentAuthController; // Added
+use App\Http\Controllers\GuestDashboardController;
+use App\Http\Controllers\Student\EnrollmentController;
 
 Route::get('/', [WelcomeController::class, 'home'])->name('home');
+
+// Test Notifications
+Route::get('/test-toast-success', function() {
+    return redirect()->route('dashboard')->with('success', 'Success notification test');
+})->middleware(['auth:sanctum', config('jetstream.auth_session')])->name('test.toast.success');
+
+Route::get('/test-toast-error', function() {
+    return redirect()->route('dashboard')->with('error', 'Error notification test');
+})->middleware(['auth:sanctum', config('jetstream.auth_session')])->name('test.toast.error');
+
+Route::get('/test-toast-message', function() {
+    return redirect()->route('dashboard')->with('message', 'Info notification test');
+})->middleware(['auth:sanctum', config('jetstream.auth_session')])->name('test.toast.message');
 
 // Online Enrollment Route
 Route::get('/enroll', [PendingEnrollmentController::class, 'create'])->name('enroll'); // Use controller create method
 Route::post('/pending-enrollment', [PendingEnrollmentController::class, 'store'])->name('pending-enrollment.store');
+Route::post('/enroll/confirm', [PendingEnrollmentController::class, 'confirm'])->name('enroll.confirm');
 
 // Enrollment Google Auth Routes
 Route::prefix('enrollment/auth')->group(function () {
@@ -51,9 +67,9 @@ Route::prefix('auth')->group(
     }
 );
 
-Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-
+    Route::get('/enrolee', GuestDashboardController::class)->name('enrolee.dashboard');
     Route::delete('/auth/destroy/{provider}', [OauthController::class, 'destroy'])->name('oauth.destroy');
 
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
@@ -62,8 +78,20 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->names('subscriptions')
         ->only(['index', 'create', 'store', 'show']);
 
+    // Student Enrollment Routes
+    Route::prefix('student')->group(function () {
+        Route::get('/enroll/subjects', [EnrollmentController::class, 'showEnrollmentForm'])->name('student.enroll.subjects');
+        Route::post('/enroll/subjects', [EnrollmentController::class, 'processEnrollment'])->name('student.enroll.subjects.submit');
+    });
+
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/tuition', [TuitionController::class, 'index'])->name('tuition.index');
     Route::get('/subjects', [SubjectsController::class, 'index'])->name('subjects.index');
     Route::get('/changelog', [ChangelogController::class, 'index'])->name('changelog.index');
 });
+
+Route::get('/payment-process', function () {
+    return Inertia::render('PaymentProcess');
+})->name('payment.process');
+
+

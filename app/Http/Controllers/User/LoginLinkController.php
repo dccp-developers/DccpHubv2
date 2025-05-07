@@ -20,18 +20,20 @@ final class LoginLinkController extends Controller
 {
     private const string RATE_LIMIT_PREFIX = 'login-link:';
 
-    private const int RATE_LIMIT_ATTEMPTS = 1;
+    private const int RATE_LIMIT_ATTEMPTS = 5;
 
     private const int EXPIRATION_TIME = 15;
 
     /**
      * Create a new magic link.
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         /** @var array<string, string> $validated */
         $validated = $request->validate([
-            'email' => ['required', 'email', 'exists:users,email'],
+            'email' => ['required', 'email'],
         ]);
 
         $email = $validated['email'];
@@ -41,8 +43,14 @@ final class LoginLinkController extends Controller
         if (RateLimiter::tooManyAttempts($key, self::RATE_LIMIT_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($key);
 
-            session()->flash('error', __('Please wait :seconds seconds before requesting another magic link.', ['seconds' => $seconds]));
+            // Return JSON for Inertia or AJAX requests
+            if ($request->expectsJson() || $request->header('X-Inertia')) {
+                return response()->json([
+                    'message' => __('Please wait :seconds seconds before requesting another magic link.', ['seconds' => $seconds]),
+                ], 429);
+            }
 
+            // session()->flash('error', __('Please wait :seconds seconds before requesting another magic link.', ['seconds' => $seconds]));
             return redirect()->back();
         }
 

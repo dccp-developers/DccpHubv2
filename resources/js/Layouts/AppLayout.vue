@@ -19,9 +19,9 @@ import SidebarProvider from "@/Components/shadcn/ui/sidebar/SidebarProvider.vue"
 import SidebarTrigger from "@/Components/shadcn/ui/sidebar/SidebarTrigger.vue";
 import Sonner from "@/Components/shadcn/ui/sonner/Sonner.vue";
 import { useSeoMetaTags } from "@/Composables/useSeoMetaTags.js";
-import { onMounted, ref, computed, inject } from "vue";
+import { onMounted, ref, computed, inject, watch } from "vue";
 import { Icon } from "@iconify/vue";
-import { Link } from "@inertiajs/vue3";
+import { Link, usePage } from "@inertiajs/vue3";
 import { Button } from "@/Components/shadcn/ui/button";
 import {
     Sheet,
@@ -30,10 +30,13 @@ import {
 } from "@/Components/shadcn/ui/sheet";
 import { useColorMode } from "@vueuse/core";
 import AppLogoIcon from "@/Components/AppLogoIcon.vue";
+import { toast } from "vue-sonner";
 
 const props = defineProps({
     title: String,
 });
+
+const page = usePage();
 
 useSeoMetaTags({
     title: props.title,
@@ -42,13 +45,66 @@ useSeoMetaTags({
 // Page load time
 const loadTime = ref(null);
 
+// Handle flash messages
+const handleFlashMessages = () => {
+    // Safely check if flash exists in page props
+    if (!page.props.flash) return;
+    
+    try {
+        if (page.props.flash.success) {
+            toast.success(page.props.flash.success);
+        }
+        
+        if (page.props.flash.error) {
+            toast.error(page.props.flash.error);
+        }
+        
+        if (page.props.flash.message) {
+            toast.info(page.props.flash.message);
+        }
+
+        // Handle toast object for more complex notifications if needed
+        if (page.props.flash.toast) {
+            const { title, description, type = 'default' } = page.props.flash.toast;
+            
+            switch (type) {
+                case 'success':
+                    toast.success(title, { description });
+                    break;
+                case 'error':
+                    toast.error(title, { description });
+                    break;
+                case 'info':
+                    toast.info(title, { description });
+                    break;
+                case 'warning':
+                    toast.warning(title, { description });
+                    break;
+                default:
+                    toast(title, { description });
+                    break;
+            }
+        }
+    } catch (error) {
+        console.error('Error displaying toast notification:', error);
+    }
+};
+
 onMounted(() => {
     // Ensure this runs only in the browser
     if (typeof window !== "undefined" && window.performance) {
         const timing = window.performance.timing;
         loadTime.value = (timing.loadEventEnd - timing.navigationStart) / 1000; // in seconds
     }
+    
+    // Handle flash messages on initial load
+    handleFlashMessages();
 });
+
+// Watch for flash messages when page changes
+watch(() => page.props.flash, () => {
+    handleFlashMessages();
+}, { deep: true });
 
 // Mobile Navigation Setup
 const route = inject("route");

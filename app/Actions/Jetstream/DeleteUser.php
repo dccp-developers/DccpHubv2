@@ -23,8 +23,10 @@ final readonly class DeleteUser implements DeletesUsers
     public function delete(User $user): void
     {
         DB::transaction(function () use ($user): void {
-            $this->deleteTeams($user);
+            // $this->deleteTeams($user);
             $user->deleteProfilePhoto();
+            // Delete all pending enrollments for this user
+            \App\Models\PendingEnrollment::whereJsonContains('data->email', $user->email)->delete();
             $user->tokens->each->delete();
             $user->delete();
         });
@@ -35,10 +37,10 @@ final readonly class DeleteUser implements DeletesUsers
      */
     private function deleteTeams(User $user): void
     {
-        $user->teams()->detach();
+        // $user->teams()->detach();
 
-        $user->ownedTeams->each(function (Team $team): void {
-            $this->deletesTeams->delete($team);
-        });
+        // $user->ownedTeams->each(function (Team $team): void {
+        //     $this->deletesTeams->delete($team);
+        // });
     }
 }

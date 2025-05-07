@@ -77,9 +77,14 @@ function handleLoginLink() {
         toast.success(page.props.flash.success);
       }
     },
-    onError: () => {
+    onError: (errors) => {
+      // Show flash error if present
       if (page.props.flash.error) {
         toast.error(page.props.flash.error);
+      }
+      // Check for 429 error (Too Many Requests)
+      if (loginLinkForm.response && loginLinkForm.response.status === 429) {
+        toast.error("Too many requests. Please wait before trying again.");
       }
     },
   });
