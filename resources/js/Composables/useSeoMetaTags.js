@@ -1,29 +1,29 @@
 import { useSeoMeta } from '@unhead/vue'
 
-// Default SEO meta tags
+// Default SEO meta tags for DCCPhub
 const defaultSeoMeta = {
   title: 'Home',
-  titleTemplate: '%s | Larasonic Modern Laravel SaaS Starter Kit',
-  description: 'Larasonic is a modern Laravel boilerplate for the VILT stack (Vue, Inertia, Laravel, TailwindCSS). Clone and start building scalable, maintainable, and production-ready applications quickly.',
-  keywords: 'Larasonic, Laravel boilerplate, Laravel VILT, Vue, Inertia, TailwindCSS, Laravel Octane, Docker, FilamentPHP, OpenAI integration, Laravel Cashier, Laravel Sanctum',
+  titleTemplate: '%s | DCCPhub - Data Center College Of The Philippines Portal',
+  description: 'DCCPhub is the official school portal for Data Center College Of The Philippines. Access student resources, announcements, grades, schedules, and more in one modern platform.',
+  keywords: 'DCCPhub, Data Center College Of The Philippines, DCCP, school portal, student portal, grades, schedules, announcements, education, Philippines',
   robots: 'index, follow',
-  themeColor: '#000000',
+  themeColor: '#003366',
 
   // Open Graph
-  ogTitle: '%s | Larasonic Modern Laravel SaaS Starter Kit',
-  ogDescription: 'Larasonic is a modern Laravel SaaS starter kit for the VILT stack. Clone the repo, start building scalable and maintainable applications quickly.',
-  ogUrl: 'https://larasonic.com',
+  ogTitle: '%s | DCCPhub - Data Center College Of The Philippines Portal',
+  ogDescription: 'DCCPhub is the official portal for students and staff of Data Center College Of The Philippines. Stay updated with announcements, grades, and resources.',
+  ogUrl: 'https://portal.dccp.edu.ph',
   ogType: 'website',
-  ogImage: 'https://larasonic.com/images/og.webp',
-  ogSiteName: 'Larasonic',
-  ogLocale: 'en_US',
+  ogImage: 'https://portal.dccp.edu.ph/images/og.png',
+  ogSiteName: 'DCCPhub',
+  ogLocale: 'en_PH',
 
   // Twitter
-  twitterTitle: '%s | Larasonic Modern Laravel SaaS Starter Kit',
-  twitterDescription: 'Larasonic is a modern Laravel SaaS starter kit for the VILT stack. Clone the repo, start building scalable and maintainable applications quickly.',
+  twitterTitle: '%s | DCCPhub - Data Center College Of The Philippines Portal',
+  twitterDescription: 'DCCPhub is the official portal for students and staff of Data Center College Of The Philippines. Stay updated with announcements, grades, and resources.',
   twitterCard: 'summary_large_image',
-  twitterImage: 'https://larasonic.com/images/og.webp',
-  twitterSite: '@pushpak1300',
+  twitterImage: 'https://portal.dccp.edu.ph/images/og.png',
+  twitterSite: '@dccphub',  
 }
 
 /**

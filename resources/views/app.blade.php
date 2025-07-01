@@ -22,16 +22,16 @@
         {
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
-            "name": "Larasonic",
-            "url": "https://larasonic.com/",
-            "image": "https://larasonic.com/images/og.webp",
-            "description": "A modern Laravel SaaS starter kit for the VILT stack. Clone the repo, start building scalable and maintainable applications quickly.",
+            "name": "DCCPhub",
+            "url": "https://portal.dccp.edu.ph/",
+            "image": "https://portal.dccp.edu.ph/images/og.webp",
+            "description": "A modern Laravel School Portal for DCCP",
             "applicationCategory": "DeveloperTool",
             "operatingSystem": "All",
             "offers": {
                 "@type": "Offer",
                 "price": "0",
-                "priceCurrency": "USD",
+                "priceCurrency": "PHP",
                 "category": "Free"
             }
         }

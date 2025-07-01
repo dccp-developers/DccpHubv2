@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<HeroProps>(), {
   description: "DCCPHub brings your entire academic journey into one seamless platform. Access courses, track grades, manage schedules, and connect with peers - everything you need for academic success.",
   button: () => ({
     text: "Start Your Journey",
-    url: "https://dccphub.com/dashboard",
+    url: "https://portal.dccp.edu.ph/register",
   }),
   secondaryButton: () => ({
     text: "Take a Tour",
@@ -66,7 +66,7 @@ const props = withDefaults(defineProps<HeroProps>(), {
       icon: "lucide:calendar"
     }
   ]),
-  githubUrl: "https://github.com/pushpak1300/dccphub",
+  githubUrl: "https://github.com/dccp-developers/DccpHubv2",
 });
 
 const activeScreenshot = ref(0);

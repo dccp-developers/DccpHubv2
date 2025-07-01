@@ -44,7 +44,7 @@ final class AdminPanelProvider extends PanelProvider
                 Widgets\FilamentInfoWidget::class,
             ])
             ->plugins([
-                FilamentPWAPlugin::make(),
+                // FilamentPWAPlugin::make(),
             ])
             ->middleware([
                 EncryptCookies::class,

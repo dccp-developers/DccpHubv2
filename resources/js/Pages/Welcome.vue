@@ -139,18 +139,18 @@ const faqItems = [
   },
 ];
 
-const githubUrl = "https://github.com/pushpak1300/dccphub";
+const githubUrl = "https://github.com/dccp-developers/DccpHubv2";
 </script>
 
 <template>
   <WebLayout :can-login="canLogin" :can-register="canRegister">
     <HeroSection :github-url="githubUrl" />
     <FeaturesSection :features="features" :github-url="githubUrl" />
-    <PricingSection
+    <!-- <PricingSection
       :pricing-features="pricingFeatures"
       :sponsor-links="sponsorLinks"
       :faq-items="faqItems"
-    />
+    /> -->
     <CtaSection :github-url="githubUrl" />
   </WebLayout>
 </template>

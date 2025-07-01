@@ -8,11 +8,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Initial release of the application.
 - User authentication and authorization.
-- Basic dashboard.
+- Basic dashboard. 
 
 ## [0.1.0] - 2023-11-15
 ### Added
 - Project setup.
 - Basic file structure.
 
-<!-- Add more entries as needed --> 

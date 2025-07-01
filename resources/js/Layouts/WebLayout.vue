@@ -28,8 +28,8 @@ const navLinks = [
   { label: "Enroll Online", href: route("enroll"), external: false },
 ];
 
-const githubUrl = "https://github.com/pushpak1300/dccphub"; // Keep for footer
-const twitterUrl = "https://x.com/pushpak1300?ref=larasonic";
+const githubUrl = "https://github.com/yukizaki/dccphub"; // Keep for footer
+const twitterUrl = "https://x.com/yukizaki?ref=larasonic";
 
 const isMenuOpen = ref(false);
 
