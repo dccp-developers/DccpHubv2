@@ -14,7 +14,8 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(/usr/bin/dirname "$0")/.." && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
 SCRIPTS_DIR="$PROJECT_ROOT/scripts"
 
 # Function to print colored output
@@ -77,33 +78,33 @@ check_pwa_builder() {
 # Function to build with Capacitor
 build_with_capacitor() {
     print_status "Building APK using Capacitor method..."
-    
+
     if [ ! -f "$SCRIPTS_DIR/build-apk-capacitor.sh" ]; then
         print_error "Capacitor build script not found"
         return 1
     fi
-    
-    chmod +x "$SCRIPTS_DIR/build-apk-capacitor.sh"
-    bash "$SCRIPTS_DIR/build-apk-capacitor.sh"
+
+    /bin/chmod +x "$SCRIPTS_DIR/build-apk-capacitor.sh"
+    /bin/bash "$SCRIPTS_DIR/build-apk-capacitor.sh"
 }
 
 # Function to build with PWA Builder
 build_with_pwa() {
     print_status "Building APK using PWA Builder method..."
-    
+
     if [ ! -f "$SCRIPTS_DIR/build-apk.sh" ]; then
         print_error "PWA Builder build script not found"
         return 1
     fi
-    
-    chmod +x "$SCRIPTS_DIR/build-apk.sh"
-    bash "$SCRIPTS_DIR/build-apk.sh"
+
+    /bin/chmod +x "$SCRIPTS_DIR/build-apk.sh"
+    /bin/bash "$SCRIPTS_DIR/build-apk.sh"
 }
 
 # Function to auto-detect best build method
 auto_detect_method() {
     print_status "Auto-detecting best build method..."
-    
+
     if check_capacitor; then
         print_success "Capacitor configuration detected - using Capacitor method"
         return 0  # Use Capacitor
@@ -119,13 +120,13 @@ auto_detect_method() {
 # Main function
 main() {
     print_header
-    
+
     # Change to project root
     cd "$PROJECT_ROOT"
-    
+
     # Parse command line arguments
     METHOD="${1:-auto}"
-    
+
     case "$METHOD" in
         "capacitor")
             if check_capacitor; then

@@ -20,6 +20,7 @@ import {
   TabsTrigger,
 } from "@/Components/shadcn/ui/tabs";
 import SocialLoginButton from "@/Components/SocialLoginButton.vue";
+import MobileSocialLoginButton from "@/Components/MobileSocialLoginButton.vue";
 import { useSeoMetaTags } from "@/Composables/useSeoMetaTags.js";
 import { Link, useForm, usePage } from "@inertiajs/vue3";
 import { useLocalStorage } from "@vueuse/core";
@@ -93,6 +94,20 @@ function handleLoginLink() {
 function togglePasswordVisibility() {
   showPassword.value = !showPassword.value;
 }
+
+// Mobile app detection
+const isMobileApp = computed(() => {
+  if (typeof window === 'undefined') return false
+
+  // Check for Capacitor
+  if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+    return true
+  }
+
+  // Check user agent
+  const userAgent = navigator.userAgent || ''
+  return userAgent.includes('DCCPHub-Mobile-App') || userAgent.includes('Capacitor')
+})
 
 // Lifecycle
 onMounted(() => {
@@ -299,7 +314,15 @@ useSeoMetaTags({
           </div>
 
           <div class="mt-6 grid gap-2">
+            <MobileSocialLoginButton
+              v-if="isMobileApp"
+              v-for="provider in availableOauthProviders"
+              :key="provider.slug"
+              :provider="provider"
+              :disabled="isProcessing"
+            />
             <SocialLoginButton
+              v-else
               v-for="provider in availableOauthProviders"
               :key="provider.slug"
               :provider="provider"

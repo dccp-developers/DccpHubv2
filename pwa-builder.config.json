@@ -1,0 +1,85 @@
+{
+  "name": "DCCPHub",
+  "packageId": "ph.edu.dccp.hub",
+  "url": "https://portal.dccp.edu.ph",
+  "webManifestUrl": "https://portal.dccp.edu.ph/manifest.json",
+  "platforms": {
+    "android": {
+      "package": {
+        "packageId": "ph.edu.dccp.hub",
+        "name": "DCCPHub",
+        "displayName": "DCCPHub",
+        "version": "1.0.0",
+        "versionCode": 1,
+        "description": "DCCPHub - Your academic hub for DCCP",
+        "author": "DCCP Developers",
+        "startUrl": "/",
+        "themeColor": "#000000",
+        "backgroundColor": "#ffffff",
+        "iconUrl": "https://portal.dccp.edu.ph/images/android/android-launchericon-512-512.png",
+        "maskableIconUrl": "https://portal.dccp.edu.ph/images/android/android-launchericon-512-512.png",
+        "monochromeIconUrl": "https://portal.dccp.edu.ph/images/android/android-launchericon-512-512.png",
+        "splashScreenColor": "#ffffff",
+        "shortcuts": [
+          {
+            "name": "Dashboard",
+            "short_name": "Dashboard",
+            "url": "/dashboard",
+            "icons": [
+              {
+                "src": "https://portal.dccp.edu.ph/images/android/android-launchericon-192-192.png",
+                "sizes": "192x192"
+              }
+            ]
+          }
+        ]
+      },
+      "signing": {
+        "keystore": null,
+        "alias": null,
+        "keystorePassword": null,
+        "keyPassword": null
+      },
+      "appVersionCode": 1,
+      "appVersion": "1.0.0",
+      "minSdkVersion": 21,
+      "targetSdkVersion": 34,
+      "compileSdkVersion": 34,
+      "enableNotifications": true,
+      "enableLocation": false,
+      "enableFullScreen": false,
+      "orientation": "portrait",
+      "display": "standalone",
+      "fallbackType": "customtabs",
+      "features": {
+        "locationServices": {
+          "enabled": false
+        },
+        "playBilling": {
+          "enabled": false
+        }
+      },
+      "webAppManifest": {
+        "shortcuts": [
+          {
+            "name": "Dashboard",
+            "short_name": "Dashboard",
+            "description": "Go to dashboard",
+            "url": "/dashboard",
+            "icons": [
+              {
+                "src": "/images/android/android-launchericon-192-192.png",
+                "sizes": "192x192",
+                "purpose": "any"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "build": {
+    "outputDirectory": "./dist-pwa",
+    "cleanOutputDirectory": true
+  }
+}

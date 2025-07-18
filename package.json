@@ -6,10 +6,22 @@
     "dev": "vite",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "generate-sw": "workbox generateSW workbox-config.cjs"
+    "generate-sw": "workbox generateSW workbox-config.cjs",
+    "build:apk": "./scripts/build-apk-capacitor.sh",
+    "build:debug-apk": "./scripts/build-debug-apk.sh",
+    "build:clean-apk": "./scripts/build-clean-debug-apk.sh",
+    "prepare:apk": "./scripts/prepare-apk.sh",
+    "apk:generate": "npm run build && npx @pwabuilder/cli package --platform android --output ./storage/app/apk",
+    "cap:build": "npm run build && npx cap copy android && npx cap open android",
+    "cap:sync": "npx cap sync android"
   },
   "dependencies": {
     "@ai-sdk/vue": "^1.2.12",
+    "@capacitor/android": "^7.4.1",
+    "@capacitor/browser": "^7.0.1",
+    "@capacitor/cli": "^7.4.1",
+    "@capacitor/core": "^7.4.1",
+    "@capgo/capacitor-social-login": "^7.8.0",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
     "@heroicons/vue": "^2.2.0",
@@ -54,11 +66,13 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^3.16.0",
+    "@pwabuilder/cli": "^0.0.17",
     "eslint": "^9.30.0",
     "eslint-plugin-format": "^0.1.3",
     "eslint-plugin-tailwindcss": "^3.18.0",
     "eslint-plugin-vue": "^9.33.0",
     "laravel-vite-plugin": "^1.3.0",
+    "typescript": "^5.8.3",
     "workbox-cli": "^7.3.0"
   }
 }

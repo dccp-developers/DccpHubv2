@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DOMAIN = 'philexscholar.koamishin.org';
+const DOMAIN = 'portal.dccp.edu.ph';
 const BASE_URL = `https://${DOMAIN}`;
 
 console.log('📱 Generating Real APK using Bubblewrap\n');
@@ -17,7 +17,7 @@ console.log(`🔗 PWA URL: ${BASE_URL}\n`);
 
 async function installBubblewrap() {
   console.log('📦 Installing Bubblewrap...\n');
-  
+
   try {
     // Check if Bubblewrap is already installed
     execSync('npx @bubblewrap/cli --version', { stdio: 'pipe' });
@@ -39,43 +39,43 @@ async function installBubblewrap() {
 
 async function generateAPKWithBubblewrap() {
   console.log('🚀 Generating APK using Bubblewrap...\n');
-  
+
   try {
     // Create bubblewrap directory
     const bubblewrapDir = path.join(__dirname, '..', 'bubblewrap-project');
-    
+
     // Remove existing directory if it exists
     if (fs.existsSync(bubblewrapDir)) {
       fs.rmSync(bubblewrapDir, { recursive: true, force: true });
     }
-    
+
     fs.mkdirSync(bubblewrapDir, { recursive: true });
-    
+
     console.log('⏳ Initializing Bubblewrap project...\n');
-    
+
     // Initialize Bubblewrap project
     const initCommand = `npx @bubblewrap/cli init --manifest ${BASE_URL}/site.webmanifest`;
     console.log(`Running: ${initCommand}\n`);
-    
-    execSync(initCommand, { 
+
+    execSync(initCommand, {
       stdio: 'inherit',
-      cwd: bubblewrapDir 
+      cwd: bubblewrapDir
     });
-    
+
     console.log('\n⏳ Building APK...\n');
-    
+
     // Build the APK
-    execSync('npx @bubblewrap/cli build', { 
+    execSync('npx @bubblewrap/cli build', {
       stdio: 'inherit',
-      cwd: bubblewrapDir 
+      cwd: bubblewrapDir
     });
-    
+
     console.log('\n✅ APK generation completed!\n');
-    
+
     // Look for generated APK
     const apkPath = path.join(bubblewrapDir, 'app-release-unsigned.apk');
     const signedApkPath = path.join(bubblewrapDir, 'app-release.apk');
-    
+
     let sourceApk = null;
     if (fs.existsSync(signedApkPath)) {
       sourceApk = signedApkPath;
@@ -84,44 +84,56 @@ async function generateAPKWithBubblewrap() {
       sourceApk = apkPath;
       console.log('📱 Found unsigned APK');
     }
-    
+
     if (sourceApk) {
-      // Copy APK to downloads directory
-      const destApk = path.join(__dirname, '..', 'public', 'downloads', 'dsms-philex.apk');
+      // Copy APK to storage directory
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const destApk = path.join(__dirname, '..', 'storage', 'app', 'apk', `DCCPHub_PWA_${timestamp}.apk`);
+      const latestApk = path.join(__dirname, '..', 'storage', 'app', 'apk', 'DCCPHub_latest.apk');
+
+      // Ensure directory exists
+      fs.mkdirSync(path.dirname(destApk), { recursive: true });
+
       fs.copyFileSync(sourceApk, destApk);
-      
-      console.log(`✅ APK copied to: public/downloads/dsms-philex.apk`);
-      
+
+      // Create symlink to latest
+      if (fs.existsSync(latestApk)) {
+        fs.unlinkSync(latestApk);
+      }
+      fs.symlinkSync(path.basename(destApk), latestApk);
+
+      console.log(`✅ APK copied to: ${destApk}`);
+
       // Update APK info
       const apkStats = fs.statSync(destApk);
       const apkInfo = {
-        name: "DSMS Philex",
+        name: "DCCPHub Mobile",
         version: "1.0.0",
-        packageId: "com.philex.dsms",
+        packageId: "ph.edu.dccp.hub",
         size: `${(apkStats.size / 1024 / 1024).toFixed(2)} MB`,
         lastUpdated: new Date().toISOString(),
-        downloadUrl: "/downloads/dsms-philex.apk",
+        downloadUrl: "/apk/download/DCCPHub_latest.apk",
         installInstructions: "Enable 'Install from unknown sources' in Android settings, then install the APK.",
-        generatedWith: "Bubblewrap"
+        generatedWith: "Bubblewrap PWA"
       };
-      
+
       fs.writeFileSync(
         path.join(__dirname, '..', 'public', 'downloads', 'apk-info.json'),
         JSON.stringify(apkInfo, null, 2)
       );
-      
+
       console.log('✅ APK info updated\n');
-      
+
       console.log('🎉 Real APK is now ready for download!\n');
       console.log('🔗 Download URL: https://philexscholar.koamishin.org/downloads/dsms-philex.apk');
       console.log('📊 APK Size:', apkInfo.size);
-      
+
       return true;
     } else {
       console.log('❌ Generated APK file not found');
       return false;
     }
-    
+
   } catch (error) {
     console.log('❌ APK generation failed:', error.message);
     return false;
@@ -130,7 +142,7 @@ async function generateAPKWithBubblewrap() {
 
 async function main() {
   const bubblewrapInstalled = await installBubblewrap();
-  
+
   if (!bubblewrapInstalled) {
     console.log('❌ Bubblewrap installation failed');
     console.log('\n🔧 Alternative methods:');
@@ -140,9 +152,9 @@ async function main() {
     console.log('   npx cap open android');
     return;
   }
-  
+
   const success = await generateAPKWithBubblewrap();
-  
+
   if (success) {
     console.log('\n📱 Installation Instructions:');
     console.log('1. Download the APK from your website');
@@ -150,12 +162,12 @@ async function main() {
     console.log('3. Enable "Install from unknown sources" or "Allow from this source"');
     console.log('4. Open the downloaded APK file');
     console.log('5. Follow the installation prompts');
-    
+
     console.log('\n🔧 Testing:');
     console.log('• Test the APK on a real Android device');
     console.log('• Verify all app features work correctly');
     console.log('• Check that the app opens your website properly');
-    
+
     console.log('\n📝 Note:');
     console.log('• This APK is unsigned (for testing only)');
     console.log('• For production, you should sign the APK with your keystore');

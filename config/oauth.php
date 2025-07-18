@@ -36,7 +36,7 @@ return [
         ],
         [
             'slug' => 'facebook',
-            'active' => true,
+            'active' => false,
             'icon' => 'mdi:facebook', // Icons from https://iconify.design/
         ],
     ],

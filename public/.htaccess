@@ -5,9 +5,21 @@
 
     RewriteEngine On
 
+    # APK MIME type configuration
+    <IfModule mod_mime.c>
+        AddType application/vnd.android.package-archive .apk
+    </IfModule>
+
+    # Force download for APK files
+    <FilesMatch "\.apk$">
+        Header set Content-Type "application/vnd.android.package-archive"
+        Header set Content-Disposition "attachment"
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_A
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
     # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .

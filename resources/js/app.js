@@ -7,6 +7,29 @@ import { ZiggyVue } from 'ziggy-js'
 import './bootstrap'
 import '../css/app.css'
 
+// Import Capacitor Social Login handler
+import { initializeSocialLogin, setupDeepLinkListener, handleDeepLinkCallback } from './utils/capacitor-social-login.js'
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+      });
+      console.log('Service Worker registered with scope:', registration.scope);
+    } catch (error) {
+      console.error('Service Worker registration failed:', error);
+    }
+  });
+}
+
+// Initialize Social Login for Capacitor
+document.addEventListener('DOMContentLoaded', async () => {
+  await initializeSocialLogin();
+  setupDeepLinkListener();
+});
+
 /**
  * This is used from unhead plugin to use seo meta tags
  * @see {@link https://unhead.unjs.io/setup/unhead/introduction} For createHead instance

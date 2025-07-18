@@ -20,7 +20,7 @@ yarn-error.log
 /.idea
 /.vscode
 /.zed
-
+/.android-sdk
 **/caddy
 frankenphp
 frankenphp-worker.php

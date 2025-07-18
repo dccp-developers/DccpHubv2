@@ -34,12 +34,12 @@ onMounted(() => {
 // Handle OAuth login
 const handleOAuthLogin = async () => {
   if (isLoading.value || props.disabled) return
-  
+
   isLoading.value = true
-  
+
   try {
     if (isMobileApp.value) {
-      // Use in-app browser for mobile app
+      // Always use external browser with deep link return for mobile app
       await handleMobileAppOAuth()
     } else {
       // Use regular redirect for web
@@ -47,80 +47,49 @@ const handleOAuthLogin = async () => {
     }
   } catch (error) {
     console.error('OAuth login error:', error)
-    // Fallback to regular redirect
+    // Fallback to regular OAuth
     window.location.href = route('oauth.redirect', { provider: props.provider.slug })
   } finally {
     isLoading.value = false
   }
 }
 
-// Handle OAuth in mobile app using Capacitor Browser
+// Handle OAuth in mobile app using external browser with deep link return
 const handleMobileAppOAuth = async () => {
-  if (!window.Capacitor) {
-    throw new Error('Capacitor not available')
-  }
-  
-  const { Browser } = window.Capacitor.Plugins
-  
-  if (!Browser) {
-    throw new Error('Browser plugin not available')
-  }
-  
-  // Get the OAuth URL
-  const oauthUrl = route('oauth.redirect', { provider: props.provider.slug })
-  
-  // Open OAuth flow in in-app browser
-  const result = await Browser.open({
-    url: oauthUrl,
-    windowName: '_self',
-    presentationStyle: 'popover',
-    showTitle: true,
-    toolbarColor: '#ffffff',
-    showNavigationButtons: true,
-    showCloseButton: true,
-    clearCache: false,
-    clearSessionCache: false
-  })
-  
-  // Listen for URL changes to detect successful authentication
-  Browser.addListener('browserPageLoaded', (info) => {
-    console.log('Browser page loaded:', info.url)
-    
-    // Check if we've been redirected to the dashboard (successful login)
-    if (info.url.includes('/dashboard') || info.url.includes('?authenticated=true')) {
-      // Close the browser and reload the main app
-      Browser.close()
-      window.location.reload()
+  try {
+    // Create OAuth URL with deep link redirect
+    const baseUrl = window.location.origin
+    const oauthUrl = new URL(route('oauth.redirect', { provider: props.provider.slug }), baseUrl)
+
+    // Add deep link redirect URI for returning to the app
+    oauthUrl.searchParams.set('redirect_uri', `dccphub://auth/${props.provider.slug}/callback`)
+    oauthUrl.searchParams.set('mobile', 'true')
+    oauthUrl.searchParams.set('return_to_app', 'true')
+
+    console.log('Opening OAuth in external browser with deep link return:', oauthUrl.toString())
+
+    // Always open in external system browser
+    if (window.Capacitor && window.Capacitor.Plugins.Browser) {
+      // Use Capacitor Browser plugin to open in system browser
+      await window.Capacitor.Plugins.Browser.open({
+        url: oauthUrl.toString(),
+        windowName: '_system',
+        presentationStyle: 'fullscreen'
+      })
+    } else {
+      // Fallback: open in system browser
+      window.open(oauthUrl.toString(), '_blank')
     }
-  })
-  
-  // Handle browser finished (user closed manually)
-  Browser.addListener('browserFinished', () => {
-    console.log('Browser finished')
-    // Check if user is now authenticated by making a request
-    checkAuthenticationStatus()
-  })
+
+    console.log('OAuth flow initiated in external browser. Waiting for deep link callback...')
+
+  } catch (error) {
+    console.error('External browser OAuth error:', error)
+    throw error
+  }
 }
 
-// Check if user is now authenticated
-const checkAuthenticationStatus = async () => {
-  try {
-    const response = await fetch('/api/user', {
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    })
-    
-    if (response.ok) {
-      // User is authenticated, redirect to dashboard
-      window.location.href = '/dashboard'
-    }
-  } catch (error) {
-    console.log('User not authenticated yet')
-  }
-}
+
 </script>
 
 <template>

@@ -4,6 +4,8 @@ import { AspectRatio } from "@/Components/shadcn/ui/aspect-ratio";
 import { Avatar, AvatarFallback, AvatarImage } from "@/Components/shadcn/ui/avatar";
 import Button from "@/Components/shadcn/ui/button/Button.vue";
 import { Icon } from "@iconify/vue";
+import InstallPrompt from "@/Components/PWA/InstallPrompt.vue";
+import MobileAppStatus from "@/Components/PWA/MobileAppStatus.vue";
 
 interface Screenshot {
   title: string;
@@ -44,7 +46,7 @@ const props = withDefaults(defineProps<HeroProps>(), {
     {
       title: "Dashboard",
       description: "Get a quick overview of your academic progress, upcoming assignments, and important announcements.",
-      image: "https://via.placeholder.com/800x500/1a1a2e/FFFFFF?text=Dashboard+View",
+      image: "/images/portal.png",
       icon: "lucide:layout-dashboard"
     },
     {
@@ -120,13 +122,18 @@ onMounted(() => {
         <p class="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
           {{ props.description }}
         </p>
-        
+
+        <!-- Mobile App Status Component -->
+        <div class="max-w-2xl mx-auto mb-8">
+          <MobileAppStatus />
+        </div>
+
         <div class="flex flex-wrap gap-4 justify-center">
           <Button as="a" :href="props.button.url" size="lg" class="gap-2 shadow-lg shadow-primary/20">
             <Icon icon="lucide:log-in" class="h-4 w-4" />
             {{ props.button.text }}
           </Button>
-          
+
           <Button as="a" :href="props.secondaryButton.url" variant="outline" size="lg" class="gap-2">
             <Icon icon="lucide:play" class="h-4 w-4" />
             {{ props.secondaryButton.text }}
@@ -152,12 +159,12 @@ onMounted(() => {
           </div>
           
           <!-- Screenshot container -->
-          <div class="relative aspect-[16/9] overflow-hidden">
-            <div class="absolute inset-0 transition-opacity duration-500"
+          <div class="relative aspect-[16/9] overflow-hidden bg-muted/30 rounded-lg border">
+            <div class="absolute inset-0 transition-opacity duration-500 flex items-center justify-center"
                  v-for="(screenshot, index) in props.screenshots"
                  :key="index"
                  :class="index === activeScreenshot ? 'opacity-100' : 'opacity-0'">
-              <img :src="screenshot.image" :alt="screenshot.title" class="w-full h-full object-cover" />
+              <img :src="screenshot.image" :alt="screenshot.title" class="max-w-full max-h-full object-contain" />
             </div>
           </div>
         </div>

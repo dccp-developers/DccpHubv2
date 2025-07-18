@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Sentry\Laravel\Integration;
 use Illuminate\Foundation\Application;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\DetectMobileApp;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            DetectMobileApp::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);

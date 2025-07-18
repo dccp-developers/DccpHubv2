@@ -1,0 +1,223 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+use App\Models\User;
+use Laravel\Socialite\Facades\Socialite;
+
+class SocialAuthController extends Controller
+{
+    /**
+     * Handle mobile OAuth callback from Capacitor Social Login plugin
+     */
+    public function handleMobileCallback(Request $request)
+    {
+        try {
+            $request->validate([
+                'access_token' => 'required|string',
+                'provider' => 'required|string|in:google',
+                'user_info' => 'sometimes|array'
+            ]);
+
+            $accessToken = $request->input('access_token');
+            $provider = $request->input('provider');
+            $userInfo = $request->input('user_info', []);
+
+            Log::info('Mobile OAuth callback received', [
+                'provider' => $provider,
+                'has_access_token' => !empty($accessToken),
+                'user_info_keys' => array_keys($userInfo)
+            ]);
+
+            // Get user info from Google API using access token
+            $googleUser = $this->getUserFromGoogle($accessToken);
+
+            if (!$googleUser) {
+                return response()->json([
+                    'error' => 'Failed to get user information from Google'
+                ], 400);
+            }
+
+            // Find or create user
+            $user = $this->findOrCreateUser($googleUser, $provider);
+
+            // Log the user in
+            Auth::login($user, true);
+
+            Log::info('Mobile OAuth login successful', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'provider' => $provider
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email
+                ],
+                'redirect_url' => route('dashboard')
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Mobile OAuth callback error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'OAuth authentication failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Exchange authorization code for tokens (deep link fallback)
+     */
+    public function exchangeCodeForTokens(Request $request)
+    {
+        try {
+            $request->validate([
+                'code' => 'required|string',
+                'redirect_uri' => 'required|string',
+                'state' => 'sometimes|string'
+            ]);
+
+            $code = $request->input('code');
+            $redirectUri = $request->input('redirect_uri');
+
+            Log::info('Token exchange requested', [
+                'code_length' => strlen($code),
+                'redirect_uri' => $redirectUri
+            ]);
+
+            // Use Laravel Socialite to exchange code for tokens
+            $socialiteUser = Socialite::driver('google')
+                ->redirectUrl($redirectUri)
+                ->user();
+
+            if (!$socialiteUser) {
+                return response()->json([
+                    'error' => 'Failed to exchange code for tokens'
+                ], 400);
+            }
+
+            // Find or create user
+            $user = $this->findOrCreateUser($socialiteUser, 'google');
+
+            // Log the user in
+            Auth::login($user, true);
+
+            Log::info('Token exchange login successful', [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email
+                ],
+                'redirect_url' => route('dashboard')
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Token exchange error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Token exchange failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get user information from Google API using access token
+     */
+    private function getUserFromGoogle($accessToken)
+    {
+        try {
+            $response = Http::get('https://www.googleapis.com/oauth2/v2/userinfo', [
+                'access_token' => $accessToken
+            ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error('Failed to get user from Google API', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Google API request error', [
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Find or create user from OAuth provider data
+     */
+    private function findOrCreateUser($providerUser, $provider)
+    {
+        // Extract user data based on provider
+        if ($provider === 'google') {
+            $email = $providerUser['email'] ?? $providerUser->getEmail();
+            $name = $providerUser['name'] ?? $providerUser->getName();
+            $providerId = $providerUser['id'] ?? $providerUser->getId();
+            $avatar = $providerUser['picture'] ?? $providerUser->getAvatar();
+        } else {
+            throw new \Exception('Unsupported OAuth provider: ' . $provider);
+        }
+
+        // Find user by email
+        $user = User::where('email', $email)->first();
+
+        if ($user) {
+            // Update user info if needed
+            $user->update([
+                'name' => $name,
+                'avatar' => $avatar,
+                'google_id' => $providerId,
+                'email_verified_at' => now()
+            ]);
+
+            Log::info('Existing user updated', [
+                'user_id' => $user->id,
+                'email' => $email
+            ]);
+        } else {
+            // Create new user
+            $user = User::create([
+                'name' => $name,
+                'email' => $email,
+                'google_id' => $providerId,
+                'avatar' => $avatar,
+                'email_verified_at' => now(),
+                'password' => bcrypt(str()->random(32)) // Random password for OAuth users
+            ]);
+
+            Log::info('New user created', [
+                'user_id' => $user->id,
+                'email' => $email
+            ]);
+        }
+
+        return $user;
+    }
+}

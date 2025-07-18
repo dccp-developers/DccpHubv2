@@ -5,6 +5,7 @@ import HeroSection from "@/Components/LandingPage/HeroSection.vue";
 import FeaturesSection from "@/Components/LandingPage/FeaturesSection.vue";
 import PricingSection from "@/Components/LandingPage/PricingSection.vue";
 import CtaSection from "@/Components/LandingPage/CtaSection.vue";
+import APKDownload from "@/Components/PWA/APKDownload.vue";
 import { router } from "@inertiajs/vue3";
 import { onMounted } from "vue";
 import { route } from "ziggy-js";
@@ -33,9 +34,14 @@ const isMobileDevice = () => {
   );
 };
 
-// Redirect to login if on mobile
+// Check if app is running in standalone mode (installed PWA) and redirect to login
 onMounted(() => {
-  if (isMobileDevice()) {
+  // Check if running in standalone mode (installed PWA)
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                      window.navigator.standalone === true;
+
+  if (isStandalone) {
+    // If running as installed PWA, redirect to login
     router.visit(route("login"));
   }
 });
@@ -146,6 +152,23 @@ const githubUrl = "https://github.com/dccp-developers/DccpHubv2";
   <WebLayout :can-login="canLogin" :can-register="canRegister">
     <HeroSection :github-url="githubUrl" />
     <FeaturesSection :features="features" :github-url="githubUrl" />
+
+    <!-- APK Download Section -->
+    <section class="py-16 bg-muted/30">
+      <div class="container mx-auto px-4 sm:px-6">
+        <div class="max-w-4xl mx-auto">
+          <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">Get the Mobile App</h2>
+            <p class="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Download DCCPHub as a native Android app for the best mobile experience.
+              Access your courses, grades, and campus resources on the go.
+            </p>
+          </div>
+          <APKDownload />
+        </div>
+      </div>
+    </section>
+
     <!-- <PricingSection
       :pricing-features="pricingFeatures"
       :sponsor-links="sponsorLinks"

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DCCPHub</string>
+    <string name="title_activity_main">DCCPHub</string>
+    <string name="package_name">ph.edu.dccp.hub</string>
+    <string name="custom_url_scheme">ph.edu.dccp.hub</string>
+</resources>

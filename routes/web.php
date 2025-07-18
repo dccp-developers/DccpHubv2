@@ -19,8 +19,51 @@ use App\Http\Controllers\PendingEnrollmentController;
 use App\Http\Controllers\EnrollmentAuthController; // Added
 use App\Http\Controllers\GuestDashboardController;
 use App\Http\Controllers\Student\EnrollmentController;
+use App\Http\Controllers\APKController;
+use App\Http\Controllers\SocialAuthController;
+use App\Http\Middleware\DetectMobileApp;
 
-Route::get('/', [WelcomeController::class, 'home'])->name('home');
+// Redirect root to login for mobile app, or welcome for web
+Route::get('/', function () {
+    // Check if this is a mobile app request using our middleware
+    $isMobileApp = DetectMobileApp::isMobileApp(request());
+
+    // If user is already authenticated, go to dashboard
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    // If mobile app, go directly to login
+    if ($isMobileApp) {
+        return redirect()->route('login');
+    }
+
+    // Otherwise, show welcome page for web browsers
+    return app(WelcomeController::class)->home();
+})->name('home');
+
+// Welcome/Landing page route (for web users who want to see it)
+Route::get('/welcome', [WelcomeController::class, 'home'])->name('welcome');
+
+// APK Generation and Download Routes
+Route::prefix('apk')->group(function () {
+    Route::get('/', [APKController::class, 'downloadPage'])->name('apk.page');
+    Route::post('/generate', [APKController::class, 'generateAPK'])->name('apk.generate');
+    Route::get('/download/{filename}', [APKController::class, 'downloadAPK'])->name('apk.download');
+    Route::get('/status', [APKController::class, 'getAPKStatus'])->name('apk.status');
+});
+
+// Direct APK download route for latest version
+Route::get('/storage/apk/DCCPHub_latest.apk', [APKController::class, 'downloadLatestAPK'])->name('apk.latest');
+
+// Mobile OAuth routes for Capacitor Social Login
+Route::prefix('auth')->group(function () {
+    Route::post('/google/callback/mobile', [SocialAuthController::class, 'handleMobileCallback'])->name('auth.mobile.callback');
+    Route::post('/google/exchange', [SocialAuthController::class, 'exchangeCodeForTokens'])->name('auth.mobile.exchange');
+    Route::get('/mobile/test', function() {
+        return response()->json(['status' => 'Mobile OAuth routes working', 'timestamp' => now()]);
+    })->name('auth.mobile.test');
+});
 
 // Test Notifications
 Route::get('/test-toast-success', function() {
