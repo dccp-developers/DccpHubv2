@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
-use App\Models\User;
+use App\Services\SocialAuthService;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
@@ -42,8 +42,9 @@ class SocialAuthController extends Controller
                 ], 400);
             }
 
-            // Find or create user
-            $user = $this->findOrCreateUser($googleUser, $provider);
+            // Find or create user using the enhanced service
+            $socialAuthService = new SocialAuthService();
+            $user = $socialAuthService->findOrCreateUser($googleUser, $provider);
 
             // Log the user in
             Auth::login($user, true);
@@ -64,6 +65,16 @@ class SocialAuthController extends Controller
                 'redirect_url' => route('dashboard')
             ]);
 
+        } catch (\InvalidArgumentException $e) {
+            // Handle validation errors (email not found in records)
+            Log::warning('Mobile OAuth validation error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'error' => 'Validation Error',
+                'message' => $e->getMessage()
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Mobile OAuth callback error', [
                 'error' => $e->getMessage(),
@@ -108,8 +119,9 @@ class SocialAuthController extends Controller
                 ], 400);
             }
 
-            // Find or create user
-            $user = $this->findOrCreateUser($socialiteUser, 'google');
+            // Find or create user using the enhanced service
+            $socialAuthService = new SocialAuthService();
+            $user = $socialAuthService->findOrCreateUser($socialiteUser, 'google');
 
             // Log the user in
             Auth::login($user, true);
@@ -129,6 +141,16 @@ class SocialAuthController extends Controller
                 'redirect_url' => route('dashboard')
             ]);
 
+        } catch (\InvalidArgumentException $e) {
+            // Handle validation errors (email not found in records)
+            Log::warning('Token exchange validation error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'error' => 'Validation Error',
+                'message' => $e->getMessage()
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Token exchange error', [
                 'error' => $e->getMessage(),
@@ -170,54 +192,5 @@ class SocialAuthController extends Controller
         }
     }
 
-    /**
-     * Find or create user from OAuth provider data
-     */
-    private function findOrCreateUser($providerUser, $provider)
-    {
-        // Extract user data based on provider
-        if ($provider === 'google') {
-            $email = $providerUser['email'] ?? $providerUser->getEmail();
-            $name = $providerUser['name'] ?? $providerUser->getName();
-            $providerId = $providerUser['id'] ?? $providerUser->getId();
-            $avatar = $providerUser['picture'] ?? $providerUser->getAvatar();
-        } else {
-            throw new \Exception('Unsupported OAuth provider: ' . $provider);
-        }
 
-        // Find user by email
-        $user = User::where('email', $email)->first();
-
-        if ($user) {
-            // Update user info if needed
-            $user->update([
-                'name' => $name,
-                'avatar' => $avatar,
-                'google_id' => $providerId,
-                'email_verified_at' => now()
-            ]);
-
-            Log::info('Existing user updated', [
-                'user_id' => $user->id,
-                'email' => $email
-            ]);
-        } else {
-            // Create new user
-            $user = User::create([
-                'name' => $name,
-                'email' => $email,
-                'google_id' => $providerId,
-                'avatar' => $avatar,
-                'email_verified_at' => now(),
-                'password' => bcrypt(str()->random(32)) // Random password for OAuth users
-            ]);
-
-            Log::info('New user created', [
-                'user_id' => $user->id,
-                'email' => $email
-            ]);
-        }
-
-        return $user;
-    }
 }

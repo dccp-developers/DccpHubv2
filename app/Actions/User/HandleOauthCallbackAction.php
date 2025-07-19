@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use App\Actions\Fortify\CreateNewUser;
+use App\Services\SocialAuthService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -94,15 +95,9 @@ final readonly class HandleOauthCallbackAction
 
     private function createNewUser(SocialiteUser $socialiteUser, string $provider): User
     {
-        $user = (new CreateNewUser())->create([
-            'name' => (string) $socialiteUser->getName(),
-            'email' => (string) $socialiteUser->getEmail(),
-            'terms' => (string) true,
-        ]);
-
-        $this->updateUserProfile($user, $socialiteUser, $provider);
-
-        return $user;
+        // Use the enhanced social auth service for proper role detection
+        $socialAuthService = new SocialAuthService();
+        return $socialAuthService->findOrCreateUser($socialiteUser, $provider);
     }
 
     private function updateUserProfile(User $user, SocialiteUser $socialiteUser, string $provider): void

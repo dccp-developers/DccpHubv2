@@ -52,6 +52,9 @@ final class OauthController extends Controller
             $user = $this->handleOauthCallbackAction->handle($provider, $socialiteUser, $authenticatedUser);
         } catch (InvalidStateException) {
             return Redirect::intended(Auth::check() ? route('profile.show') : route('login'))->with('error', __('The request timed out. Please try again.'));
+        } catch (\InvalidArgumentException $invalidArgumentException) {
+            // Handle validation errors (email not found in records)
+            return Redirect::intended(Auth::check() ? route('profile.show') : route('login'))->with('error', $invalidArgumentException->getMessage());
         } catch (OAuthAccountLinkingException $oauthAccountLinkingException) {
             return Redirect::intended(Auth::check() ? route('profile.show') : route('login'))->with('error', $oauthAccountLinkingException->getMessage());
         } catch (Throwable $throwable) {

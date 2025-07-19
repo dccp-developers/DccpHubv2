@@ -25,7 +25,7 @@
       <Card class="sm:hidden">
         <CardContent class="p-4">
           <div class="text-center">
-            <p class="text-sm font-medium text-foreground">{{ currentSemester }} Semester {{ schoolYear }}</p>
+            <p class="text-sm font-medium text-foreground">{{ props.currentSemester }} Semester {{ props.schoolYear }}</p>
             <div class="flex items-center justify-center mt-2 space-x-4">
               <Badge variant="success" class="text-xs">
                 <div class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
@@ -407,53 +407,20 @@ const props = defineProps({
   classes: Array,
   todaysSchedule: Array,
   recentActivities: Array,
-  user: Object,
-  semester: Number,
+  upcomingDeadlines: Array,
+  performanceMetrics: Object,
+  currentSemester: String,
   schoolYear: String,
-  generalSettings: Object
+  error: String
 })
 
 // Computed properties
-const currentSemester = computed(() => {
-  const semesterNames = {
-    1: '1st',
-    2: '2nd',
-    3: 'Summer'
-  }
-  return semesterNames[props.semester] || '1st'
-})
-
-// Enhanced sample data with colors and trends
-const sampleStats = ref([
-  {
-    label: 'Total Classes',
-    value: 6,
-    description: 'Classes you are teaching this semester',
-    color: 'blue',
-    trend: '+1 from last semester'
-  },
-  {
-    label: 'Total Students',
-    value: 180,
-    description: 'Students enrolled in your classes',
-    color: 'green',
-    trend: '+12% from last semester'
-  },
-  {
-    label: 'Weekly Schedules',
-    value: 18,
-    description: 'Your weekly class schedules',
-    color: 'purple',
-    trend: 'Same as last semester'
-  },
-  {
-    label: 'Avg. Class Size',
-    value: 30,
-    description: 'Average students per class',
-    color: 'amber',
-    trend: '+2 students from last semester'
-  }
-])
+const stats = computed(() => props.stats || [])
+const classes = computed(() => props.classes || [])
+const todaysSchedule = computed(() => props.todaysSchedule || [])
+const recentActivities = computed(() => props.recentActivities || [])
+const upcomingDeadlines = computed(() => props.upcomingDeadlines || [])
+const performanceMetrics = computed(() => props.performanceMetrics || {})
 
 const sampleTodaysSchedule = ref([
   {
@@ -488,108 +455,12 @@ const sampleTodaysSchedule = ref([
   }
 ])
 
-const sampleClasses = ref([
-  {
-    id: 1,
-    subject_code: 'CS101',
-    subject_title: 'Introduction to Computer Science',
-    section: 'A',
-    room: '201',
-    student_count: 35,
-    color: 'blue-500'
-  },
-  {
-    id: 2,
-    subject_code: 'CS102',
-    subject_title: 'Data Structures and Algorithms',
-    section: 'A',
-    room: '301',
-    student_count: 28,
-    color: 'purple-500'
-  },
-  {
-    id: 3,
-    subject_code: 'MATH201',
-    subject_title: 'Calculus II',
-    section: 'B',
-    room: '105',
-    student_count: 42,
-    color: 'green-500'
-  },
-  {
-    id: 4,
-    subject_code: 'CS201',
-    subject_title: 'Database Systems',
-    section: 'C',
-    room: '205',
-    student_count: 25,
-    color: 'amber-500'
-  }
-])
+// Error handling
+const hasError = computed(() => !!props.error)
 
-const sampleActivities = ref([
-  {
-    id: 1,
-    type: 'grade_submitted',
-    description: 'Grades submitted for CS101 Midterm Exam',
-    timestamp: '2 hours ago'
-  },
-  {
-    id: 2,
-    type: 'attendance_recorded',
-    description: 'Attendance recorded for MATH201 Section B',
-    timestamp: '5 hours ago'
-  },
-  {
-    id: 3,
-    type: 'assignment_created',
-    description: 'New assignment created for CS102 - Data Structures',
-    timestamp: '1 day ago'
-  },
-  {
-    id: 4,
-    type: 'schedule_updated',
-    description: 'Schedule updated for next week',
-    timestamp: '2 days ago'
-  },
-  {
-    id: 5,
-    type: 'student_message',
-    description: 'New message from student about CS301 project',
-    timestamp: '3 hours ago'
-  }
-])
+// All data now comes from props via the service layer
 
-// Upcoming deadlines
-const upcomingDeadlines = ref([
-  {
-    id: 1,
-    title: 'Midterm Grades Due',
-    class: 'CS101 - Section A',
-    daysLeft: 3,
-    urgent: true
-  },
-  {
-    id: 2,
-    title: 'Assignment Review',
-    class: 'MATH201 - Section B',
-    daysLeft: 7,
-    urgent: false
-  },
-  {
-    id: 3,
-    title: 'Final Project Submission',
-    class: 'CS301 - Section A',
-    daysLeft: 14,
-    urgent: false
-  }
-])
-
-// Use sample data if props are empty
-const stats = computed(() => props.stats?.length ? props.stats : sampleStats.value)
-const todaysSchedule = computed(() => props.todaysSchedule?.length ? props.todaysSchedule : sampleTodaysSchedule.value)
-const classes = computed(() => props.classes?.length ? props.classes : sampleClasses.value)
-const recentActivities = computed(() => props.recentActivities?.length ? props.recentActivities : sampleActivities.value)
+// Remove this section - we already have computed properties defined above
 
 // Enhanced quick actions with descriptions
 const quickActions = ref([
