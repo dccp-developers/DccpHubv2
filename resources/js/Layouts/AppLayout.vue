@@ -111,6 +111,7 @@ const route = inject("route");
 const mode = useColorMode({
     attribute: "class",
     modes: { light: "", dark: "dark" },
+    initialValue: "light",
 });
 const isDarkMode = computed(() => mode.value === "dark");
 const isMobileMenuOpen = ref(false);

@@ -17,9 +17,10 @@ defineProps({
 const mode = useColorMode({
   attribute: "class",
   modes: {
-    light: "", 
+    light: "",
     dark: "dark",
   },
+  initialValue: "light",
 });
 
 // Updated nav links for the redesigned header

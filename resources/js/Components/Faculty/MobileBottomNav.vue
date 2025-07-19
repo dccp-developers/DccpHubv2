@@ -1,0 +1,72 @@
+<template>
+  <div class="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border md:hidden">
+    <div class="grid grid-cols-5 h-16">
+      <Link
+        v-for="item in navigationItems"
+        :key="item.name"
+        :href="item.href"
+        :class="[
+          'flex flex-col items-center justify-center space-y-1 text-xs transition-colors',
+          item.current
+            ? 'text-primary bg-primary/10'
+            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+        ]"
+      >
+        <component :is="item.icon" class="h-5 w-5" />
+        <span class="text-[10px] font-medium">{{ item.name }}</span>
+        <div
+          v-if="item.badge"
+          class="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-[8px] font-bold"
+        >
+          {{ item.badge }}
+        </div>
+      </Link>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { Link } from '@inertiajs/vue3'
+import {
+  HomeIcon,
+  AcademicCapIcon,
+  UsersIcon,
+  CalendarIcon,
+  ChartBarIcon
+} from '@heroicons/vue/24/outline'
+
+const navigationItems = [
+  {
+    name: 'Dashboard',
+    href: route('faculty.dashboard'),
+    icon: HomeIcon,
+    current: route().current('faculty.dashboard')
+  },
+  {
+    name: 'Classes',
+    href: '#',
+    icon: AcademicCapIcon,
+    current: false,
+    badge: 6
+  },
+  {
+    name: 'Students',
+    href: '#',
+    icon: UsersIcon,
+    current: false,
+    badge: 3
+  },
+  {
+    name: 'Schedule',
+    href: '#',
+    icon: CalendarIcon,
+    current: false
+  },
+  {
+    name: 'Grades',
+    href: '#',
+    icon: ChartBarIcon,
+    current: false
+  }
+]
+</script>

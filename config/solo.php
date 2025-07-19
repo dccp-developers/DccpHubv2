@@ -22,7 +22,7 @@ return [
     | Themes
     |--------------------------------------------------------------------------
     */
-    'theme' => env('SOLO_THEME', 'dark'),
+    'theme' => env('SOLO_THEME', 'light'),
 
     'themes' => [
         'light' => Themes\LightTheme::class,

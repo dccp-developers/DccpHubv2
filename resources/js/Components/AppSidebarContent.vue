@@ -22,6 +22,7 @@ const route = inject("route");
 const mode = useColorMode({
   attribute: "class",
   modes: { light: "", dark: "dark" },
+  initialValue: "light",
 });
 
 const appName = "DccpHub";

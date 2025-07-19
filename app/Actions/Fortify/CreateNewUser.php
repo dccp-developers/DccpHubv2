@@ -90,4 +90,42 @@ final class CreateNewUser implements CreatesNewUsers
 
         return null;
     }
+
+    /**
+     * Determine the person type based on email for authentication.
+     */
+    public static function determinePersonTypeByEmail(string $email): ?array
+    {
+        // Check Students table first
+        $student = Students::query()->where('email', $email)->first();
+        if ($student) {
+            return [
+                'type' => Students::class,
+                'person' => $student,
+                'role' => 'student'
+            ];
+        }
+
+        // Check Faculty table
+        $faculty = Faculty::query()->where('email', $email)->first();
+        if ($faculty) {
+            return [
+                'type' => Faculty::class,
+                'person' => $faculty,
+                'role' => 'faculty'
+            ];
+        }
+
+        // Check ShsStudents table
+        $shsStudent = ShsStudents::query()->where('email', $email)->first();
+        if ($shsStudent) {
+            return [
+                'type' => ShsStudents::class,
+                'person' => $shsStudent,
+                'role' => 'student'
+            ];
+        }
+
+        return null;
+    }
 }

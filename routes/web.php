@@ -19,6 +19,7 @@ use App\Http\Controllers\PendingEnrollmentController;
 use App\Http\Controllers\EnrollmentAuthController; // Added
 use App\Http\Controllers\GuestDashboardController;
 use App\Http\Controllers\Student\EnrollmentController;
+use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\APKController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Middleware\DetectMobileApp;
@@ -112,6 +113,7 @@ Route::prefix('auth')->group(
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/faculty/dashboard', FacultyDashboardController::class)->name('faculty.dashboard');
     Route::get('/enrolee', GuestDashboardController::class)->name('enrolee.dashboard');
     Route::delete('/auth/destroy/{provider}', [OauthController::class, 'destroy'])->name('oauth.destroy');
 

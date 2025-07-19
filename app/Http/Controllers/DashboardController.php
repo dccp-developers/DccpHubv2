@@ -31,8 +31,13 @@ final class DashboardController extends Controller
             return redirect()->route('enrolee.dashboard');
         }
 
+        // Redirect faculty users to the faculty dashboard
+        if ($user->isFaculty()) {
+            return redirect()->route('faculty.dashboard');
+        }
+
         // Ensure the user is a student
-        if (! $user->student) {
+        if (!$user->isStudent()) {
             abort(403, 'Only students can access the dashboard.');
         }
 

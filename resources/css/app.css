@@ -87,4 +87,13 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    /* Ensure light mode is the default */
+    html {
+        color-scheme: light;
+    }
+
+    html.dark {
+        color-scheme: dark;
+    }
 }

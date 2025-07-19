@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Laravel\Fortify\Fortify;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\DualAuthenticationAction;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use App\Actions\Fortify\ResetUserPassword;
@@ -38,6 +39,9 @@ final class FortifyServiceProvider extends ServiceProvider
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
+        // Configure custom authentication
+        Fortify::authenticateUsing(new DualAuthenticationAction());
+
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower((string) $request->string(Fortify::username())).'|'.$request->ip());
 
@@ -47,6 +51,7 @@ final class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by($request->session()->get('login.id')));
 
         $this->configureLoginView();
+        $this->configureRedirects();
     }
 
     private function configureLoginView(): void
@@ -56,5 +61,14 @@ final class FortifyServiceProvider extends ServiceProvider
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
         ]));
+    }
+
+    private function configureRedirects(): void
+    {
+        // Configure login redirect based on user role
+        Fortify::redirects('login', function ($request) {
+            $user = $request->user();
+            return DualAuthenticationAction::getRedirectUrl($user);
+        });
     }
 }

@@ -113,6 +113,7 @@ final class User extends Authenticatable implements FilamentUser
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'phone',
         'password',
@@ -200,19 +201,30 @@ final class User extends Authenticatable implements FilamentUser
         return $this->morphTo();
     }
 
+    /**
+     * Get the student record if this user is a student.
+     */
     public function student()
     {
-        return $this->belongsTo(Students::class, 'person_id');
+        return $this->belongsTo(Students::class, 'person_id', 'id');
     }
 
+    /**
+     * Get the faculty record if this user is a faculty.
+     */
     public function faculty()
     {
-        return $this->belongsTo(Faculty::class, 'person_id');
+        // Since Faculty uses UUID and accounts.person_id is bigint,
+        // we'll match by email instead
+        return $this->hasOne(Faculty::class, 'email', 'email');
     }
 
+    /**
+     * Get the SHS student record if this user is an SHS student.
+     */
     public function shsStudent()
     {
-        return $this->belongsTo(ShsStudents::class, 'person_id');
+        return $this->belongsTo(ShsStudents::class, 'person_id', 'student_lrn');
     }
 
     public function getIsStudentAttribute()
@@ -223,6 +235,43 @@ final class User extends Authenticatable implements FilamentUser
     public function getIsFacultyAttribute()
     {
         return $this->hasOne(Faculty::class, 'person_id');
+    }
+
+    /**
+     * Check if the user is a student.
+     */
+    public function isStudent(): bool
+    {
+        return $this->role === 'student' &&
+               ($this->person_type === Students::class || $this->person_type === ShsStudents::class);
+    }
+
+    /**
+     * Check if the user is a faculty member.
+     */
+    public function isFaculty(): bool
+    {
+        return $this->role === 'faculty' && $this->faculty()->exists();
+    }
+
+    /**
+     * Get the person record (polymorphic relationship).
+     */
+    public function getPerson()
+    {
+        if ($this->person_type === Students::class) {
+            return $this->student;
+        }
+
+        if ($this->person_type === Faculty::class) {
+            return $this->faculty;
+        }
+
+        if ($this->person_type === ShsStudents::class) {
+            return $this->shsStudent;
+        }
+
+        return null;
     }
 
     protected static function booted(): void
