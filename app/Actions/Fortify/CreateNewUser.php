@@ -81,8 +81,8 @@ final class CreateNewUser implements CreatesNewUsers
      */
     private function getPersonData(string $inputId): ?array
     {
-        // Check Faculty by faculty_code first, then by UUID
-        $faculty = Faculty::query()->where('faculty_code', $inputId)->first();
+        // Check Faculty by faculty_id_number first, then by UUID
+        $faculty = Faculty::query()->where('faculty_id_number', $inputId)->first();
         if (!$faculty) {
             $faculty = Faculty::query()->where('id', $inputId)->first();
         }

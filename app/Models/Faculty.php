@@ -60,7 +60,7 @@ final class Faculty extends Authenticatable implements FilamentUser, HasAvatar
 
     protected $fillable = [
         'id',
-        'faculty_code',
+        'faculty_id_number',
         'first_name',
         'last_name',
         'middle_name',

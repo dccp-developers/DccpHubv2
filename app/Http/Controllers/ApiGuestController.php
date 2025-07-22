@@ -86,10 +86,10 @@ final class ApiGuestController extends Controller
         }
 
         if ($userType === 'instructor') {
-            // First try to find by faculty_code (new system)
-            $faculty = Faculty::query()->where('faculty_code', $id)->first();
+            // First try to find by faculty_id_number (new system)
+            $faculty = Faculty::query()->where('faculty_id_number', $id)->first();
 
-            // If not found by faculty_code, try by UUID (legacy system)
+            // If not found by faculty_id_number, try by UUID (legacy system)
             if (!$faculty) {
                 $faculty = Faculty::query()->where('id', $id)->first();
             }

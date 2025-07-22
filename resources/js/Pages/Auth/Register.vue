@@ -71,7 +71,7 @@ const stepInfo = [
     },
     {
         title: "ID Verification",
-        description: "Enter your faculty code or student ID",
+        description: "Enter your faculty ID number or student ID",
         icon: UserCircle
     },
     {
@@ -272,11 +272,11 @@ const togglePasswordConfirmationVisibility = () => {
             <div v-if="step === 3" class="flex flex-col space-y-4">
                 <div class="space-y-2">
                     <Label for="id" class="text-base">
-                        {{ userType === 'instructor' ? 'Faculty Code' : 'Student ID' }}
+                        {{ userType === 'instructor' ? 'Faculty ID Number' : 'Student ID' }}
                     </Label>
                     <p class="text-sm text-muted-foreground">
                         {{ userType === 'instructor'
-                            ? 'Enter your faculty code (e.g., FAC001) to verify your affiliation'
+                            ? 'Enter your 8-digit faculty ID number to verify your affiliation'
                             : 'Enter your student ID to verify your affiliation'
                         }}
                     </p>
@@ -288,7 +288,7 @@ const togglePasswordConfirmationVisibility = () => {
                         type="text"
                         required
                         v-model="idForm.id"
-                        :placeholder="userType === 'instructor' ? 'Enter your faculty code (e.g., FAC001)' : 'Enter your student ID'"
+                        :placeholder="userType === 'instructor' ? 'Enter your 8-digit faculty ID (e.g., 10000001)' : 'Enter your student ID'"
                         class="pl-10"
                     />
                 </div>
@@ -303,8 +303,8 @@ const togglePasswordConfirmationVisibility = () => {
                             </svg>
                         </div>
                         <div class="text-sm text-blue-800">
-                            <p class="font-medium">Faculty Code Format</p>
-                            <p>Your faculty code follows the format FAC### (e.g., FAC001, FAC002). If you don't know your faculty code, please contact the administration office.</p>
+                            <p class="font-medium">Faculty ID Number Format</p>
+                            <p>Your faculty ID is an 8-digit number (e.g., 10000001, 10000002). If you don't know your faculty ID number, please contact the administration office.</p>
                         </div>
                     </div>
                 </div>

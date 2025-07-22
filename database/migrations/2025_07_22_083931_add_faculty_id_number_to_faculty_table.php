@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('faculty', function (Blueprint $table) {
-            $table->string('faculty_id_number', 20)->nullable()->unique()->after('id');
+            $table->string('faculty_id_number', 20)->nullable()->unique()->after('faculty_code');
         });
 
         // Populate existing faculty records with numeric IDs
