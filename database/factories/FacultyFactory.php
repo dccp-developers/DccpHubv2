@@ -21,6 +21,7 @@ final class FacultyFactory extends Factory
     {
         return [
             'id' => $this->faker->unique()->regexify('FAC[0-9]{3}'),
+            'faculty_code' => $this->faker->unique()->regexify('FAC[0-9]{3}'),
             'first_name' => $this->faker->firstName(),
             'last_name' => $this->faker->lastName(),
             'middle_name' => $this->faker->firstName(),

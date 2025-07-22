@@ -214,8 +214,7 @@ final class User extends Authenticatable implements FilamentUser
      */
     public function faculty()
     {
-        // Since Faculty uses UUID and accounts.person_id is bigint,
-        // we'll match by email instead
+        // Match by email for simplicity and reliability
         return $this->hasOne(Faculty::class, 'email', 'email');
     }
 

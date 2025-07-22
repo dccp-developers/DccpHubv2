@@ -86,16 +86,30 @@ final class ApiGuestController extends Controller
         }
 
         if ($userType === 'instructor') {
-            $faculty = Faculty::query()->where('id', $id)->first();
+            // First try to find by faculty_code (new system)
+            $faculty = Faculty::query()->where('faculty_code', $id)->first();
+
+            // If not found by faculty_code, try by UUID (legacy system)
+            if (!$faculty) {
+                $faculty = Faculty::query()->where('id', $id)->first();
+            }
+
             if ($faculty) {
+                // Verify email matches if provided
+                if ($faculty->email !== $email) {
+                    return response()->json([
+                        'error' => 'The provided email does not match the faculty ID. Please use the email associated with your faculty account.',
+                    ]);
+                }
+
                 return response()->json([
-                    'success' => 'ID is valid.',
-                    'fullName' => $faculty->getFacultyFullNameAttribute(),
+                    'success' => 'ID and email match.',
+                    'fullName' => $faculty->getFullNameAttribute(),
                 ]);
             }
 
             return response()->json([
-                'error' => 'ID not found in Faculty records.',
+                'error' => 'Faculty ID not found in records.',
             ]);
 
         }

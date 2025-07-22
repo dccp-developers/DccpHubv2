@@ -32,11 +32,16 @@ final class CreateNewUser implements CreatesNewUsers
             'phone' => ['nullable', 'string', 'max:20'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'string'],
-            'id' => ['required', 'integer'],
+            'id' => ['required', 'string'],
             // 'person_type' => ['required', 'string'],
         ])->validate();
-        // Determine person type
-        $personType = $this->determinePersonType($input['id']);
+
+        // Determine person type and get actual person ID
+        $personData = $this->getPersonData($input['id']);
+
+        if (!$personData) {
+            throw new \Exception('Person not found with the provided ID.');
+        }
 
         return DB::transaction(fn () => tap(User::query()->create([
             'name' => $input['name'],
@@ -44,10 +49,10 @@ final class CreateNewUser implements CreatesNewUsers
             'username' => $input['name'],
             'phone' => $input['phone'],
             'password' => Hash::make($input['password']),
-            'role' => $personType === Faculty::class ? 'faculty' : 'student',
+            'role' => $personData['type'] === Faculty::class ? 'faculty' : 'student',
             'is_active' => true,
-            'person_id' => $input['id'],
-            'person_type' => $personType,
+            'person_id' => $personData['person_id'],
+            'person_type' => $personData['type'],
         ]), function (User $user): void {
             // $this->createTeam($user);
             $this->createCustomer($user);
@@ -72,23 +77,55 @@ final class CreateNewUser implements CreatesNewUsers
     }
 
     /**
+     * Get person data including type and actual person ID.
+     */
+    private function getPersonData(string $inputId): ?array
+    {
+        // Check Faculty by faculty_code first, then by UUID
+        $faculty = Faculty::query()->where('faculty_code', $inputId)->first();
+        if (!$faculty) {
+            $faculty = Faculty::query()->where('id', $inputId)->first();
+        }
+        if ($faculty) {
+            return [
+                'type' => Faculty::class,
+                'person_id' => $faculty->id, // Store the actual UUID
+                'person' => $faculty
+            ];
+        }
+
+        // Check Students table (only if inputId is numeric to avoid bigint errors)
+        if (is_numeric($inputId)) {
+            $student = Students::query()->where('id', $inputId)->first();
+            if ($student) {
+                return [
+                    'type' => Students::class,
+                    'person_id' => $student->id,
+                    'person' => $student
+                ];
+            }
+        }
+
+        // Check SHS Students
+        $shsStudent = ShsStudents::query()->where('student_lrn', $inputId)->first();
+        if ($shsStudent) {
+            return [
+                'type' => ShsStudents::class,
+                'person_id' => $shsStudent->student_lrn,
+                'person' => $shsStudent
+            ];
+        }
+
+        return null;
+    }
+
+    /**
      * Determine the person type based on the ID.
      */
     private function determinePersonType(string $studentId): ?string
     {
-        if (Students::query()->where('id', $studentId)->exists()) {
-            return Students::class;
-        }
-
-        if (Faculty::query()->where('id', $studentId)->exists()) {
-            return Faculty::class;
-        }
-
-        if (ShsStudents::query()->where('student_lrn', $studentId)->exists()) {
-            return ShsStudents::class;
-        }
-
-        return null;
+        $personData = $this->getPersonData($studentId);
+        return $personData ? $personData['type'] : null;
     }
 
     /**

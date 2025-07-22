@@ -2,74 +2,139 @@
 
 declare(strict_types=1);
 
+/**
+ * Created by Reliese Model.
+ */
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
+use Filament\Panel;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-/* CREATE  TABLE `laravel-v1`.faculty (
-    id                   INT    NOT NULL   PRIMARY KEY,
-    first_name           VARCHAR(255)    NOT NULL   ,
-    last_name            VARCHAR(255)    NOT NULL   ,
-    middle_name          VARCHAR(255)       ,
-    email                VARCHAR(255)    NOT NULL   ,
-    phone_number         VARCHAR(20)       ,
-    department           VARCHAR(11)       ,
-    office_hours         VARCHAR(255)       ,
-    birth_date           DATE       ,
-    address_line1        VARCHAR(255)       ,
-    biography            TEXT       ,
-    education            TEXT       ,
-    courses_taught       TEXT       ,
-    photo_url            VARCHAR(255)       ,
-    `status`             ENUM('active','inactive','on_leave','retired')       ,
-    created_at           TIMESTAMP  DEFAULT (CURRENT_TIMESTAMP)     ,
-    updated_at           TIMESTAMP  DEFAULT (CURRENT_TIMESTAMP) ON UPDATE CURRENT_TIMESTAMP    ,
-    gender               ENUM('male','female','other')       ,
-    age                  INT       ,
-    CONSTRAINT email UNIQUE ( email )
- );
-
+/**
+ * Class Faculty
+ *
+ * @property string $id
+ * @property string $first_name
+ * @property string $last_name
+ * @property string|null $middle_name
+ * @property string $email
+ * @property string|null $phone_number
+ * @property string|null $department
+ * @property string|null $office_hours
+ * @property Carbon|null $birth_date
+ * @property string|null $address_line1
+ * @property string|null $biography
+ * @property string|null $education
+ * @property string|null $courses_taught
+ * @property string|null $photo_url
+ * @property USER-DEFINED|null $status
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property USER-DEFINED|null $gender
+ * @property int|null $age
  */
-final class Faculty extends Model
+final class Faculty extends Authenticatable implements FilamentUser, HasAvatar
 {
-    use HasFactory;
+    use HasFactory, HasUuids, Notifiable;
 
     public $incrementing = false;
 
     protected $table = 'faculty';
 
-    // Add keyType and incrementing properties for UUID
-    protected $keyType = 'string';
+    protected $casts = [
+        'id' => 'string',
+        'birth_date' => 'datetime',
+        'status' => 'string',
+        'gender' => 'string',
+        'age' => 'int',
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
     protected $fillable = [
         'id',
-        'first_name', 'last_name', 'middle_name', 'email', 'phone_number', 'department', 'office_hours', 'birth_date', 'address_line1', 'biography', 'education', 'courses_taught', 'photo_url', 'status', 'gender', 'age',
+        'faculty_code',
+        'first_name',
+        'last_name',
+        'middle_name',
+        'email',
+        'password',
+        'phone_number',
+        'department',
+        'office_hours',
+        'birth_date',
+        'address_line1',
+        'biography',
+        'education',
+        'courses_taught',
+        'photo_url',
+        'status',
+        'gender',
+        'age',
     ];
 
-    // Add casts property for UUID
-    protected $casts = [
-        'id' => 'string',
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
-    public function account()
+    protected $primaryKey = 'id';
+
+    protected $keyType = 'string';
+
+    private string $guard = 'faculty';
+
+    // Get full name attribute
+    public function getFullNameAttribute(): string
     {
-        return $this->hasOne(User::class, 'person_id', 'id');
+        $name = mb_trim("{$this->last_name}, {$this->first_name} {$this->middle_name}");
+
+        return $name !== '' && $name !== '0' ? $name : 'N/A';  // Return 'N/A' if the name is empty
     }
 
-    public function getFacultyFullNameAttribute(): string
+    public function getFilamentAvatarUrl(): ?string
     {
-        return $this->first_name.' '.$this->middle_name.' '.$this->last_name;
+        if ($this->photo_url) {
+            return $this->photo_url;
+        }
+
+        // Default to gravatar
+        $hash = md5(mb_strtolower(mb_trim($this->email)));
+
+        return 'https://www.gravatar.com/avatar/'.$hash.'?d=mp&r=g&s=250';
     }
 
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $panel->getId() === 'faculty';
+    }
+
+    // Relationships
     public function classes()
     {
-        return $this->hasMany(Classes::class, 'faculty_id');
+        return $this->hasMany(Classes::class, 'faculty_id', 'id');
     }
 
-    // get the schedule for the faculty
-    public function schedule()
+    public function classEnrollments()
     {
-        return $this->hasMany(Schedule::class, 'faculty_id');
+        return $this->hasManyThrough(
+            ClassEnrollment::class,
+            Classes::class,
+            'faculty_id',
+            'class_id'
+        );
+    }
+
+    // Update or add this method to ensure we always return a string
+    public function getNameAttribute(): string
+    {
+        return $this->getFullNameAttribute();
     }
 }
