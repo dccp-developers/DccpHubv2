@@ -40,7 +40,7 @@ final class FacultyClassService
     {
         $class = $faculty->classes()
             ->where('id', $classId)
-            ->with(['subject', 'ShsSubject', 'ClassStudents.student', 'Schedule'])
+            ->with(['subject', 'ShsSubject', 'ClassStudents.student', 'Schedule.room'])
             ->withCount('ClassStudents')
             ->first();
 
@@ -191,7 +191,7 @@ final class FacultyClassService
                 return [
                     'id' => $enrollment->student->id,
                     'name' => $enrollment->student->first_name . ' ' . $enrollment->student->last_name,
-                    'student_number' => $enrollment->student->student_number,
+                    'student_number' => $enrollment->student->student_id,
                     'email' => $enrollment->student->email,
                     'status' => $enrollment->status,
                 ];

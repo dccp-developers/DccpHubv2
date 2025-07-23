@@ -132,6 +132,7 @@ class StudentEnrollment extends Model
 
     public function getCertificateUrlAttribute(): string
     {
+        
         $resource = $this->resources()->where('type', 'certificate')->latest()->first();
         return $resource ? Storage::disk('public')->url($resource->file_path) : '';
     }

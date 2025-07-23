@@ -156,13 +156,13 @@ final class FacultyClassController extends Controller
     {
         // Get detailed class information
         $classDetails = $this->classService->getClassDetails($faculty, $class->id);
-        
+
         // Get class schedules
         $schedules = $this->scheduleService->getClassSchedules($faculty, $class->id);
-        
+
         // Get class statistics
         $stats = $this->getClassStats($faculty, $class);
-        
+
         // Get class performance metrics
         $performance = $this->classService->getClassPerformance($faculty, $class->id);
 

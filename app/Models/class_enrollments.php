@@ -84,7 +84,7 @@ final class class_enrollments extends Model
             return $this->ShsStudent->grade_level;
         }
 
-        return $this->student->academic_year;
+        return (string) $this->student->academic_year;
 
     }
 

@@ -189,6 +189,16 @@ final class FacultyDashboardService
     }
 
     /**
+     * Get subject title for a class (handles both College and SHS)
+     */
+    private function getClassSubjectTitle($class): string
+    {
+        // Get the appropriate subject based on classification
+        $subject = $class->classification === 'shs' ? $class->ShsSubject : $class->subject;
+        return $subject ? $subject->title : 'Unknown Subject';
+    }
+
+    /**
      * Get class enrollments for faculty
      */
     private function getClassEnrollments(Faculty $faculty): Collection
@@ -198,7 +208,7 @@ final class FacultyDashboardService
                   ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->with(['class.subject', 'student'])
+        ->with(['class.subject', 'class.ShsSubject', 'student.course', 'ShsStudent'])
         ->get()
         ->map(function ($enrollment) {
             return [
@@ -209,7 +219,7 @@ final class FacultyDashboardService
                 'student_year_standing' => $enrollment->student_year_standing,
                 'course_strand' => $enrollment->course_strand,
                 'subject_code' => $enrollment->class->subject_code,
-                'subject_title' => $enrollment->class->formated_title,
+                'subject_title' => $this->getClassSubjectTitle($enrollment->class),
                 'section' => $enrollment->class->section,
                 'prelim_grade' => $enrollment->prelim_grade,
                 'midterm_grade' => $enrollment->midterm_grade,
