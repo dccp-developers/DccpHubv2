@@ -20,6 +20,8 @@ use App\Http\Controllers\EnrollmentAuthController; // Added
 use App\Http\Controllers\GuestDashboardController;
 use App\Http\Controllers\Student\EnrollmentController;
 use App\Http\Controllers\Faculty\FacultyDashboardController;
+use App\Http\Controllers\Faculty\FacultyClassController;
+use App\Http\Controllers\Faculty\FacultySettingsController;
 use App\Http\Controllers\APKController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Middleware\DetectMobileApp;
@@ -116,6 +118,20 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
     Route::get('/faculty/dashboard', FacultyDashboardController::class)->name('faculty.dashboard');
     Route::get('/enrolee', GuestDashboardController::class)->name('enrolee.dashboard');
     Route::delete('/auth/destroy/{provider}', [OauthController::class, 'destroy'])->name('oauth.destroy');
+
+    // Faculty Routes
+    Route::prefix('faculty')->name('faculty.')->group(function () {
+        Route::get('/classes', [FacultyClassController::class, 'index'])->name('classes.index');
+        Route::get('/classes/{class}', [FacultyClassController::class, 'show'])->name('classes.show');
+    });
+
+    // Faculty Settings Routes
+    Route::prefix('faculty/settings')->name('faculty.settings.')->group(function () {
+        Route::get('/', [FacultySettingsController::class, 'index'])->name('index');
+        Route::patch('/semester', [FacultySettingsController::class, 'updateSemester'])->name('semester');
+        Route::patch('/school-year', [FacultySettingsController::class, 'updateSchoolYear'])->name('school-year');
+        Route::patch('/both', [FacultySettingsController::class, 'updateBoth'])->name('both');
+    });
 
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
 

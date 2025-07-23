@@ -8,20 +8,24 @@ use App\Models\Faculty;
 use App\Models\Classes;
 use App\Models\Subject;
 use App\Models\class_enrollments;
+use App\Services\GeneralSettingsService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class FacultyClassService
 {
+    public function __construct(
+        private readonly GeneralSettingsService $settingsService
+    ) {}
     /**
      * Get all classes for a faculty member
      */
     public function getFacultyClasses(Faculty $faculty): Collection
     {
         return $faculty->classes()
-            ->where('semester', $this->getCurrentSemester())
+            ->where('semester', (string) $this->getCurrentSemester())
             ->where('school_year', $this->getCurrentSchoolYear())
-            ->with(['subject', 'ClassStudents.student'])
+            ->with(['subject', 'ClassStudents.student', 'room'])
             ->withCount('ClassStudents')
             ->get()
             ->map(function ($class) {
@@ -36,7 +40,7 @@ final class FacultyClassService
     {
         $class = $faculty->classes()
             ->where('id', $classId)
-            ->with(['subject', 'ClassStudents.student', 'schedules'])
+            ->with(['subject', 'ClassStudents.student', 'Schedule'])
             ->withCount('ClassStudents')
             ->first();
 
@@ -53,7 +57,7 @@ final class FacultyClassService
     public function getClassStatistics(Faculty $faculty): array
     {
         $classes = $faculty->classes()
-            ->where('semester', $this->getCurrentSemester())
+            ->where('semester', (string) $this->getCurrentSemester())
             ->where('school_year', $this->getCurrentSchoolYear())
             ->withCount('ClassStudents')
             ->get();
@@ -147,17 +151,20 @@ final class FacultyClassService
     private function formatClassItem(Classes $class): array
     {
         $subject = $class->subject;
-        
+        $room = $class->room;
+
         return [
             'id' => $class->id,
             'subject_code' => $subject ? $subject->code : $class->subject_code,
             'subject_title' => $subject ? $subject->title : 'Unknown Subject',
             'section' => $class->section,
-            'room' => $class->room ?? 'TBA',
+            'room' => $room ? $room->name : 'TBA',
+            'room_code' => $room ? $room->class_code : null,
             'semester' => $class->semester,
             'school_year' => $class->school_year,
-            'student_count' => $class->class_students_count,
-            'max_students' => $class->max_students ?? 40,
+            'student_count' => $class->class_students_count ?? $class->ClassStudents->count(),
+            'max_students' => $class->maximum_slots ?? 40,
+            'classification' => $class->classification,
             'color' => $this->getSubjectColor($subject ? $subject->code : $class->subject_code),
             'units' => $subject ? $subject->units : 3,
             'lecture_hours' => $subject ? $subject->lecture : 3,
@@ -184,12 +191,12 @@ final class FacultyClassService
                     'status' => $enrollment->status,
                 ];
             }),
-            'schedules' => $class->schedules->map(function ($schedule) {
+            'schedules' => $class->Schedule->map(function ($schedule) {
                 return [
-                    'day' => $schedule->day,
+                    'day_of_week' => $schedule->day_of_week,
                     'start_time' => $schedule->start_time,
                     'end_time' => $schedule->end_time,
-                    'room' => $schedule->room,
+                    'room' => $schedule->room ? $schedule->room->name : 'TBA',
                 ];
             }),
             'performance' => $this->getClassPerformance($class->faculty, $class->id),
@@ -203,7 +210,7 @@ final class FacultyClassService
     {
         $enrollments = class_enrollments::whereHas('class', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
         ->whereNotNull('total_average')
@@ -250,11 +257,11 @@ final class FacultyClassService
     /**
      * Get subjects taught by faculty
      */
-    private function getSubjectsTaught(Faculty $faculty): Collection
+    public function getSubjectsTaught(Faculty $faculty): Collection
     {
         return Subject::whereHas('classes', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
         ->distinct()
@@ -290,33 +297,44 @@ final class FacultyClassService
     }
 
     /**
-     * Get current semester
+     * Get class attendance summary
      */
-    private function getCurrentSemester(): string
+    public function getClassAttendance(Faculty $faculty, int $classId): array
     {
-        $month = now()->month;
-        
-        if ($month >= 6 && $month <= 10) {
-            return '1st';
-        } elseif ($month >= 11 || $month <= 3) {
-            return '2nd';
-        } else {
-            return 'Summer';
-        }
+        // Placeholder for attendance functionality
+        // This would integrate with an attendance system
+        return [
+            'total_sessions' => 20,
+            'sessions_held' => 15,
+            'average_attendance' => 85.5,
+            'attendance_trend' => 'stable',
+            'recent_sessions' => []
+        ];
     }
 
     /**
-     * Get current school year
+     * Get class announcements
+     */
+    public function getClassAnnouncements(Faculty $faculty, int $classId): Collection
+    {
+        // Placeholder for announcements functionality
+        // This would integrate with an announcements system
+        return collect([]);
+    }
+
+    /**
+     * Get current semester using GeneralSettingsService
+     */
+    private function getCurrentSemester(): int
+    {
+        return $this->settingsService->getCurrentSemester();
+    }
+
+    /**
+     * Get current school year using GeneralSettingsService
      */
     private function getCurrentSchoolYear(): string
     {
-        $year = now()->year;
-        $month = now()->month;
-        
-        if ($month >= 6) {
-            return $year . '-' . ($year + 1);
-        } else {
-            return ($year - 1) . '-' . $year;
-        }
+        return $this->settingsService->getCurrentSchoolYearString();
     }
 }

@@ -8,10 +8,14 @@ use App\Models\Faculty;
 use App\Models\Classes;
 use App\Models\Schedule;
 use App\Models\class_enrollments;
+use App\Services\GeneralSettingsService;
 use Illuminate\Support\Facades\DB;
 
 final class FacultyStatsService
 {
+    public function __construct(
+        private readonly GeneralSettingsService $settingsService
+    ) {}
     /**
      * Get comprehensive statistics for a faculty member
      */
@@ -59,7 +63,7 @@ final class FacultyStatsService
     public function getTotalClasses(Faculty $faculty): int
     {
         return $faculty->classes()
-            ->where('semester', $this->getCurrentSemester())
+            ->where('semester', (string) $this->getCurrentSemester())
             ->where('school_year', $this->getCurrentSchoolYear())
             ->count();
     }
@@ -71,7 +75,7 @@ final class FacultyStatsService
     {
         return class_enrollments::whereHas('class', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })->count();
     }
@@ -83,7 +87,7 @@ final class FacultyStatsService
     {
         return Schedule::whereHas('class', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })->count();
     }
@@ -94,7 +98,7 @@ final class FacultyStatsService
     public function getAverageClassSize(Faculty $faculty): int
     {
         $classes = $faculty->classes()
-            ->where('semester', $this->getCurrentSemester())
+            ->where('semester', (string) $this->getCurrentSemester())
             ->where('school_year', $this->getCurrentSchoolYear())
             ->withCount('ClassStudents')
             ->get();
@@ -234,34 +238,19 @@ final class FacultyStatsService
     }
 
     /**
-     * Get current semester
+     * Get current semester using GeneralSettingsService
      */
-    private function getCurrentSemester(): string
+    private function getCurrentSemester(): int
     {
-        $month = now()->month;
-        
-        if ($month >= 6 && $month <= 10) {
-            return '1st';
-        } elseif ($month >= 11 || $month <= 3) {
-            return '2nd';
-        } else {
-            return 'Summer';
-        }
+        return $this->settingsService->getCurrentSemester();
     }
 
     /**
-     * Get current school year
+     * Get current school year using GeneralSettingsService
      */
     private function getCurrentSchoolYear(): string
     {
-        $year = now()->year;
-        $month = now()->month;
-        
-        if ($month >= 6) {
-            return $year . '-' . ($year + 1);
-        } else {
-            return ($year - 1) . '-' . $year;
-        }
+        return $this->settingsService->getCurrentSchoolYearString();
     }
 
     /**

@@ -6,25 +6,29 @@ namespace App\Services\Faculty;
 
 use App\Models\Faculty;
 use App\Models\Schedule;
+use App\Services\GeneralSettingsService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 final class FacultyScheduleService
 {
+    public function __construct(
+        private readonly GeneralSettingsService $settingsService
+    ) {}
     /**
      * Get today's schedule for a faculty member
      */
     public function getTodaysSchedule(Faculty $faculty): Collection
     {
         $today = now()->format('l'); // Full day name (e.g., 'Monday')
-        
+
         return Schedule::whereHas('class', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->where('day', $today)
-        ->with(['class.subject'])
+        ->where('day_of_week', $today)
+        ->with(['class.subject', 'room'])
         ->orderBy('start_time')
         ->get()
         ->map(function ($schedule) {
@@ -39,14 +43,14 @@ final class FacultyScheduleService
     {
         return Schedule::whereHas('class', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->with(['class.subject'])
-        ->orderBy('day')
+        ->with(['class.subject', 'room'])
+        ->orderBy('day_of_week')
         ->orderBy('start_time')
         ->get()
-        ->groupBy('day')
+        ->groupBy('day_of_week')
         ->map(function ($daySchedules) {
             return $daySchedules->map(function ($schedule) {
                 return $this->formatScheduleItem($schedule);
@@ -61,11 +65,11 @@ final class FacultyScheduleService
     {
         return Schedule::whereHas('class', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->where('day', $day)
-        ->with(['class.subject'])
+        ->where('day_of_week', $day)
+        ->with(['class.subject', 'room'])
         ->orderBy('start_time')
         ->get()
         ->map(function ($schedule) {
@@ -85,10 +89,10 @@ final class FacultyScheduleService
         // First, try to find a class later today
         $nextClass = Schedule::whereHas('class', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->where('day', $currentDay)
+        ->where('day_of_week', $currentDay)
         ->where('start_time', '>', $currentTime)
         ->with(['class.subject'])
         ->orderBy('start_time')
@@ -108,11 +112,11 @@ final class FacultyScheduleService
             
             $nextClass = Schedule::whereHas('class', function ($query) use ($faculty) {
                 $query->where('faculty_id', $faculty->id)
-                      ->where('semester', $this->getCurrentSemester())
+                      ->where('semester', (string) $this->getCurrentSemester())
                       ->where('school_year', $this->getCurrentSchoolYear());
             })
-            ->where('day', $nextDay)
-            ->with(['class.subject'])
+            ->where('day_of_week', $nextDay)
+            ->with(['class.subject', 'room'])
             ->orderBy('start_time')
             ->first();
 
@@ -131,10 +135,10 @@ final class FacultyScheduleService
     {
         return Schedule::whereHas('class', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->where('day', $day)
+        ->where('day_of_week', $day)
         ->where('start_time', '<=', $time)
         ->where('end_time', '>=', $time)
         ->exists();
@@ -147,11 +151,11 @@ final class FacultyScheduleService
     {
         $schedules = Schedule::whereHas('class', function ($query) use ($faculty) {
             $query->where('faculty_id', $faculty->id)
-                  ->where('semester', $this->getCurrentSemester())
+                  ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->with(['class.subject'])
-        ->orderBy('day')
+        ->with(['class.subject', 'room'])
+        ->orderBy('day_of_week')
         ->orderBy('start_time')
         ->get();
 
@@ -160,7 +164,7 @@ final class FacultyScheduleService
         foreach ($schedules as $schedule) {
             $overlapping = $schedules->filter(function ($other) use ($schedule) {
                 return $other->id !== $schedule->id &&
-                       $other->day === $schedule->day &&
+                       $other->day_of_week === $schedule->day_of_week &&
                        $this->timesOverlap(
                            $schedule->start_time, $schedule->end_time,
                            $other->start_time, $other->end_time
@@ -187,15 +191,18 @@ final class FacultyScheduleService
     {
         $class = $schedule->class;
         $subject = $class->subject ?? null;
-        
+        $room = $schedule->room;
+
         return [
             'id' => $schedule->id,
             'class_id' => $class->id,
             'subject_code' => $subject ? $subject->code : $class->subject_code,
             'subject_title' => $subject ? $subject->title : 'Unknown Subject',
             'section' => $class->section,
-            'room' => $schedule->room,
-            'day' => $schedule->day,
+            'room' => $room ? $room->name : 'TBA',
+            'room_id' => $schedule->room_id,
+            'day' => $schedule->day_of_week,
+            'day_of_week' => $schedule->day_of_week,
             'start_time' => Carbon::parse($schedule->start_time)->format('g:i A'),
             'end_time' => Carbon::parse($schedule->end_time)->format('g:i A'),
             'raw_start_time' => $schedule->start_time,
@@ -210,10 +217,10 @@ final class FacultyScheduleService
     /**
      * Calculate duration between two times
      */
-    private function calculateDuration(string $startTime, string $endTime): string
+    private function calculateDuration($startTime, $endTime): string
     {
-        $start = Carbon::parse($startTime);
-        $end = Carbon::parse($endTime);
+        $start = $startTime instanceof Carbon ? $startTime : Carbon::parse($startTime);
+        $end = $endTime instanceof Carbon ? $endTime : Carbon::parse($endTime);
         $duration = $start->diffInMinutes($end);
         
         $hours = intval($duration / 60);
@@ -254,7 +261,7 @@ final class FacultyScheduleService
         $today = $now->format('l');
         $currentTime = $now->format('H:i:s');
         
-        if ($schedule->day !== $today) {
+        if ($schedule->day_of_week !== $today) {
             return 'scheduled';
         }
         
@@ -276,33 +283,38 @@ final class FacultyScheduleService
     }
 
     /**
-     * Get current semester
+     * Get schedules for a specific class
      */
-    private function getCurrentSemester(): string
+    public function getClassSchedules(Faculty $faculty, int $classId): Collection
     {
-        $month = now()->month;
-        
-        if ($month >= 6 && $month <= 10) {
-            return '1st';
-        } elseif ($month >= 11 || $month <= 3) {
-            return '2nd';
-        } else {
-            return 'Summer';
-        }
+        return Schedule::whereHas('class', function ($query) use ($faculty, $classId) {
+            $query->where('faculty_id', $faculty->id)
+                  ->where('id', $classId)
+                  ->where('semester', (string) $this->getCurrentSemester())
+                  ->where('school_year', $this->getCurrentSchoolYear());
+        })
+        ->with(['class.subject', 'room'])
+        ->orderBy('day_of_week')
+        ->orderBy('start_time')
+        ->get()
+        ->map(function ($schedule) {
+            return $this->formatScheduleItem($schedule);
+        });
     }
 
     /**
-     * Get current school year
+     * Get current semester using GeneralSettingsService
+     */
+    private function getCurrentSemester(): int
+    {
+        return $this->settingsService->getCurrentSemester();
+    }
+
+    /**
+     * Get current school year using GeneralSettingsService
      */
     private function getCurrentSchoolYear(): string
     {
-        $year = now()->year;
-        $month = now()->month;
-        
-        if ($month >= 6) {
-            return $year . '-' . ($year + 1);
-        } else {
-            return ($year - 1) . '-' . $year;
-        }
+        return $this->settingsService->getCurrentSchoolYearString();
     }
 }

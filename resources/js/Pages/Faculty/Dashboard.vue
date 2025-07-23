@@ -31,7 +31,7 @@
                 <div class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
                 Active
               </Badge>
-              <span class="text-xs text-muted-foreground">6 Classes</span>
+              <span class="text-xs text-muted-foreground">{{ classes.length }} Classes</span>
             </div>
           </div>
         </CardContent>
@@ -131,9 +131,11 @@
                     </div>
                     <p class="text-xs text-muted-foreground mt-1">
                       {{ schedule.start_time }} - {{ schedule.end_time }}
+                      <span v-if="schedule.duration" class="ml-2">({{ schedule.duration }})</span>
                     </p>
                     <p class="text-xs text-muted-foreground">
                       Room {{ schedule.room }} • Sec {{ schedule.section }}
+                      <span v-if="schedule.student_count" class="ml-2">• {{ schedule.student_count }} students</span>
                     </p>
                   </div>
                   <ChevronRightIcon class="w-4 h-4 text-muted-foreground ml-2" />
@@ -191,6 +193,12 @@
                           <Badge variant="secondary" class="text-xs">
                             Sec {{ classItem.section }}
                           </Badge>
+                          <Badge
+                            :variant="classItem.classification === 'college' ? 'default' : 'outline'"
+                            class="text-xs"
+                          >
+                            {{ classItem.classification === 'college' ? 'College' : 'SHS' }}
+                          </Badge>
                         </div>
                         <p class="text-xs text-muted-foreground line-clamp-2 mb-2">
                           {{ classItem.subject_title }}
@@ -198,11 +206,15 @@
                         <div class="flex items-center space-x-3 text-xs text-muted-foreground">
                           <div class="flex items-center">
                             <UsersIcon class="w-3 h-3 mr-1" />
-                            {{ classItem.student_count }}
+                            {{ classItem.student_count || 0 }} students
                           </div>
                           <div class="flex items-center">
                             <MapPinIcon class="w-3 h-3 mr-1" />
-                            {{ classItem.room }}
+                            {{ classItem.room || 'TBA' }}
+                          </div>
+                          <div class="flex items-center">
+                            <ClockIcon class="w-3 h-3 mr-1" />
+                            {{ classItem.units || 3 }} units
                           </div>
                         </div>
                       </div>
@@ -236,6 +248,20 @@
           </Card>
         </div>
       </div>
+
+      <!-- Weekly Schedule Overview -->
+      <Card>
+        <CardContent class="p-6">
+          <WeeklySchedule
+            :weekly-schedule="weeklySchedule"
+            :schedule-overview="scheduleOverview"
+            :current-semester="currentSemester"
+            :school-year="schoolYear"
+            @schedule-click="viewScheduleDetails"
+            @view-full-calendar="viewFullCalendar"
+          />
+        </CardContent>
+      </Card>
 
       <!-- Additional Faculty Features -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -373,7 +399,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { router } from '@inertiajs/vue3'
 import FacultyLayout from '@/Layouts/FacultyLayout.vue'
+import WeeklySchedule from '@/Components/Faculty/WeeklySchedule.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card.js'
 import { Button } from '@/Components/ui/button.js'
 import { Badge } from '@/Components/ui/badge.js'
@@ -406,11 +434,14 @@ const props = defineProps({
   stats: Array,
   classes: Array,
   todaysSchedule: Array,
+  weeklySchedule: Object,
+  classEnrollments: Array,
   recentActivities: Array,
   upcomingDeadlines: Array,
   performanceMetrics: Object,
   currentSemester: String,
   schoolYear: String,
+  scheduleOverview: Object,
   error: String
 })
 
@@ -418,49 +449,27 @@ const props = defineProps({
 const stats = computed(() => props.stats || [])
 const classes = computed(() => props.classes || [])
 const todaysSchedule = computed(() => props.todaysSchedule || [])
+const weeklySchedule = computed(() => props.weeklySchedule || {})
+const classEnrollments = computed(() => props.classEnrollments || [])
 const recentActivities = computed(() => props.recentActivities || [])
 const upcomingDeadlines = computed(() => props.upcomingDeadlines || [])
 const performanceMetrics = computed(() => props.performanceMetrics || {})
-
-const sampleTodaysSchedule = ref([
-  {
-    id: 1,
-    subject_code: 'CS101',
-    subject_title: 'Introduction to Computer Science',
-    start_time: '08:00',
-    end_time: '09:30',
-    room: '201',
-    section: 'A',
-    color: 'blue-500'
-  },
-  {
-    id: 2,
-    subject_code: 'MATH201',
-    subject_title: 'Calculus II',
-    start_time: '10:00',
-    end_time: '11:30',
-    room: '105',
-    section: 'B',
-    color: 'green-500'
-  },
-  {
-    id: 3,
-    subject_code: 'CS102',
-    subject_title: 'Data Structures',
-    start_time: '14:00',
-    end_time: '15:30',
-    room: '301',
-    section: 'A',
-    color: 'purple-500'
-  }
-])
+const scheduleOverview = computed(() => props.scheduleOverview || {})
 
 // Error handling
 const hasError = computed(() => !!props.error)
 
-// All data now comes from props via the service layer
+// Days of the week for schedule display
+const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
-// Remove this section - we already have computed properties defined above
+// Get formatted weekly schedule
+const formattedWeeklySchedule = computed(() => {
+  const schedule = {}
+  daysOfWeek.forEach(day => {
+    schedule[day] = weeklySchedule.value[day] || []
+  })
+  return schedule
+})
 
 // Enhanced quick actions with descriptions
 const quickActions = ref([
@@ -530,6 +539,10 @@ const getCurrentDateShort = () => {
   })
 }
 
+const getCurrentDay = () => {
+  return new Date().toLocaleDateString('en-US', { weekday: 'long' })
+}
+
 const getGreeting = () => {
   const hour = new Date().getHours()
   if (hour < 12) return 'morning'
@@ -571,12 +584,16 @@ const getActivityColor = (type) => {
 }
 
 const viewClassDetails = (classItem) => {
-  console.log('View class details:', classItem)
-  // TODO: Navigate to class details page
+  router.visit(route('faculty.classes.show', { class: classItem.id }))
 }
 
 const viewScheduleDetails = (schedule) => {
   console.log('View schedule details:', schedule)
   // TODO: Navigate to schedule details page
+}
+
+const viewFullCalendar = () => {
+  console.log('View full calendar')
+  // TODO: Navigate to full calendar page
 }
 </script>

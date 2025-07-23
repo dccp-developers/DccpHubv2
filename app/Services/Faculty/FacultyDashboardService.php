@@ -8,6 +8,7 @@ use App\Models\Faculty;
 use App\Models\Classes;
 use App\Models\Schedule;
 use App\Models\class_enrollments;
+use App\Services\GeneralSettingsService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,8 @@ final class FacultyDashboardService
         private readonly FacultyStatsService $statsService,
         private readonly FacultyScheduleService $scheduleService,
         private readonly FacultyClassService $classService,
-        private readonly FacultyActivityService $activityService
+        private readonly FacultyActivityService $activityService,
+        private readonly GeneralSettingsService $settingsService
     ) {}
 
     /**
@@ -28,18 +30,21 @@ final class FacultyDashboardService
     public function getDashboardData(Faculty $faculty): array
     {
         $cacheKey = "faculty_dashboard_{$faculty->id}_" . now()->format('Y-m-d-H');
-        
+
         return Cache::remember($cacheKey, 3600, function () use ($faculty) {
             return [
                 'faculty' => $this->getFacultyInfo($faculty),
                 'stats' => $this->statsService->getStats($faculty),
                 'todaysSchedule' => $this->scheduleService->getTodaysSchedule($faculty),
+                'weeklySchedule' => $this->scheduleService->getWeeklySchedule($faculty),
                 'classes' => $this->classService->getFacultyClasses($faculty),
+                'classEnrollments' => $this->getClassEnrollments($faculty),
                 'recentActivities' => $this->activityService->getRecentActivities($faculty),
                 'upcomingDeadlines' => $this->getUpcomingDeadlines($faculty),
                 'performanceMetrics' => $this->getPerformanceMetrics($faculty),
                 'currentSemester' => $this->getCurrentSemester(),
                 'schoolYear' => $this->getCurrentSchoolYear(),
+                'scheduleOverview' => $this->getScheduleOverview($faculty),
             ];
         });
     }
@@ -52,7 +57,7 @@ final class FacultyDashboardService
         return [
             'id' => $faculty->id,
             'name' => $faculty->first_name . ' ' . $faculty->last_name,
-            'full_name' => $faculty->faculty_full_name,
+            'full_name' => $faculty->full_name,
             'email' => $faculty->email,
             'department' => $faculty->department ?? 'Computer Science',
             'office_hours' => $faculty->office_hours ?? 'Mon-Fri 2:00-4:00 PM',
@@ -184,35 +189,93 @@ final class FacultyDashboardService
     }
 
     /**
-     * Get current semester
+     * Get class enrollments for faculty
      */
-    private function getCurrentSemester(): string
+    private function getClassEnrollments(Faculty $faculty): Collection
     {
-        // This would typically come from a settings table
-        $month = now()->month;
-        
-        if ($month >= 6 && $month <= 10) {
-            return '1st';
-        } elseif ($month >= 11 || $month <= 3) {
-            return '2nd';
-        } else {
-            return 'Summer';
-        }
+        return class_enrollments::whereHas('class', function ($query) use ($faculty) {
+            $query->where('faculty_id', $faculty->id)
+                  ->where('semester', (string) $this->getCurrentSemester())
+                  ->where('school_year', $this->getCurrentSchoolYear());
+        })
+        ->with(['class.subject', 'student'])
+        ->get()
+        ->map(function ($enrollment) {
+            return [
+                'id' => $enrollment->id,
+                'class_id' => $enrollment->class_id,
+                'student_id' => $enrollment->student_id,
+                'student_name' => $enrollment->student_name,
+                'student_year_standing' => $enrollment->student_year_standing,
+                'course_strand' => $enrollment->course_strand,
+                'subject_code' => $enrollment->class->subject_code,
+                'subject_title' => $enrollment->class->formated_title,
+                'section' => $enrollment->class->section,
+                'prelim_grade' => $enrollment->prelim_grade,
+                'midterm_grade' => $enrollment->midterm_grade,
+                'finals_grade' => $enrollment->finals_grade,
+                'total_average' => $enrollment->total_average,
+                'grade_status' => $enrollment->grade_status,
+                'is_completed' => $enrollment->is_completed,
+                'status' => $enrollment->status,
+            ];
+        });
     }
 
     /**
-     * Get current school year
+     * Get schedule overview for faculty
+     */
+    private function getScheduleOverview(Faculty $faculty): array
+    {
+        $weeklySchedule = $this->scheduleService->getWeeklySchedule($faculty);
+        $todaysSchedule = $this->scheduleService->getTodaysSchedule($faculty);
+
+        // Calculate schedule statistics
+        $totalWeeklyHours = 0;
+        $daysWithClasses = 0;
+        $busyDays = [];
+
+        foreach ($weeklySchedule as $day => $schedules) {
+            if ($schedules->isNotEmpty()) {
+                $daysWithClasses++;
+                $dayHours = 0;
+
+                foreach ($schedules as $schedule) {
+                    $start = \Carbon\Carbon::parse($schedule['raw_start_time']);
+                    $end = \Carbon\Carbon::parse($schedule['raw_end_time']);
+                    $dayHours += $start->diffInHours($end);
+                }
+
+                $totalWeeklyHours += $dayHours;
+                $busyDays[$day] = $dayHours;
+            }
+        }
+
+        return [
+            'total_weekly_hours' => $totalWeeklyHours,
+            'days_with_classes' => $daysWithClasses,
+            'busiest_day' => !empty($busyDays) ? array_keys($busyDays, max($busyDays))[0] : null,
+            'lightest_day' => !empty($busyDays) ? array_keys($busyDays, min($busyDays))[0] : null,
+            'average_daily_hours' => $daysWithClasses > 0 ? round($totalWeeklyHours / $daysWithClasses, 1) : 0,
+            'todays_classes_count' => $todaysSchedule->count(),
+            'next_class' => $this->scheduleService->getNextClass($faculty),
+        ];
+    }
+
+    /**
+     * Get current semester using GeneralSettingsService
+     */
+    private function getCurrentSemester(): int
+    {
+        return $this->settingsService->getCurrentSemester();
+    }
+
+    /**
+     * Get current school year using GeneralSettingsService
      */
     private function getCurrentSchoolYear(): string
     {
-        $year = now()->year;
-        $month = now()->month;
-        
-        if ($month >= 6) {
-            return $year . '-' . ($year + 1);
-        } else {
-            return ($year - 1) . '-' . $year;
-        }
+        return $this->settingsService->getCurrentSchoolYearString();
     }
 
     /**

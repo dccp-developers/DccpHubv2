@@ -88,6 +88,63 @@
           </div>
 
           <div class="flex items-center space-x-2">
+            <!-- Academic Period Selector -->
+            <div class="hidden md:flex items-center space-x-2">
+              <div class="flex items-center space-x-1 px-3 py-1.5 bg-muted rounded-md">
+                <CalendarIcon class="h-4 w-4 text-muted-foreground" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="ghost" size="sm" class="h-auto p-1 text-xs font-medium">
+                      {{ currentSemesterName }} {{ currentSchoolYearString }}
+                      <ChevronDownIcon class="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" class="w-64">
+                    <DropdownMenuLabel>Academic Period</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+
+                    <!-- Semester Selection -->
+                    <div class="px-2 py-1">
+                      <label class="text-xs font-medium text-muted-foreground">Semester</label>
+                      <div class="mt-1 space-y-1">
+                        <button
+                          v-for="(name, value) in availableSemesters"
+                          :key="value"
+                          @click="updateSemester(parseInt(value))"
+                          :class="[
+                            'w-full text-left px-2 py-1 text-sm rounded hover:bg-accent',
+                            currentSemester === parseInt(value) ? 'bg-accent font-medium' : ''
+                          ]"
+                        >
+                          {{ name }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <DropdownMenuSeparator />
+
+                    <!-- School Year Selection -->
+                    <div class="px-2 py-1">
+                      <label class="text-xs font-medium text-muted-foreground">School Year</label>
+                      <div class="mt-1 max-h-32 overflow-y-auto space-y-1">
+                        <button
+                          v-for="(name, value) in availableSchoolYears"
+                          :key="value"
+                          @click="updateSchoolYear(parseInt(value))"
+                          :class="[
+                            'w-full text-left px-2 py-1 text-sm rounded hover:bg-accent',
+                            currentSchoolYear === parseInt(value) ? 'bg-accent font-medium' : ''
+                          ]"
+                        >
+                          {{ name }}
+                        </button>
+                      </div>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
             <!-- Theme toggle -->
             <ThemeToggle />
 
@@ -188,8 +245,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { router, Link } from '@inertiajs/vue3'
+import axios from 'axios'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 import { Button } from '@/Components/ui/button.js'
 import { Badge } from '@/Components/ui/badge.js'
@@ -225,10 +283,17 @@ import {
 const sidebarOpen = ref(false)
 const quickActionsOpen = ref(false)
 
+// Academic period settings
+const currentSemester = ref(1)
+const currentSchoolYear = ref(new Date().getFullYear())
+const availableSemesters = ref({})
+const availableSchoolYears = ref({})
+const loading = ref(false)
+
 // Navigation items
 const navigation = ref([
   { name: 'Dashboard', href: route('faculty.dashboard'), icon: HomeIcon, current: route().current('faculty.dashboard') },
-  { name: 'My Classes', href: '#', icon: AcademicCapIcon, current: false },
+  { name: 'My Classes', href: route('faculty.classes.index'), icon: AcademicCapIcon, current: route().current('faculty.classes.*') },
   { name: 'Students', href: '#', icon: UsersIcon, current: false },
   { name: 'Schedule', href: '#', icon: CalendarIcon, current: false },
   { name: 'Attendance', href: '#', icon: ClipboardDocumentListIcon, current: false },
@@ -246,8 +311,79 @@ const quickActions = ref([
   { name: 'Schedule Class', href: '#', icon: CalendarIcon },
 ])
 
+// Computed properties
+const currentSemesterName = computed(() => {
+  return availableSemesters.value[currentSemester.value] || '1st Semester'
+})
+
+const currentSchoolYearString = computed(() => {
+  return availableSchoolYears.value[currentSchoolYear.value] || `${currentSchoolYear.value} - ${currentSchoolYear.value + 1}`
+})
+
 // Methods
+const loadSettings = async () => {
+  try {
+    loading.value = true
+    const response = await axios.get(route('faculty.settings.index'))
+
+    if (response.data.success) {
+      const data = response.data.data
+      currentSemester.value = data.current_semester
+      currentSchoolYear.value = data.current_school_year
+      availableSemesters.value = data.available_semesters
+      availableSchoolYears.value = data.available_school_years
+    }
+  } catch (error) {
+    console.error('Failed to load settings:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const updateSemester = async (semester) => {
+  try {
+    loading.value = true
+    const response = await axios.patch(route('faculty.settings.semester'), {
+      semester: semester
+    })
+
+    if (response.data.success) {
+      currentSemester.value = semester
+      // Refresh the current page to reload data with new semester
+      router.reload({ only: ['stats', 'classes', 'todaysSchedule', 'weeklySchedule', 'classEnrollments'] })
+    }
+  } catch (error) {
+    console.error('Failed to update semester:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const updateSchoolYear = async (schoolYear) => {
+  try {
+    loading.value = true
+    const response = await axios.patch(route('faculty.settings.school-year'), {
+      school_year: schoolYear
+    })
+
+    if (response.data.success) {
+      currentSchoolYear.value = schoolYear
+      // Refresh the current page to reload data with new school year
+      router.reload({ only: ['stats', 'classes', 'todaysSchedule', 'weeklySchedule', 'classEnrollments'] })
+    }
+  } catch (error) {
+    console.error('Failed to update school year:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
 const logout = () => {
   router.post(route('logout'))
 }
+
+// Load settings on component mount
+onMounted(() => {
+  loadSettings()
+})
 </script>

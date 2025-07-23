@@ -106,7 +106,7 @@ final class FacultyActivityService
         })
         ->where(function ($query) {
             $query->whereNotNull('midterm_grade')
-                  ->orWhereNotNull('final_grade')
+                  ->orWhereNotNull('finals_grade')
                   ->orWhereNotNull('total_average');
         })
         ->where('updated_at', '>=', now()->subDays(30))
@@ -120,7 +120,7 @@ final class FacultyActivityService
             
             $subjectCode = $subject ? $subject->code : $class->subject_code;
             $studentName = $enrollment->student->first_name . ' ' . $enrollment->student->last_name;
-            $grade = $enrollment->total_average ?: ($enrollment->final_grade ?: $enrollment->midterm_grade);
+            $grade = $enrollment->total_average ?: ($enrollment->finals_grade ?: $enrollment->midterm_grade);
 
             return [
                 'id' => 'grade_' . $enrollment->id,
@@ -268,7 +268,7 @@ final class FacultyActivityService
         })
         ->where(function ($query) {
             $query->whereNotNull('midterm_grade')
-                  ->orWhereNotNull('final_grade')
+                  ->orWhereNotNull('finals_grade')
                   ->orWhereNotNull('total_average');
         })
         ->where('updated_at', '>=', $since)
