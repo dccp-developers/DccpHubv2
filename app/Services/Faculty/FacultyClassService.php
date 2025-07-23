@@ -132,14 +132,15 @@ final class FacultyClassService
             ];
         }
 
-        $grades = $enrollments->pluck('total_average');
+        $grades = $enrollments->pluck('total_average')->filter();
         $passingGrades = $grades->filter(fn($grade) => $grade >= 75);
+        $gradesCount = $grades->count();
 
         return [
-            'average_grade' => round($grades->avg(), 2),
-            'passing_rate' => round(($passingGrades->count() / $grades->count()) * 100, 1),
-            'highest_grade' => $grades->max(),
-            'lowest_grade' => $grades->min(),
+            'average_grade' => $gradesCount > 0 ? round($grades->avg(), 2) : 0,
+            'passing_rate' => $gradesCount > 0 ? round(($passingGrades->count() / $gradesCount) * 100, 1) : 0,
+            'highest_grade' => $grades->max() ?? 0,
+            'lowest_grade' => $grades->min() ?? 0,
             'grade_distribution' => $this->calculateGradeDistribution($grades),
             'total_students' => $enrollments->count(),
         ];

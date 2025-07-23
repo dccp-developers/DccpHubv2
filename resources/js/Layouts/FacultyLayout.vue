@@ -294,7 +294,7 @@ const loading = ref(false)
 const navigation = ref([
   { name: 'Dashboard', href: route('faculty.dashboard'), icon: HomeIcon, current: route().current('faculty.dashboard') },
   { name: 'My Classes', href: route('faculty.classes.index'), icon: AcademicCapIcon, current: route().current('faculty.classes.*') },
-  { name: 'Students', href: '#', icon: UsersIcon, current: false },
+  { name: 'Students', href: route('faculty.students.index'), icon: UsersIcon, current: route().current('faculty.students.*') },
   { name: 'Schedule', href: '#', icon: CalendarIcon, current: false },
   { name: 'Attendance', href: '#', icon: ClipboardDocumentListIcon, current: false },
   { name: 'Grades', href: '#', icon: ChartBarIcon, current: false },

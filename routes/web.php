@@ -21,6 +21,7 @@ use App\Http\Controllers\GuestDashboardController;
 use App\Http\Controllers\Student\EnrollmentController;
 use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Faculty\FacultyClassController;
+use App\Http\Controllers\Faculty\FacultyStudentController;
 use App\Http\Controllers\Faculty\FacultySettingsController;
 use App\Http\Controllers\APKController;
 use App\Http\Controllers\SocialAuthController;
@@ -123,6 +124,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
     Route::prefix('faculty')->name('faculty.')->group(function () {
         Route::get('/classes', [FacultyClassController::class, 'index'])->name('classes.index');
         Route::get('/classes/{class}', [FacultyClassController::class, 'show'])->name('classes.show');
+
+        Route::get('/students', [FacultyStudentController::class, 'index'])->name('students.index');
+        Route::get('/students/{student}', [FacultyStudentController::class, 'show'])->name('students.show');
     });
 
     // Faculty Settings Routes
