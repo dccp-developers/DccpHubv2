@@ -25,7 +25,7 @@ final class FacultyClassService
         return $faculty->classes()
             ->where('semester', (string) $this->getCurrentSemester())
             ->where('school_year', $this->getCurrentSchoolYear())
-            ->with(['subject', 'ClassStudents.student', 'room'])
+            ->with(['subject', 'ShsSubject', 'ClassStudents.student', 'room'])
             ->withCount('ClassStudents')
             ->get()
             ->map(function ($class) {
@@ -40,7 +40,7 @@ final class FacultyClassService
     {
         $class = $faculty->classes()
             ->where('id', $classId)
-            ->with(['subject', 'ClassStudents.student', 'Schedule'])
+            ->with(['subject', 'ShsSubject', 'ClassStudents.student', 'Schedule'])
             ->withCount('ClassStudents')
             ->first();
 
@@ -150,13 +150,18 @@ final class FacultyClassService
      */
     private function formatClassItem(Classes $class): array
     {
-        $subject = $class->subject;
+        // Get the appropriate subject based on classification
+        $subject = $class->classification === 'shs' ? $class->ShsSubject : $class->subject;
         $room = $class->room;
+
+        // Get subject code and title
+        $subjectCode = $subject ? $subject->code : $class->subject_code;
+        $subjectTitle = $subject ? $subject->title : 'Unknown Subject';
 
         return [
             'id' => $class->id,
-            'subject_code' => $subject ? $subject->code : $class->subject_code,
-            'subject_title' => $subject ? $subject->title : 'Unknown Subject',
+            'subject_code' => $subjectCode,
+            'subject_title' => $subjectTitle,
             'section' => $class->section,
             'room' => $room ? $room->name : 'TBA',
             'room_code' => $room ? $room->class_code : null,
@@ -165,12 +170,12 @@ final class FacultyClassService
             'student_count' => $class->class_students_count ?? $class->ClassStudents->count(),
             'max_students' => $class->maximum_slots ?? 40,
             'classification' => $class->classification,
-            'color' => $this->getSubjectColor($subject ? $subject->code : $class->subject_code),
-            'units' => $subject ? $subject->units : 3,
-            'lecture_hours' => $subject ? $subject->lecture : 3,
-            'lab_hours' => $subject ? $subject->laboratory : 0,
+            'color' => $this->getSubjectColor($subjectCode),
+            'units' => $subject ? $subject->units ?? 3 : 3,
+            'lecture_hours' => $subject ? $subject->lecture ?? 3 : 3,
+            'lab_hours' => $subject ? $subject->laboratory ?? 0 : 0,
             'status' => $class->status ?? 'active',
-            'description' => $subject ? $subject->title : null,
+            'description' => $subjectTitle,
         ];
     }
 

@@ -28,7 +28,7 @@ final class FacultyScheduleService
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
         ->where('day_of_week', $today)
-        ->with(['class.subject', 'room'])
+        ->with(['class.subject', 'class.ShsSubject', 'room'])
         ->orderBy('start_time')
         ->get()
         ->map(function ($schedule) {
@@ -46,7 +46,7 @@ final class FacultyScheduleService
                   ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->with(['class.subject', 'room'])
+        ->with(['class.subject', 'class.ShsSubject', 'room'])
         ->orderBy('day_of_week')
         ->orderBy('start_time')
         ->get()
@@ -69,7 +69,7 @@ final class FacultyScheduleService
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
         ->where('day_of_week', $day)
-        ->with(['class.subject', 'room'])
+        ->with(['class.subject', 'class.ShsSubject', 'room'])
         ->orderBy('start_time')
         ->get()
         ->map(function ($schedule) {
@@ -94,7 +94,7 @@ final class FacultyScheduleService
         })
         ->where('day_of_week', $currentDay)
         ->where('start_time', '>', $currentTime)
-        ->with(['class.subject'])
+        ->with(['class.subject', 'class.ShsSubject'])
         ->orderBy('start_time')
         ->first();
 
@@ -116,7 +116,7 @@ final class FacultyScheduleService
                       ->where('school_year', $this->getCurrentSchoolYear());
             })
             ->where('day_of_week', $nextDay)
-            ->with(['class.subject', 'room'])
+            ->with(['class.subject', 'class.ShsSubject', 'room'])
             ->orderBy('start_time')
             ->first();
 
@@ -154,7 +154,7 @@ final class FacultyScheduleService
                   ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->with(['class.subject', 'room'])
+        ->with(['class.subject', 'class.ShsSubject', 'room'])
         ->orderBy('day_of_week')
         ->orderBy('start_time')
         ->get();
@@ -190,7 +190,8 @@ final class FacultyScheduleService
     private function formatScheduleItem(Schedule $schedule): array
     {
         $class = $schedule->class;
-        $subject = $class->subject ?? null;
+        // Get the appropriate subject based on classification
+        $subject = $class->classification === 'shs' ? $class->ShsSubject : $class->subject;
         $room = $schedule->room;
 
         return [
@@ -293,7 +294,7 @@ final class FacultyScheduleService
                   ->where('semester', (string) $this->getCurrentSemester())
                   ->where('school_year', $this->getCurrentSchoolYear());
         })
-        ->with(['class.subject', 'room'])
+        ->with(['class.subject', 'class.ShsSubject', 'room'])
         ->orderBy('day_of_week')
         ->orderBy('start_time')
         ->get()

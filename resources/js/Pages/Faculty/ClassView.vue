@@ -438,7 +438,7 @@ import {
 
 // Props from the controller
 const props = defineProps({
-  class: Object,
+  classData: Object,
   schedules: Array,
   stats: Object,
   performance: Object,
@@ -454,10 +454,11 @@ const props = defineProps({
 const activeTab = ref('students')
 
 // Computed properties
-const classData = computed(() => props.class || {})
+const classData = computed(() => props.classData || {})
 const schedules = computed(() => props.schedules || [])
 const stats = computed(() => props.stats || {})
 const performance = computed(() => props.performance || {})
+
 
 // Tab configuration
 const tabs = [

@@ -63,7 +63,7 @@ final class FacultyClassController extends Controller
                     'full_name' => $faculty->full_name,
                     'email' => $faculty->email,
                 ],
-                'currentSemester' => $this->settingsService->getCurrentSemester(),
+                'currentSemester' => (string) $this->settingsService->getCurrentSemester(),
                 'schoolYear' => $this->settingsService->getCurrentSchoolYearString(),
                 'availableSemesters' => $this->settingsService->getAvailableSemesters(),
                 'availableSchoolYears' => $this->settingsService->getAvailableSchoolYears(),
@@ -85,7 +85,7 @@ final class FacultyClassController extends Controller
                     'name' => $faculty->first_name . ' ' . $faculty->last_name,
                     'email' => $faculty->email,
                 ],
-                'currentSemester' => $this->settingsService->getCurrentSemester(),
+                'currentSemester' => (string) $this->settingsService->getCurrentSemester(),
                 'schoolYear' => $this->settingsService->getCurrentSchoolYearString(),
             ]);
         }
@@ -131,7 +131,7 @@ final class FacultyClassController extends Controller
 
             return Inertia::render('Faculty/ClassView', [
                 'error' => 'Unable to load class data. Please try again later.',
-                'class' => [
+                'classData' => [
                     'id' => $class->id,
                     'subject_code' => $class->subject_code,
                     'section' => $class->section,
@@ -143,7 +143,7 @@ final class FacultyClassController extends Controller
                 'students' => [],
                 'schedules' => [],
                 'stats' => [],
-                'currentSemester' => $this->settingsService->getCurrentSemester(),
+                'currentSemester' => (string) $this->settingsService->getCurrentSemester(),
                 'schoolYear' => $this->settingsService->getCurrentSchoolYearString(),
             ]);
         }
@@ -167,7 +167,7 @@ final class FacultyClassController extends Controller
         $performance = $this->classService->getClassPerformance($faculty, $class->id);
 
         return [
-            'class' => $classDetails,
+            'classData' => $classDetails,
             'schedules' => $schedules,
             'stats' => $stats,
             'performance' => $performance,
@@ -177,7 +177,7 @@ final class FacultyClassController extends Controller
                 'full_name' => $faculty->full_name,
                 'email' => $faculty->email,
             ],
-            'currentSemester' => $this->settingsService->getCurrentSemester(),
+            'currentSemester' => (string) $this->settingsService->getCurrentSemester(),
             'schoolYear' => $this->settingsService->getCurrentSchoolYearString(),
             'availableSemesters' => $this->settingsService->getAvailableSemesters(),
             'availableSchoolYears' => $this->settingsService->getAvailableSchoolYears(),
