@@ -186,14 +186,17 @@ final class User extends Authenticatable implements FilamentUser
             return null;
         }
 
-        // If profile_photo_path starts with http:// or https://, it's already a URL
+        // If profile_photo_path starts with http:// or https://, it's already a URL (from OAuth)
         if (str_starts_with($this->profile_photo_path, 'http://') ||
             str_starts_with($this->profile_photo_path, 'https://')) {
             return $this->profile_photo_path;
         }
 
-        // Otherwise get URL from S3
-        return Storage::disk('s3')->url($this->profile_photo_path);
+        // Get the configured profile photo disk from Jetstream config
+        $disk = config('jetstream.profile_photo_disk', 'public');
+
+        // Return URL from the configured disk
+        return Storage::disk($disk)->url($this->profile_photo_path);
     }
 
     public function UserPerson()

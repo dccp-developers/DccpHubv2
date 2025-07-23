@@ -24,7 +24,7 @@ final class UpdateUserProfileInformation implements UpdatesUserProfileInformatio
             'phone' => ['nullable', 'string', 'max:15'],
             'role' => ['nullable', 'string', 'max:50'],
             'is_active' => ['required', 'boolean'],
-            'person_id' => ['nullable', 'integer'],
+            'person_id' => ['nullable', 'string', 'max:255'], // Changed from integer to string to support both UUIDs and numeric IDs
             'person_type' => ['nullable', 'string'],
             'photo' => ['nullable', 'mimes:jpg,jpeg,png', 'max:1024'],
         ])->validateWithBag('updateProfileInformation');

@@ -22,7 +22,10 @@
         </Button>
       </div>
       <nav class="mt-4 px-2">
-        <SidebarNavigation :navigation="navigation" />
+        <SidebarNavigation
+          :navigation="navigation"
+          @showDevelopmentModal="showDevelopmentModal = true"
+        />
       </nav>
     </div>
 
@@ -34,7 +37,10 @@
           <span class="ml-2 text-lg font-semibold text-foreground">Faculty Portal</span>
         </div>
         <nav class="mt-4 flex-1 px-2">
-          <SidebarNavigation :navigation="navigation" />
+          <SidebarNavigation
+            :navigation="navigation"
+            @showDevelopmentModal="showDevelopmentModal = true"
+          />
         </nav>
 
         <!-- User profile section -->
@@ -239,8 +245,14 @@
       </main>
 
       <!-- Mobile bottom navigation -->
-      <MobileBottomNav />
+      <MobileBottomNav @showDevelopmentModal="showDevelopmentModal = true" />
     </div>
+
+    <!-- Development Modal -->
+    <DevelopmentModal
+      :open="showDevelopmentModal"
+      @update:open="showDevelopmentModal = $event"
+    />
   </div>
 </template>
 
@@ -262,6 +274,7 @@ import {
 } from '@/Components/shadcn/ui/dropdown-menu'
 import SidebarNavigation from '@/Components/Faculty/SidebarNavigation.vue'
 import MobileBottomNav from '@/Components/Faculty/MobileBottomNav.vue'
+import DevelopmentModal from '@/Components/ui/DevelopmentModal.vue'
 import {
   Bars3Icon,
   XMarkIcon,
@@ -282,6 +295,7 @@ import {
 // Reactive state
 const sidebarOpen = ref(false)
 const quickActionsOpen = ref(false)
+const showDevelopmentModal = ref(false)
 
 // Academic period settings
 const currentSemester = ref(1)
@@ -295,20 +309,20 @@ const navigation = ref([
   { name: 'Dashboard', href: route('faculty.dashboard'), icon: HomeIcon, current: route().current('faculty.dashboard') },
   { name: 'My Classes', href: route('faculty.classes.index'), icon: AcademicCapIcon, current: route().current('faculty.classes.*') },
   { name: 'Students', href: route('faculty.students.index'), icon: UsersIcon, current: route().current('faculty.students.*') },
-  { name: 'Schedule', href: '#', icon: CalendarIcon, current: false },
-  { name: 'Attendance', href: '#', icon: ClipboardDocumentListIcon, current: false },
-  { name: 'Grades', href: '#', icon: ChartBarIcon, current: false },
-  { name: 'Assignments', href: '#', icon: DocumentTextIcon, current: false },
-  { name: 'Resources', href: '#', icon: BookOpenIcon, current: false },
-  { name: 'Settings', href: '#', icon: CogIcon, current: false },
+  { name: 'Schedule', href: '#', icon: CalendarIcon, current: false, isDevelopment: true },
+  { name: 'Attendance', href: '#', icon: ClipboardDocumentListIcon, current: false, isDevelopment: true },
+  { name: 'Grades', href: '#', icon: ChartBarIcon, current: false, isDevelopment: true },
+  { name: 'Assignments', href: '#', icon: DocumentTextIcon, current: false, isDevelopment: true },
+  { name: 'Resources', href: '#', icon: BookOpenIcon, current: false, isDevelopment: true },
+  { name: 'Settings', href: '#', icon: CogIcon, current: false, isDevelopment: true },
 ])
 
 // Quick actions
 const quickActions = ref([
-  { name: 'Take Attendance', href: '#', icon: ClipboardDocumentListIcon },
-  { name: 'Create Assignment', href: '#', icon: DocumentTextIcon },
-  { name: 'Grade Students', href: '#', icon: ChartBarIcon },
-  { name: 'Schedule Class', href: '#', icon: CalendarIcon },
+  { name: 'Take Attendance', action: () => showDevelopmentModal.value = true, icon: ClipboardDocumentListIcon },
+  { name: 'Create Assignment', action: () => showDevelopmentModal.value = true, icon: DocumentTextIcon },
+  { name: 'Grade Students', action: () => showDevelopmentModal.value = true, icon: ChartBarIcon },
+  { name: 'Schedule Class', action: () => showDevelopmentModal.value = true, icon: CalendarIcon },
 ])
 
 // Computed properties

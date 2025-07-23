@@ -18,6 +18,7 @@ const form = useForm({
     email: props.user.email,
     photo: null,
     phone: props.user.phone,
+    // Keep these fields for backend compatibility but don't show them in the form
     role: props.user.role,
     is_active: props.user.is_active,
     person_id: props.user.person_id,
@@ -139,17 +140,40 @@ function clearPhotoFileInput() {
                 <InputError :message="form.errors.phone" class="mt-2" />
             </div>
 
-            <!-- Role -->
-
-
-            <!-- Is Active -->
-
-
-            <!-- Person ID -->
+            <!-- Account Information (Read-only) -->
             <div class="col-span-6 sm:col-span-4">
-                <Label for="person_id">Person ID</Label>
-                <Input id="person_id" v-model="form.person_id" disabled type="number" class="mt-1 block w-full" />
-                <InputError :message="form.errors.person_id" class="mt-2" />
+                <div class="bg-muted/50 rounded-lg p-4 space-y-3">
+                    <h4 class="text-sm font-medium text-foreground">Account Information</h4>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <span class="text-muted-foreground">Role:</span>
+                            <span class="ml-2 font-medium capitalize">{{ user.role }}</span>
+                        </div>
+
+                        <div>
+                            <span class="text-muted-foreground">Person ID:</span>
+                            <span class="ml-2 font-mono text-xs">{{ user.person_id || 'Not assigned' }}</span>
+                        </div>
+
+                        <div>
+                            <span class="text-muted-foreground">Account Status:</span>
+                            <span class="ml-2">
+                                <span v-if="user.is_active" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    Active
+                                </span>
+                                <span v-else class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                    Inactive
+                                </span>
+                            </span>
+                        </div>
+
+                        <div v-if="user.person_type">
+                            <span class="text-muted-foreground">User Type:</span>
+                            <span class="ml-2 font-medium">{{ user.person_type.split('\\').pop() }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
 
