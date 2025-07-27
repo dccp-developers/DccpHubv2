@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\NotificationCampaign;
+use App\Models\StudentNotificationCampaign;
 use App\Models\User;
 use App\Enums\NotificationStatus;
 use App\Enums\NotificationType;
@@ -242,6 +243,152 @@ class NotificationCampaignService
     }
 
     /**
+     * Create a student campaign from template.
+     */
+    public function createStudentCampaignFromTemplate(
+        NotificationType $type,
+        array $customData = [],
+        ?array $recipients = null
+    ): StudentNotificationCampaign {
+        $template = $type->getTemplate();
+
+        return StudentNotificationCampaign::create([
+            'title' => $customData['title'] ?? $template['title'],
+            'description' => $customData['description'] ?? "Student campaign for {$type->getLabel()}",
+            'type' => $type,
+            'priority' => $customData['priority'] ?? $type->getDefaultPriority(),
+            'status' => NotificationStatus::DRAFT,
+            'notification_title' => $customData['notification_title'] ?? $template['title'],
+            'notification_message' => $customData['notification_message'] ?? $template['message'],
+            'action_text' => $customData['action_text'] ?? $template['action_text'],
+            'action_url' => $customData['action_url'] ?? $template['action_url'],
+            'additional_data' => $customData['additional_data'] ?? [],
+            'recipient_ids' => $recipients,
+            'send_to_all_students' => $recipients === null,
+            'created_by' => Auth::id(),
+        ]);
+    }
+
+    /**
+     * Send a student notification campaign.
+     */
+    public function sendStudentCampaign(StudentNotificationCampaign $campaign): bool
+    {
+        if ($campaign->status !== NotificationStatus::SCHEDULED) {
+            return false;
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Get recipients
+            $recipients = $this->getStudentRecipients($campaign);
+
+            if ($recipients->isEmpty()) {
+                throw new \Exception('No student recipients found for campaign');
+            }
+
+            // Update campaign status
+            $campaign->update([
+                'status' => NotificationStatus::SENT,
+                'sent_at' => now(),
+                'total_recipients' => $recipients->count(),
+            ]);
+
+            $sentCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            // Send notifications to each recipient
+            foreach ($recipients as $recipient) {
+                try {
+                    $this->notificationService->sendToUser(
+                        $recipient,
+                        $campaign->notification_title,
+                        $campaign->notification_message,
+                        $campaign->type->value,
+                        $campaign->additional_data ?? [],
+                        $campaign->action_url,
+                        $campaign->action_text,
+                        $campaign->priority->value,
+                        $campaign->expires_at
+                    );
+
+                    $sentCount++;
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = [
+                        'user_id' => $recipient->id,
+                        'error' => $e->getMessage(),
+                        'timestamp' => now()->toISOString(),
+                    ];
+
+                    Log::error('Failed to send notification to student', [
+                        'campaign_id' => $campaign->id,
+                        'user_id' => $recipient->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Update campaign statistics
+            $campaign->update([
+                'sent_count' => $sentCount,
+                'failed_count' => $failedCount,
+                'error_log' => $errors,
+                'status' => $failedCount > 0 && $sentCount === 0 ? NotificationStatus::FAILED : NotificationStatus::SENT,
+            ]);
+
+            DB::commit();
+
+            Log::info('Student notification campaign sent', [
+                'campaign_id' => $campaign->id,
+                'sent_count' => $sentCount,
+                'failed_count' => $failedCount,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            $campaign->update([
+                'status' => NotificationStatus::FAILED,
+                'error_log' => [
+                    [
+                        'error' => $e->getMessage(),
+                        'timestamp' => now()->toISOString(),
+                    ]
+                ],
+            ]);
+
+            Log::error('Failed to send student notification campaign', [
+                'campaign_id' => $campaign->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Get student recipients for a campaign.
+     */
+    protected function getStudentRecipients(StudentNotificationCampaign $campaign): Collection
+    {
+        if ($campaign->send_to_all_students) {
+            return User::where('role', 'student')->get();
+        }
+
+        if ($campaign->recipient_ids) {
+            return User::whereIn('id', $campaign->recipient_ids)
+                      ->where('role', 'student')
+                      ->get();
+        }
+
+        return collect();
+    }
+
+    /**
      * Get campaign statistics.
      */
     public function getCampaignStats(): array
@@ -252,6 +399,20 @@ class NotificationCampaignService
             'scheduled_campaigns' => NotificationCampaign::withStatus(NotificationStatus::SCHEDULED)->count(),
             'failed_campaigns' => NotificationCampaign::withStatus(NotificationStatus::FAILED)->count(),
             'draft_campaigns' => NotificationCampaign::withStatus(NotificationStatus::DRAFT)->count(),
+        ];
+    }
+
+    /**
+     * Get student campaign statistics.
+     */
+    public function getStudentCampaignStats(): array
+    {
+        return [
+            'total_campaigns' => StudentNotificationCampaign::count(),
+            'sent_campaigns' => StudentNotificationCampaign::where('status', NotificationStatus::SENT)->count(),
+            'scheduled_campaigns' => StudentNotificationCampaign::where('status', NotificationStatus::SCHEDULED)->count(),
+            'failed_campaigns' => StudentNotificationCampaign::where('status', NotificationStatus::FAILED)->count(),
+            'draft_campaigns' => StudentNotificationCampaign::where('status', NotificationStatus::DRAFT)->count(),
         ];
     }
 }

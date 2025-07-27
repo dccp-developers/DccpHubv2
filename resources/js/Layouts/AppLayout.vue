@@ -18,7 +18,10 @@ import SidebarMenuItem from "@/Components/shadcn/ui/sidebar/SidebarMenuItem.vue"
 import SidebarProvider from "@/Components/shadcn/ui/sidebar/SidebarProvider.vue";
 import SidebarTrigger from "@/Components/shadcn/ui/sidebar/SidebarTrigger.vue";
 import Sonner from "@/Components/shadcn/ui/sonner/Sonner.vue";
+import NotificationDropdown from "@/Components/Notifications/NotificationDropdown.vue";
 import { useSeoMetaTags } from "@/Composables/useSeoMetaTags.js";
+import { useRealtimeNotifications } from "@/Composables/useRealtimeNotifications";
+import { useNotifications } from "@/Composables/useNotifications";
 import { onMounted, ref, computed, inject, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { Link, usePage } from "@inertiajs/vue3";
@@ -42,6 +45,17 @@ const page = usePage();
 useSeoMetaTags({
     title: props.title,
 });
+
+// Initialize notification system for authenticated users
+const user = computed(() => page.props.auth?.user);
+if (user.value) {
+    // Initialize real-time notifications
+    useRealtimeNotifications();
+}
+
+// Notification composables
+const { sendTestNotification } = useNotifications();
+const notificationDropdown = ref(null);
 
 // Page load time
 const loadTime = ref(null);
@@ -167,6 +181,21 @@ const mobileNavItems = computed(() => {
 function logout() {
     router.post(route("logout"));
 }
+
+// Send test notification (for development)
+const sendTestNotificationHandler = async () => {
+    try {
+        await sendTestNotification();
+        // Refresh the notification dropdown
+        if (notificationDropdown.value) {
+            notificationDropdown.value.refresh();
+        }
+    } catch (error) {
+        console.error('Failed to send test notification:', error);
+        toast.error('Failed to send test notification');
+    }
+};
+
 // Get current page title
 const currentPageTitle = computed(() => props.title || appName);
 
@@ -246,7 +275,15 @@ const mobileNavConfig = computed(() => ({
                 <div class="font-medium text-sm">{{ currentPageTitle }}</div>
             </div>
 
-            <Sheet v-model:open="isMobileMenuOpen">
+            <div class="flex items-center gap-2">
+                <!-- Notifications for authenticated users -->
+                <NotificationDropdown
+                    v-if="user"
+                    ref="notificationDropdown"
+                    class="md:hidden"
+                />
+
+                <Sheet v-model:open="isMobileMenuOpen">
                 <SheetTrigger asChild>
                     <Button variant="ghost" size="icon" class="md:hidden">
                         <Icon icon="lucide:menu" class="h-5 w-5" />
@@ -300,6 +337,15 @@ const mobileNavConfig = computed(() => ({
                                     <Icon :icon="isDarkMode ? 'lucide:moon' : 'lucide:sun'" class="mr-3 h-5 w-5" />
                                     {{ isDarkMode ? "Dark" : "Light" }} Mode
                                 </button>
+
+                                <!-- Test Notification Button (Development) -->
+                                <button
+                                    v-if="user && $page.props.app?.env === 'local'"
+                                    class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
+                                    @click="sendTestNotificationHandler">
+                                    <Icon icon="lucide:bell" class="mr-3 h-5 w-5" />
+                                    Test Notification
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -316,6 +362,7 @@ const mobileNavConfig = computed(() => ({
                     </div>
                 </SheetContent>
             </Sheet>
+            </div>
         </div>
 
         <SidebarProvider>
@@ -356,7 +403,16 @@ const mobileNavConfig = computed(() => ({
                                 </BreadcrumbList>
                             </Breadcrumb>
                         </div>
-                        <SemesterSchoolYearSelector />
+
+                        <div class="flex items-center gap-2">
+                            <!-- Notifications for authenticated users -->
+                            <NotificationDropdown
+                                v-if="user"
+                                ref="notificationDropdown"
+                                class="hidden md:block"
+                            />
+                            <SemesterSchoolYearSelector />
+                        </div>
                     </div>
                 </header>
                 <main class="flex flex-1 flex-col gap-4 p-4 pt-0 mt-14 md:mt-0">

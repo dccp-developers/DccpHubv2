@@ -86,6 +86,9 @@ final class DashboardController extends Controller
         // Get recent grades
         $recentGradesData = $this->getRecentGrades($enrollments);
 
+        // Get weekly schedule data
+        $weeklyScheduleData = $this->getWeeklySchedule($student);
+
         // Get course information
         $courseInfo = $this->getCourseInfo($student);
 
@@ -104,6 +107,7 @@ final class DashboardController extends Controller
             'todaysClasses' => $todaysClassesData,
             'currentClass' => $currentClassData,
             'recentGrades' => $recentGradesData,
+            'weeklySchedule' => $weeklyScheduleData,
             'assignments' => self::COMING_SOON, // Placeholder
             'exams' => self::COMING_SOON,       // Placeholder
             'announcements' => self::COMING_SOON, // Placeholder
@@ -131,7 +135,11 @@ final class DashboardController extends Controller
                 $query->where('semester', $currentSemester);
             })
             ->where('school_year', $currentSchoolYear)
-            ->with(['subject', 'class']) // Eager load related data
+            ->with([
+                'subject.classes.schedules.room',
+                'subject.classes.Faculty',
+                'class'
+            ]) // Eager load related data including schedules
             ->get();
 
         // Get class enrollments with attendance data
@@ -260,5 +268,57 @@ final class DashboardController extends Controller
         }
 
         return $grade >= 75 ? 'Passing' : 'Failing';
+    }
+
+    /**
+     * Get weekly schedule for the student (using same approach as ScheduleController)
+     */
+    private function getWeeklySchedule(Students $student): array
+    {
+        // Get current semester and school year
+        $currentSemester = $this->settingsService->getCurrentSemester();
+        $currentSchoolYear = $this->settingsService->getCurrentSchoolYearString();
+
+        // Get the student's classes for the current semester and academic year (same as ScheduleController)
+        $classes = \App\Models\Classes::query()
+            ->whereHas('ClassStudents', function ($query) use ($student): void {
+                $query->where('student_id', $student->id);
+            })
+            ->where('semester', $currentSemester)
+            ->where('school_year', $currentSchoolYear)
+            ->with([
+                'Schedule.room',
+                'Subject',
+                'ShsSubject',
+                'Faculty',
+                'Room',
+            ])
+            ->get();
+
+        // Flatten and enhance the schedule data (same as ScheduleController)
+        $weeklySchedule = $classes->flatMap(fn (\App\Models\Classes $class) => $class->Schedule->map(function (\App\Models\Schedule $schedule) use ($class): array {
+            // Format the time in a more readable way
+            $startTime = $schedule->start_time->format('g:i A');
+            $endTime = $schedule->end_time->format('g:i A');
+
+            return [
+                'id' => $schedule->id,
+                'day' => $schedule->day_of_week,
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'subject' => $class->subject_title,
+                'subject_code' => $class->subject_code ?? 'N/A',
+                'room' => $schedule->room?->name ?? 'N/A',
+                'teacher' => $class->faculty_full_name ?? 'TBA',
+                'class_id' => $class->id,
+                'section' => $class->section ?? 'N/A',
+                'color' => $this->generateColorForSubject($class->subject_code ?? $class->subject_title),
+            ];
+        }))->sortBy([
+            ['day', 'asc'],
+            ['start_time', 'asc'],
+        ])->values()->all();
+
+        return $weeklySchedule;
     }
 }

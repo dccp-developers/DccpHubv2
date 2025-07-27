@@ -3,6 +3,7 @@ export { default as StatsCards } from './StatsCards.vue';
 export { default as CurrentClassCard } from './CurrentClassCard.vue';
 export { default as ScheduleCard } from './ScheduleCard.vue';
 export { default as TodaysScheduleCard } from './TodaysScheduleCard.vue';
+export { default as WeeklyScheduleTimeline } from './WeeklyScheduleTimeline.vue';
 export { default as QuickActionsCard } from './QuickActionsCard.vue';
 export { default as AcademicProgressCard } from './AcademicProgressCard.vue';
 export { default as AssignmentsCard } from './AssignmentsCard.vue';

@@ -33,7 +33,13 @@ export function useRealtimeNotifications() {
       if (channel) {
         // Listen for faculty notification events
         listen(channelName.value, 'faculty.notification', (data) => {
-          console.log('Received real-time notification:', data)
+          console.log('Received real-time faculty notification:', data)
+          handleRealtimeNotification(data)
+        })
+
+        // Listen for student notification events
+        listen(channelName.value, 'student.notification', (data) => {
+          console.log('Received real-time student notification:', data)
           handleRealtimeNotification(data)
         })
 

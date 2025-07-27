@@ -4,7 +4,7 @@ import {
   StudentHeader,
   StatsCards,
   CurrentClassCard,
-  TodaysScheduleCard,
+  WeeklyScheduleTimeline,
   QuickActionsCard,
   GradesCard
 } from './Dashboard/Components';
@@ -29,6 +29,10 @@ const props = defineProps({
     default: null, // Can be null
   },
   recentGrades: {
+    type: Array,
+    required: true
+  },
+  weeklySchedule: {
     type: Array,
     required: true
   },
@@ -109,14 +113,16 @@ const currentDate = new Date().toLocaleDateString('en-US', {
 
         <!-- Main Content - Mobile-First Layout -->
         <div class="space-y-3">
-          <!-- Current Class - Always First Priority -->
+          <!-- Current Class - Always First Priority (only if there's a current class) -->
           <CurrentClassCard
+            v-if="currentClass"
             :currentClass="currentClass"
           />
 
-          <!-- Today's Schedule - Second Priority -->
-          <TodaysScheduleCard
-            :todaysClasses="todaysClasses"
+          <!-- Weekly Schedule Timeline - Replaces break time section -->
+          <WeeklyScheduleTimeline
+            :weeklySchedule="weeklySchedule"
+            :currentDay="new Date().toLocaleDateString('en-US', { weekday: 'long' })"
           />
 
           <!-- Desktop: Two Column Layout for Secondary Content -->

@@ -80,12 +80,7 @@ const navigateToNotifications = () => {
         <!-- Simplified Actions -->
         <div class="flex items-center space-x-2">
           <!-- Notifications Button -->
-          <Button variant="ghost" size="sm" @click="navigateToNotifications" class="relative">
-            <Icon icon="lucide:bell" class="h-4 w-4" />
-            <Badge variant="destructive" class="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs flex items-center justify-center">
-              3
-            </Badge>
-          </Button>
+         
 
           <!-- Profile Menu -->
           <DropdownMenu>
