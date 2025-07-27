@@ -76,6 +76,18 @@ return [
 
             'signedUrlExpires' => 60 * 60 * 24, // 1 day <- default to 1 hour (3600)
         ],
+            // Example for a new 'r2' disk
+    'r2' => [
+        'driver' => 's3', // Use the S3 driver
+        'key' => env('R2_ACCESS_KEY_ID'),
+        'secret' => env('R2_SECRET_ACCESS_KEY'),
+        'region' => 'auto', // Or a specific R2 region if desired
+        'bucket' => env('R2_BUCKET'),
+        'endpoint' => env('R2_ENDPOINT'), // Your R2 S3 API endpoint
+        'url' => env('R2_URL'), // Optional: Your custom domain URL if used
+        'use_path_style_endpoint' => env('R2_USE_PATH_STYLE_ENDPOINT', false),
+        'throw' => false,
+    ],
 
     ],
 

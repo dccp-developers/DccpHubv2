@@ -127,14 +127,14 @@ class StudentEnrollment extends Model
     public function getAssessmentUrlAttribute(): string
     {
         $resource = $this->resources()->where('type', 'assessment')->latest()->first();
-        return $resource ? Storage::disk('public')->url($resource->file_path) : '';
+        return $resource ? Storage::disk('r2')->url($resource->file_path) : '';
     }
 
     public function getCertificateUrlAttribute(): string
     {
         
         $resource = $this->resources()->where('type', 'certificate')->latest()->first();
-        return $resource ? Storage::disk('public')->url($resource->file_path) : '';
+        return $resource ? Storage::disk('r2')->url($resource->file_path) : '';
     }
 
     /**

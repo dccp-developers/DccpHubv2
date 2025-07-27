@@ -175,12 +175,16 @@ final class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return false;
+        return true;
     }
 
     public function person()
     {
         return $this->morphTo();
+    }
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->getProfilePhotoUrlAttribute();
     }
     public function getProfilePhotoUrlAttribute()
     {
@@ -195,10 +199,10 @@ final class User extends Authenticatable implements FilamentUser
         }
 
         // Get the configured profile photo disk from Jetstream config
-        $disk = config('jetstream.profile_photo_disk', 'public');
+        $disk = config('jetstream.profile_photo_disk', 'r2');
 
         // Return URL from the configured disk
-        return Storage::disk($disk)->url($this->profile_photo_path);
+        return Storage::disk($disk)->get($this->profile_photo_path);
     }
 
     public function UserPerson()

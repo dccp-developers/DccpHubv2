@@ -25,7 +25,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.16",
         "laravel/tinker": "^2.9",
-        "league/flysystem-aws-s3-v3": "^3.0",
+        "league/flysystem-aws-s3-v3": "^3.29",
         "pinkary-project/type-guard": "^0.1.0",
         "predis/predis": "^3.0",
         "pusher/pusher-php-server": "^7.2",
