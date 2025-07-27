@@ -155,11 +155,17 @@
             <ThemeToggle />
 
             <!-- Notifications -->
-            <Button variant="ghost" size="icon" class="relative">
-              <BellIcon class="h-5 w-5" />
-              <Badge variant="destructive" class="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs">
-                3
-              </Badge>
+            <NotificationDropdown ref="notificationDropdown" />
+
+            <!-- Test Notification Button (Development) -->
+            <Button
+              v-if="$page.props.app?.env === 'local'"
+              variant="ghost"
+              size="icon"
+              @click="sendTestNotification"
+              title="Send Test Notification"
+            >
+              <BeakerIcon class="h-5 w-5" />
             </Button>
 
             <!-- Quick actions dropdown (desktop only) -->
@@ -262,8 +268,11 @@ import { router, Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 import { Button } from '@/Components/ui/button.js'
-import { Badge } from '@/Components/ui/badge.js'
 import ThemeToggle from '@/Components/ui/theme-toggle.vue'
+import NotificationDropdown from '@/Components/Notifications/NotificationDropdown.vue'
+import { useRealtimeNotifications } from '@/Composables/useRealtimeNotifications'
+import { useNotifications } from '@/Composables/useNotifications'
+import { useToast } from '@/Components/shadcn/ui/toast'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -278,7 +287,6 @@ import DevelopmentModal from '@/Components/ui/DevelopmentModal.vue'
 import {
   Bars3Icon,
   XMarkIcon,
-  BellIcon,
   PlusIcon,
   ChevronDownIcon,
   HomeIcon,
@@ -289,13 +297,27 @@ import {
   ChartBarIcon,
   DocumentTextIcon,
   CogIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  BeakerIcon
 } from '@heroicons/vue/24/outline'
 
 // Reactive state
 const sidebarOpen = ref(false)
 const quickActionsOpen = ref(false)
 const showDevelopmentModal = ref(false)
+const notificationDropdown = ref(null)
+
+// Notification composables
+const { sendTestNotification: sendTest } = useNotifications()
+const { toast } = useToast()
+
+// Initialize real-time notifications
+useRealtimeNotifications()
+
+// Route helper function
+const route = (name, params = {}) => {
+  return window.route ? window.route(name, params) : '#'
+}
 
 // Academic period settings
 const currentSemester = ref(1)
@@ -394,6 +416,24 @@ const updateSchoolYear = async (schoolYear) => {
 
 const logout = () => {
   router.post(route('logout'))
+}
+
+// Send test notification
+const sendTestNotification = async () => {
+  try {
+    await sendTest()
+    // Refresh the notification dropdown
+    if (notificationDropdown.value) {
+      notificationDropdown.value.refresh()
+    }
+  } catch (error) {
+    console.error('Failed to send test notification:', error)
+    toast({
+      title: 'Error',
+      description: 'Failed to send test notification',
+      variant: 'destructive'
+    })
+  }
 }
 
 // Load settings on component mount

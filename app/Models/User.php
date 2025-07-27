@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\DatabaseNotificationCollection;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 use function Illuminate\Events\queueable;
 
@@ -103,6 +104,7 @@ final class User extends Authenticatable implements FilamentUser
     use HasApiTokens;
     use Notifiable;
     use TwoFactorAuthenticatable;
+    use HasPushSubscriptions;
 
     protected $table = 'accounts';
 
@@ -318,5 +320,29 @@ final class User extends Authenticatable implements FilamentUser
                   ->orWhereJsonContains('data->enrollment_google_email', $this->email);
         })->where('status', 'approved')->first();
         return $enrollment;
+    }
+
+    /**
+     * Get the faculty notifications for the user.
+     */
+    public function facultyNotifications(): HasMany
+    {
+        return $this->hasMany(FacultyNotification::class);
+    }
+
+    /**
+     * Get unread faculty notifications for the user.
+     */
+    public function unreadFacultyNotifications(): HasMany
+    {
+        return $this->facultyNotifications()->unread()->notExpired();
+    }
+
+    /**
+     * Get the count of unread faculty notifications.
+     */
+    public function getUnreadNotificationCountAttribute(): int
+    {
+        return $this->unreadFacultyNotifications()->count();
     }
 }

@@ -7,6 +7,11 @@ import { ZiggyVue } from 'ziggy-js'
 import './bootstrap'
 import '../css/app.css'
 
+// Debug Pusher (temporary)
+if (import.meta.env.DEV) {
+  import('./debug-pusher.js')
+}
+
 // Import Capacitor Social Login handler
 import { initializeSocialLogin, setupDeepLinkListener, handleDeepLinkCallback } from './utils/capacitor-social-login.js'
 
