@@ -30,6 +30,7 @@ import {
 } from "@/Components/shadcn/ui/sheet";
 import { useColorMode } from "@vueuse/core";
 import AppLogoIcon from "@/Components/AppLogoIcon.vue";
+import SemesterSchoolYearSelector from "@/Components/SemesterSchoolYearSelector.vue";
 import { toast } from "vue-sonner";
 
 const props = defineProps({
@@ -240,7 +241,10 @@ const mobileNavConfig = computed(() => ({
                 <span class="font-bold">{{ appName }}</span>
             </div>
 
-            <div class="font-medium">{{ currentPageTitle }}</div>
+            <div class="flex items-center gap-2">
+                <SemesterSchoolYearSelector />
+                <div class="font-medium text-sm">{{ currentPageTitle }}</div>
+            </div>
 
             <Sheet v-model:open="isMobileMenuOpen">
                 <SheetTrigger asChild>
@@ -338,18 +342,21 @@ const mobileNavConfig = computed(() => ({
             <SidebarInset>
                 <header
                     class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:block hidden">
-                    <div class="flex items-center gap-2 px-4 mt-4">
-                        <SidebarTrigger class="" />
-                        <Separator orientation="vertical" class="mr-2 h-4 hidden md:block" />
-                        <Breadcrumb>
-                            <BreadcrumbList>
-                                <BreadcrumbItem>
-                                    <BreadcrumbLink>
-                                        {{ title }}
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
-                            </BreadcrumbList>
-                        </Breadcrumb>
+                    <div class="flex items-center justify-between w-full gap-2 px-4 mt-4">
+                        <div class="flex items-center gap-2">
+                            <SidebarTrigger class="" />
+                            <Separator orientation="vertical" class="mr-2 h-4 hidden md:block" />
+                            <Breadcrumb>
+                                <BreadcrumbList>
+                                    <BreadcrumbItem>
+                                        <BreadcrumbLink>
+                                            {{ title }}
+                                        </BreadcrumbLink>
+                                    </BreadcrumbItem>
+                                </BreadcrumbList>
+                            </Breadcrumb>
+                        </div>
+                        <SemesterSchoolYearSelector />
                     </div>
                 </header>
                 <main class="flex flex-1 flex-col gap-4 p-4 pt-0 mt-14 md:mt-0">

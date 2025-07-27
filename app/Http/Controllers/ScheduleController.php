@@ -10,11 +10,15 @@ use Inertia\Response;
 use App\Models\Classes;
 use App\Models\Schedule;
 use App\Models\Students;
-use App\Models\GeneralSettings;
+use App\Services\GeneralSettingsService;
 use Illuminate\Support\Facades\Auth;
 
 final class ScheduleController extends Controller
 {
+    public function __construct(
+        private readonly GeneralSettingsService $settingsService
+    ) {}
+
     public function index(): Response
     {
         /** @var User $user */
@@ -25,10 +29,9 @@ final class ScheduleController extends Controller
         /** @var Students $student */
         $student = $user->student;
 
-        // Get current semester and school year from settings
-        $settings = GeneralSettings::query()->first();
-        $currentSemester = $settings->semester;
-        $currentSchoolYear = $settings->getSchoolYear();
+        // Get current semester and school year from settings service
+        $currentSemester = $this->settingsService->getCurrentSemester();
+        $currentSchoolYear = $this->settingsService->getCurrentSchoolYearString();
 
         // Get the student's classes for the current semester and academic year
         $classes = Classes::query()
@@ -59,12 +62,12 @@ final class ScheduleController extends Controller
                 'start_time' => $startTime,
                 'end_time' => $endTime,
                 'subject' => $class->subject_title,
-                'subject_code' => $class->formated_subject_code,
+                'subject_code' => $class->subject_code ?? 'N/A',
                 'room' => $schedule->room?->name ?? 'N/A',
-                'teacher' => $class->faculty_full_name,
+                'teacher' => $class->faculty_full_name ?? 'TBA',
                 'class_id' => $class->id,
-                'section' => $class->section,
-                'color' => $this->generateColorForSubject($class->subject_code),
+                'section' => $class->section ?? 'N/A',
+                'color' => $this->generateColorForSubject($class->subject_code ?? $class->subject_title),
             ];
         }))->sortBy([
             ['day_of_week', 'asc'],

@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue';
+import { router } from '@inertiajs/vue3';
 import { Avatar, AvatarImage, AvatarFallback } from '@/Components/shadcn/ui/avatar';
 import { Button } from '@/Components/shadcn/ui/button';
 import { Icon } from '@iconify/vue';
@@ -6,7 +8,7 @@ import { Card, CardContent } from '@/Components/shadcn/ui/card';
 import { Badge } from '@/Components/shadcn/ui/badge';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/Components/shadcn/ui/dropdown-menu';
 
-defineProps({
+const props = defineProps({
   student: {
     type: Object,
     required: true,
@@ -20,52 +22,84 @@ defineProps({
     required: true
   }
 });
+
+// Get greeting based on time of day
+const greeting = computed(() => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+});
+
+// Get student initials for avatar fallback
+const studentInitials = computed(() => {
+  const names = props.student.name.split(' ');
+  return names.map(name => name.charAt(0)).join('').substring(0, 2).toUpperCase();
+});
+
+// Navigation functions
+const navigateToProfile = () => {
+  router.visit('/profile');
+};
+
+const navigateToSettings = () => {
+  router.visit('/settings');
+};
+
+const navigateToNotifications = () => {
+  router.visit('/notifications');
+};
 </script>
 
 <template>
-  <Card class="w-full">
-    <CardContent class="p-6">
-      <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-        <div class="flex items-center space-x-4">
-          <Avatar class="h-20 w-20 md:h-24 md:w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
+  <Card class="w-full border-0 shadow-sm">
+    <CardContent class="p-3 md:p-4">
+      <div class="flex items-center justify-between">
+        <!-- Student Info Section -->
+        <div class="flex items-center space-x-3">
+          <Avatar class="h-10 w-10 md:h-12 md:w-12 ring-2 ring-primary/20">
             <AvatarImage :src="user.profile_photo_url" alt="Student" />
-            <AvatarFallback class="text-lg font-bold">{{ student.name.charAt(0) }}</AvatarFallback>
+            <AvatarFallback class="text-sm font-bold bg-primary/10 text-primary">{{ studentInitials }}</AvatarFallback>
           </Avatar>
-          <div class="space-y-1">
-            <h1 class="text-2xl md:text-3xl font-bold text-primary">{{ student.name }}</h1>
-            <div class="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" class="text-xs md:text-sm">
-                <Icon icon="lucide:graduation-cap" class="mr-1 h-3 w-3 md:h-4 md:w-4" />
+
+          <div class="min-w-0 flex-1">
+            <h1 class="text-sm md:text-base font-semibold text-foreground truncate">
+              {{ greeting }}, {{ student.name.split(' ')[0] }}!
+            </h1>
+            <div class="flex items-center gap-2 mt-1">
+              <Badge variant="secondary" class="text-xs px-2 py-0.5">
                 {{ student.grade }}
               </Badge>
-              <Badge variant="outline" class="text-xs md:text-sm">
-                <Icon icon="lucide:calendar" class="mr-1 h-3 w-3 md:h-4 md:w-4" />
-                {{ currentDate }}
-              </Badge>
+              <span class="text-xs text-muted-foreground hidden sm:inline">
+                {{ new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) }}
+              </span>
             </div>
           </div>
         </div>
+
+        <!-- Simplified Actions -->
         <div class="flex items-center space-x-2">
-          <Button variant="outline" size="sm" class="hidden md:flex">
-            <Icon icon="lucide:bell" class="mr-2 h-4 w-4" />
-            Notifications
+          <!-- Notifications Button -->
+          <Button variant="ghost" size="sm" @click="navigateToNotifications" class="relative">
+            <Icon icon="lucide:bell" class="h-4 w-4" />
+            <Badge variant="destructive" class="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs flex items-center justify-center">
+              3
+            </Badge>
           </Button>
-          <Button variant="outline" size="sm" class="hidden md:flex">
-            <Icon icon="lucide:settings" class="mr-2 h-4 w-4" />
-            Settings
-          </Button>
+
+          <!-- Profile Menu -->
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" class="md:hidden">
-                <Icon icon="lucide:more-vertical" class="h-5 w-5" />
+              <Button variant="ghost" size="sm">
+                <Icon icon="lucide:more-vertical" class="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <Icon icon="lucide:bell" class="mr-2 h-4 w-4" />
-                Notifications
+            <DropdownMenuContent align="end" class="w-40">
+              <DropdownMenuItem @click="navigateToProfile">
+                <Icon icon="lucide:user" class="mr-2 h-4 w-4" />
+                Profile
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem @click="navigateToSettings">
                 <Icon icon="lucide:settings" class="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>

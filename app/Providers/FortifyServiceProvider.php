@@ -50,16 +50,26 @@ final class FortifyServiceProvider extends ServiceProvider
 
         RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by($request->session()->get('login.id')));
 
-        $this->configureLoginView();
+        $this->configureViews();
         $this->configureRedirects();
     }
 
-    private function configureLoginView(): void
+    private function configureViews(): void
     {
         Fortify::loginView(fn () => Inertia::render('Auth/Login', [
             'availableOauthProviders' => (new ActiveOauthProviderAction())->handle(),
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+        ]));
+
+        // Configure password reset views
+        Fortify::requestPasswordResetLinkView(fn () => Inertia::render('Auth/ForgotPassword', [
+            'status' => session('status'),
+        ]));
+
+        Fortify::resetPasswordView(fn (Request $request) => Inertia::render('Auth/ResetPassword', [
+            'email' => $request->email,
+            'token' => $request->route('token'),
         ]));
     }
 

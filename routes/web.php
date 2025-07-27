@@ -19,6 +19,7 @@ use App\Http\Controllers\PendingEnrollmentController;
 use App\Http\Controllers\EnrollmentAuthController; // Added
 use App\Http\Controllers\GuestDashboardController;
 use App\Http\Controllers\Student\EnrollmentController;
+use App\Http\Controllers\Student\StudentSettingsController;
 use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Faculty\FacultyClassController;
 use App\Http\Controllers\Faculty\FacultyStudentController;
@@ -152,6 +153,14 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
     Route::prefix('student')->group(function () {
         Route::get('/enroll/subjects', [EnrollmentController::class, 'showEnrollmentForm'])->name('student.enroll.subjects');
         Route::post('/enroll/subjects', [EnrollmentController::class, 'processEnrollment'])->name('student.enroll.subjects.submit');
+    });
+
+    // Student Settings Routes
+    Route::prefix('student/settings')->name('student.settings.')->group(function () {
+        Route::get('/', [StudentSettingsController::class, 'index'])->name('index');
+        Route::patch('/semester', [StudentSettingsController::class, 'updateSemester'])->name('semester');
+        Route::patch('/school-year', [StudentSettingsController::class, 'updateSchoolYear'])->name('school-year');
+        Route::patch('/both', [StudentSettingsController::class, 'updateBoth'])->name('both');
     });
 
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');

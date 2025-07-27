@@ -1,12 +1,9 @@
-import { inject } from 'vue'
-
 <script setup>
 import InputError from '@/Components/InputError.vue'
 import AuthenticationCardLogo from '@/Components/LogoRedirect.vue'
 import Button from '@/Components/shadcn/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
 import Input from '@/Components/shadcn/ui/input/Input.vue'
-
 import Label from '@/Components/shadcn/ui/label/Label.vue'
 import { useSeoMetaTags } from '@/Composables/useSeoMetaTags.js'
 import { cn } from '@/lib/utils'
@@ -19,7 +16,7 @@ const props = defineProps({
 })
 
 useSeoMetaTags({
-  title: 'Register',
+  title: 'Reset Password',
 })
 
 const route = inject('route')

@@ -163,4 +163,56 @@ class StudentEnrollment extends Model
         // Log::warning('General settings not found for scoping Student Enrollments.'); // Optional logging
         return $query;
     }
+
+    /**
+     * Check if a student is already enrolled for a specific semester and school year.
+     *
+     * @param  string  $studentId
+     * @param  int  $semester
+     * @param  string  $schoolYear
+     * @return bool
+     */
+    public static function isStudentEnrolled(string $studentId, int $semester, string $schoolYear): bool
+    {
+        return self::where('student_id', $studentId)
+            ->where('semester', $semester)
+            ->where('school_year', $schoolYear)
+            ->where('status', 'Verified By Cashier')
+            ->exists();
+    }
+
+    /**
+     * Check if a student has any enrollment record for a specific semester and school year.
+     *
+     * @param  string  $studentId
+     * @param  int  $semester
+     * @param  string  $schoolYear
+     * @return bool
+     */
+    public static function hasEnrollmentRecord(string $studentId, int $semester, string $schoolYear): bool
+    {
+        return self::where('student_id', $studentId)
+            ->where('semester', $semester)
+            ->where('school_year', $schoolYear)
+            ->exists();
+    }
+
+    /**
+     * Get the enrollment status for a student in a specific semester and school year.
+     *
+     * @param  string  $studentId
+     * @param  int  $semester
+     * @param  string  $schoolYear
+     * @return string|null
+     */
+    public static function getEnrollmentStatus(string $studentId, int $semester, string $schoolYear): ?string
+    {
+        $enrollment = self::where('student_id', $studentId)
+            ->where('semester', $semester)
+            ->where('school_year', $schoolYear)
+            ->latest('created_at')
+            ->first();
+
+        return $enrollment ? $enrollment->status : null;
+    }
 }

@@ -12,7 +12,7 @@ import { computed } from 'vue';
 const props = defineProps({
   stats: {
     type: Array,
-    required: true,
+    default: () => [],
   },
   courseInfo: {
     type: Object,
@@ -79,12 +79,20 @@ const getProgressValue = (stat) => {
     // Assuming GPA is on a 4.0 scale
     const value = parseFloat(stat.value);
     if (isNaN(value)) return null;
-    return (value / 4.0) * 100;
+    const percentage = (value / 4.0) * 100;
+    return Math.min(Math.max(percentage, 0), 100); // Clamp between 0-100
   } else if (lowerLabel.includes('attendance')) {
-    // Attendance is already a percentage
+    // Handle attendance - could be percentage or raw number
     const value = parseFloat(stat.value);
     if (isNaN(value)) return null;
-    return value;
+
+    // If value is greater than 100, it's likely a raw number, not percentage
+    if (value > 100) {
+      // Assume it's out of some total - for now, don't show progress
+      return null;
+    }
+
+    return Math.min(Math.max(value, 0), 100); // Clamp between 0-100
   } else {
     // For other stats, no progress bar
     return null;
@@ -124,48 +132,40 @@ const academicInfo = computed(() => {
       </div>
     </div>
 
-    <!-- Stats cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <TooltipProvider>
-        <Tooltip v-for="(stat, index) in stats" :key="index">
-          <TooltipTrigger asChild>
-            <Card
-              class="overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary/50 group cursor-pointer"
-            >
-              <CardContent class="p-6">
-                <div class="flex items-start justify-between mb-2">
-                  <div>
-                    <p class="text-sm font-medium text-muted-foreground mb-1">{{ stat.label }}</p>
-                    <div class="text-2xl font-bold" :class="getStatConfig(stat.label).color">{{ stat.value }}</div>
-                  </div>
-                  <div
-                    class="p-2 rounded-full transition-colors duration-300 group-hover:bg-primary/10"
-                    :class="getStatConfig(stat.label).bgColor"
-                  >
-                    <Icon
-                      :icon="getStatConfig(stat.label).icon"
-                      class="w-5 h-5 transition-transform duration-300 group-hover:scale-110"
-                      :class="getStatConfig(stat.label).color"
-                    />
-                  </div>
+    <!-- Simplified Stats cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+      <div v-for="(stat, index) in (Array.isArray(props.stats) ? props.stats.slice(0, 4) : [])" :key="index">
+        <Card class="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <CardContent class="p-3">
+            <div class="flex items-center justify-between">
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-muted-foreground mb-1 truncate">{{ stat.label }}</p>
+                <div class="text-lg md:text-xl font-bold" :class="getStatConfig(stat.label).color">
+                  {{ stat.value }}
                 </div>
+              </div>
+              <div
+                class="p-2 rounded-lg flex-shrink-0"
+                :class="getStatConfig(stat.label).bgColor"
+              >
+                <Icon
+                  :icon="getStatConfig(stat.label).icon"
+                  class="w-4 h-4"
+                  :class="getStatConfig(stat.label).color"
+                />
+              </div>
+            </div>
 
-                <!-- Progress bar for applicable stats -->
-                <div v-if="getProgressValue(stat) !== null" class="mt-4">
-                  <Progress
-                    :model-value="getProgressValue(stat)"
-                    class="h-1.5"
-                  />
-                  <p class="text-xs text-muted-foreground mt-1 text-right">{{ Math.round(getProgressValue(stat)) }}%</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TooltipTrigger>
-          <TooltipContent v-if="stat.description">
-            <p>{{ stat.description }}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+            <!-- Simplified progress bar for applicable stats -->
+            <div v-if="getProgressValue(stat) !== null" class="mt-2">
+              <Progress
+                :model-value="getProgressValue(stat)"
+                class="h-1.5"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   </div>
 </template>

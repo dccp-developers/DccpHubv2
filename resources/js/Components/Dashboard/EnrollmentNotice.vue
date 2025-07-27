@@ -51,10 +51,41 @@ const currentStep = computed(() => {
 const closed = ref(false);
 const canClose = computed(() => props.studentEnrollment && props.studentEnrollment.status === 'Verified By Cashier');
 const handleClose = () => { closed.value = true; };
+
+// Check if student is already enrolled (has verified enrollment)
+const isAlreadyEnrolled = computed(() => {
+  try {
+    // Check if student has a verified enrollment for the current period
+    return props.studentEnrollment &&
+           props.studentEnrollment.id &&
+           props.studentEnrollment.status === 'Verified By Cashier';
+  } catch (error) {
+    console.warn('Error checking enrollment status:', error);
+    return false;
+  }
+});
+
+// Show enrollment notice only if user is student, not closed, and not already enrolled
+// PRIORITY: Hide completely if student is already enrolled, regardless of any other settings
+const shouldShowEnrollmentNotice = computed(() => {
+  // RULE 1: If student is already enrolled (status = 'Verified By Cashier'), NEVER show the banner
+  // This takes precedence over all other conditions including online_enrollment_enabled
+  if (isAlreadyEnrolled.value) {
+    return false;
+  }
+
+  // RULE 2: Only show if all conditions are met:
+  // - Online enrollment is enabled
+  // - User is a student
+  // - Banner hasn't been manually closed
+  return props.generalSettings.online_enrollment_enabled &&
+         props.user.role === 'student' &&
+         !closed.value;
+});
 </script>
 
 <template>
-  <div v-if="generalSettings.online_enrollment_enabled && user.role === 'student' && !closed">
+  <div v-if="shouldShowEnrollmentNotice">
     <!-- If student has an enrollment, show status tracker -->
     <template v-if="studentEnrollment && studentEnrollment.id">
       <Card class="border-2 border-primary shadow-lg overflow-hidden bg-gradient-to-br from-primary/5 to-background">

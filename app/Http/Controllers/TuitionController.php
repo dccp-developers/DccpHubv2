@@ -9,13 +9,17 @@ use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Students;
 use App\Models\StudentTuition;
-use App\Models\GeneralSettings;
 use App\Models\StudentTransactions;
+use App\Services\GeneralSettingsService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 
 final class TuitionController extends Controller
 {
+    public function __construct(
+        private readonly GeneralSettingsService $settingsService
+    ) {}
+
     public function index(): Response|RedirectResponse
     {
         /** @var User $user */
@@ -35,8 +39,8 @@ final class TuitionController extends Controller
         $student = $user->student;
 
         // Get the student's tuition for the current semester and academic year.
-        $currentSemester = GeneralSettings::query()->first()->semester;
-        $currentSchoolYear = GeneralSettings::query()->first()->getSchoolYear();
+        $currentSemester = $this->settingsService->getCurrentSemester();
+        $currentSchoolYear = $this->settingsService->getCurrentSchoolYearString();
 
         $tuition = StudentTuition::query()
             ->where('student_id', $student->id)

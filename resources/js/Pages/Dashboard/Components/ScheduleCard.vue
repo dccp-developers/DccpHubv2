@@ -75,19 +75,19 @@ const formattedDate = computed(() => {
 
 // Calculate position for schedule blocks in timeline view
 function getSchedulePosition(classItem) {
-  if (!classItem.start_time) return { top: 0, height: 60 };
+  if (!classItem.start_time) return { top: '0px', height: '56px' };
 
   // Parse time (e.g., "8:00 AM" to hours and minutes)
   const startParts = classItem.start_time.split(' ');
   const startTime = startParts[0].split(':');
   const startHour = parseInt(startTime[0]);
-  const startMin = parseInt(startTime[1]);
+  const startMin = parseInt(startTime[1] || 0);
   const startAmPm = startParts[1];
 
   const endParts = classItem.end_time.split(' ');
   const endTime = endParts[0].split(':');
   const endHour = parseInt(endTime[0]);
-  const endMin = parseInt(endTime[1]);
+  const endMin = parseInt(endTime[1] || 0);
   const endAmPm = endParts[1];
 
   // Convert to 24-hour format
@@ -99,18 +99,34 @@ function getSchedulePosition(classItem) {
   if (endAmPm === 'PM' && endHour !== 12) adjustedEndHour += 12;
   if (endAmPm === 'AM' && endHour === 12) adjustedEndHour = 0;
 
-  // Calculate position and height
+  // Calculate position and height (6AM is our start time)
   const hoursSince6Am = Math.max(0, adjustedStartHour - 6 + startMin / 60);
   const durationHours = (adjustedEndHour + endMin / 60) - (adjustedStartHour + startMin / 60);
 
-  const topPosition = hoursSince6Am * 60; // 60px per hour
-  const height = Math.max(30, durationHours * 60); // Minimum height of 30px
+  const topPosition = hoursSince6Am * 56; // 56px per hour to match time slots
+  const height = Math.max(40, durationHours * 56); // Minimum height of 40px
 
   return {
-    top: topPosition,
-    height: height
+    top: topPosition + 'px',
+    height: height + 'px'
   };
 }
+
+// Calculate current time position for the indicator line
+const getCurrentTimePosition = computed(() => {
+  const now = currentTime.value;
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+
+  // Calculate position based on time (6AM to 8PM)
+  const startHour = 6;
+  const hourOffset = hour - startHour + minute / 60;
+
+  if (hourOffset >= 0 && hourOffset <= 14) {
+    return hourOffset * 56; // 56px per hour
+  }
+  return null;
+});
 
 // Toggle class details
 function toggleDetails(classId) {
@@ -444,74 +460,79 @@ function getTimeInMinutes(timeStr) {
 
       <!-- Timeline view -->
       <div v-else-if="viewMode === 'timeline'" class="relative">
-        <div ref="scrollContainer" class="max-h-[350px] overflow-y-auto pr-1">
-          <!-- Time markers -->
-          <div class="relative border-l border-muted-foreground/20 ml-4 pl-4">
-            <!-- Current time indicator -->
-            <div
-              class="absolute left-0 flex items-center z-10 transform -translate-y-1/2"
-              :style="{
-                top: ((currentTime.value.getHours() - 6) * 60 + currentTime.value.getMinutes()) + 'px'
-              }"
-            >
-              <div class="h-2 w-2 rounded-full bg-red-500 animate-pulse mr-1"></div>
-              <div class="text-xs font-medium text-red-500 bg-background px-1">
-                {{ currentTime.value.getHours() }}:{{ currentTime.value.getMinutes().toString().padStart(2, '0') }}
+        <div ref="scrollContainer" class="timeline-container relative overflow-y-auto max-h-[350px]">
+          <div class="overflow-x-auto">
+            <div class="min-w-[300px]">
+              <!-- Time column -->
+              <div class="sticky left-0 z-20 bg-background/95 backdrop-blur-sm w-[60px] border-r float-left">
+                <div class="h-14 border-b flex items-end justify-center">
+                  <span class="text-xs font-medium mb-1">Time</span>
+                </div>
+                <!-- Time slots -->
+                <div v-for="hour in 14" :key="hour" class="h-14 border-b border-gray-100 flex items-center justify-center">
+                  <span class="text-xs text-muted-foreground">
+                    {{ (hour + 5) % 12 || 12 }}{{ (hour + 5) >= 12 ? 'pm' : 'am' }}
+                  </span>
+                </div>
               </div>
-              <div class="h-px w-full bg-red-500/50"></div>
-            </div>
 
-            <!-- Hour markers -->
-            <div v-for="hour in 14" :key="hour" class="relative" :style="{ height: '60px' }">
-              <div class="absolute left-0 transform -translate-x-4 -translate-y-1/2 flex items-center">
-                <div class="h-1.5 w-1.5 rounded-full bg-muted-foreground/40"></div>
-                <div class="text-xs text-muted-foreground ml-1.5">{{ (hour + 6) % 12 || 12 }}{{ (hour + 6) >= 12 ? 'pm' : 'am' }}</div>
-              </div>
-            </div>
+              <!-- Schedule column -->
+              <div class="ml-[60px] relative">
+                <div class="h-14 border-b flex items-center justify-center bg-muted/30">
+                  <span class="text-xs font-medium">Today's Classes</span>
+                </div>
 
-            <!-- Class blocks -->
-            <div
-              v-for="class_item in sortedClasses"
-              :key="class_item.id"
-              class="absolute left-8 right-2 rounded-md border p-2 transition-all duration-200 hover:shadow-md cursor-pointer"
-              :class="[
-                getClassStatus(class_item) === 'current' ? 'border-primary bg-primary/5' : 'border-muted',
-                getClassStatus(class_item) === 'past' ? 'opacity-60' : 'opacity-100'
-              ]"
-              :style="{
-                top: getSchedulePosition(class_item).top + 'px',
-                height: getSchedulePosition(class_item).height + 'px',
-                minHeight: '30px'
-              }"
-              @click="toggleDetails(class_item.id)"
-            >
-              <div class="flex flex-col h-full overflow-hidden">
-                <div class="flex justify-between items-start">
-                  <div class="flex-1 min-w-0">
-                    <h4 class="font-medium text-sm truncate" :class="getClassStatus(class_item) === 'current' ? 'text-primary' : ''">
-                      {{ class_item.subject }}
-                    </h4>
-                    <p class="text-xs truncate text-muted-foreground">
-                      {{ class_item.start_time }} - {{ class_item.end_time }}
-                    </p>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    class="text-xs shrink-0 ml-1"
-                    :class="getClassStatus(class_item) === 'current' ? 'border-primary/50 bg-primary/5' : ''"
+                <!-- Day content -->
+                <div class="relative">
+                  <!-- Time slot lines -->
+                  <div
+                    v-for="(slot, index) in 14"
+                    :key="slot"
+                    class="absolute w-full h-14 border-b border-gray-100"
+                    :style="{ top: `${index * 56}px` }"
+                    :class="{ 'bg-background': index % 2 === 0 }"
+                  ></div>
+
+                  <!-- Current time indicator line -->
+                  <div
+                    v-if="getCurrentTimePosition !== null"
+                    class="absolute left-0 right-0 h-px bg-primary z-30 pointer-events-none"
+                    :style="{ top: `${getCurrentTimePosition}px` }"
                   >
-                    {{ class_item.room }}
-                  </Badge>
-                </div>
+                    <div class="absolute -left-1 -top-1.5 flex items-center">
+                      <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                    </div>
+                  </div>
 
-                <!-- Only show if there's enough height -->
-                <div v-if="getSchedulePosition(class_item).height > 50" class="mt-1 text-xs text-muted-foreground truncate">
-                  {{ class_item.teacher }}
-                </div>
-
-                <!-- Current class indicator -->
-                <div v-if="getClassStatus(class_item) === 'current'" class="mt-auto pt-1">
-                  <Progress :model-value="class_item.progress || 0" class="h-1" />
+                  <!-- Schedule blocks -->
+                  <div
+                    v-for="class_item in sortedClasses"
+                    :key="class_item.id"
+                    class="absolute w-[90%] left-[5%] rounded-md p-2 shadow-sm z-10 text-xs cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-md border"
+                    :class="[
+                      class_item.color || 'bg-blue-100 border-blue-300',
+                      getClassStatus(class_item) === 'current' ? 'ring-1 ring-primary animate-pulse-subtle' : '',
+                      getClassStatus(class_item) === 'past' ? 'opacity-60' : ''
+                    ]"
+                    :style="getSchedulePosition(class_item)"
+                    @click="toggleDetails(class_item.id)"
+                  >
+                    <div class="text-[10px] leading-tight font-medium">
+                      {{ class_item.time }}
+                      <span class="ml-1 text-[9px] opacity-75">
+                        Room {{ class_item.room }}
+                      </span>
+                    </div>
+                    <div class="text-[11px] font-semibold mt-0.5 truncate">
+                      {{ class_item.subject_code }}
+                    </div>
+                    <div class="text-[10px] opacity-75 truncate">
+                      {{ class_item.subject }}
+                    </div>
+                    <div v-if="getSchedulePosition(class_item).height > 60" class="text-[9px] opacity-60 truncate mt-1">
+                      {{ class_item.teacher }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

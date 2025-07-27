@@ -4,12 +4,9 @@ import {
   StudentHeader,
   StatsCards,
   CurrentClassCard,
-  ScheduleCard,
-  AssignmentsCard,
-  ExamsCard,
-  GradesCard,
-  AnnouncementsCard,
-  ResourcesCard
+  TodaysScheduleCard,
+  QuickActionsCard,
+  GradesCard
 } from './Dashboard/Components';
 import EnrollmentNotice from '@/Components/Dashboard/EnrollmentNotice.vue';
 
@@ -85,65 +82,60 @@ const currentDate = new Date().toLocaleDateString('en-US', {
         <!-- You can add a button to continue to the next step or show available subjects here -->
       </div>
     </div>
-    <div v-else class="md:container mx-auto px-4 py-6 space-y-6">
-      <!-- Enrollment Notice -->
-      <EnrollmentNotice 
-        v-if="user.role === 'student'"
-        :general-settings="generalSettings"
-        :user="user"
-        :student-enrollment="studentEnrollment"
-      />
-      
-      <!-- Student Header -->
-      <StudentHeader
-        :student="student"
-        :user="user"
-        :currentDate="currentDate"
-      />
-
-      <!-- Stats Cards -->
-      <StatsCards
-        :stats="stats"
-        :course-info="courseInfo"
-        :semester="semester"
-        :school-year="schoolYear"
-      />
-
-      <!-- Today's Schedule and Current Class -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Current/Next Class Card -->
-        <CurrentClassCard
-          :currentClass="currentClass"
+    <div v-else class="min-h-screen bg-background">
+      <div class="container mx-auto px-3 py-3 space-y-3 max-w-6xl">
+        <!-- Enrollment Notice -->
+        <EnrollmentNotice
+          v-if="user.role === 'student'"
+          :general-settings="generalSettings"
+          :user="user"
+          :student-enrollment="studentEnrollment"
         />
 
-        <!-- Today's Schedule -->
-        <ScheduleCard
-          :todaysClasses="todaysClasses"
-          class="lg:col-span-2"
+        <!-- Simplified Student Header -->
+        <StudentHeader
+          :student="student"
+          :user="user"
+          :currentDate="currentDate"
         />
-      </div>
 
-      <!-- Main Dashboard Content - 2 Column Layout -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Left Column - Assignments and Exams -->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- Assignments Card -->
-          <AssignmentsCard :assignments="assignments" />
+        <!-- Essential Stats (Mobile-First) -->
+        <StatsCards
+          :stats="stats"
+          :course-info="courseInfo"
+          :semester="semester"
+          :school-year="schoolYear"
+        />
 
-          <!-- Exams Card -->
-          <ExamsCard :exams="exams" />
-        </div>
+        <!-- Main Content - Mobile-First Layout -->
+        <div class="space-y-3">
+          <!-- Current Class - Always First Priority -->
+          <CurrentClassCard
+            :currentClass="currentClass"
+          />
 
-        <!-- Right Column - Grades, Announcements, Resources -->
-        <div class="space-y-6">
-          <!-- Recent Grades Card -->
-          <GradesCard :recentGrades="recentGrades" />
+          <!-- Today's Schedule - Second Priority -->
+          <TodaysScheduleCard
+            :todaysClasses="todaysClasses"
+          />
 
-          <!-- Announcements Card -->
-          <AnnouncementsCard :announcements="announcements" />
+          <!-- Desktop: Two Column Layout for Secondary Content -->
+          <div class="hidden md:grid md:grid-cols-2 gap-4">
+            <!-- Recent Grades -->
+            <GradesCard :recentGrades="recentGrades" />
 
-          <!-- Resources Card -->
-          <ResourcesCard :resources="resources" />
+            <!-- Quick Actions -->
+            <QuickActionsCard />
+          </div>
+
+          <!-- Mobile: Single Column for Secondary Content -->
+          <div class="md:hidden space-y-3">
+            <!-- Recent Grades -->
+            <GradesCard :recentGrades="recentGrades" />
+
+            <!-- Quick Actions -->
+            <QuickActionsCard />
+          </div>
         </div>
       </div>
     </div>

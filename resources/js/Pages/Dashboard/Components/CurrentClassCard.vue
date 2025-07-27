@@ -43,7 +43,10 @@ const formattedTimeRemaining = computed(() => {
 // Calculate progress percentage of class completion
 const classProgress = computed(() => {
   if (!props.currentClass || !props.currentClass.progress) return 0;
-  return props.currentClass.progress;
+  const progress = parseFloat(props.currentClass.progress);
+  if (isNaN(progress)) return 0;
+  // Ensure progress is between 0 and 100
+  return Math.min(Math.max(progress, 0), 100);
 });
 
 // Get the next class
@@ -69,131 +72,81 @@ const getGradeStatusColor = (status) => {
 </script>
 
 <template>
-  <Card v-if="currentClass" class="overflow-hidden border-primary/20 hover:border-primary/50 transition-all duration-300">
-    <!-- Class in progress indicator -->
-    <div class="bg-primary/10 px-4 py-1.5 flex items-center justify-between">
+  <Card v-if="currentClass" class="border-0 shadow-sm">
+    <!-- Simplified class in progress indicator -->
+    <div class="bg-green-50 dark:bg-green-900/20 px-3 py-2 flex items-center justify-between border-b">
       <div class="flex items-center">
         <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse mr-2"></div>
-        <span class="text-xs font-medium text-primary">In Progress</span>
+        <span class="text-xs font-medium text-green-700 dark:text-green-400">In Progress</span>
       </div>
       <span class="text-xs text-muted-foreground">{{ formattedTimeRemaining }}</span>
     </div>
 
-    <CardHeader class="pb-2">
-      <div class="flex justify-between items-start">
-        <div>
-          <div class="flex items-center">
-            <CardTitle class="text-xl font-bold">{{ currentClass.subject }}</CardTitle>
-            <Badge
-              v-if="currentClass.subject_code"
-              class="ml-2 text-xs bg-primary/5 text-primary"
-            >
-              {{ currentClass.subject_code }}
-            </Badge>
+    <CardContent class="p-3">
+      <div class="space-y-3">
+        <!-- Class info -->
+        <div class="flex items-start justify-between">
+          <div class="min-w-0 flex-1">
+            <h3 class="text-sm font-semibold truncate">{{ currentClass.subject }}</h3>
+            <p class="text-xs text-muted-foreground mt-1">{{ currentClass.teacher }}</p>
+            <div class="flex items-center gap-2 mt-1">
+              <Badge variant="secondary" class="text-xs px-2 py-0.5">
+                Room {{ currentClass.room }}
+              </Badge>
+              <span class="text-xs text-muted-foreground">{{ currentClass.time }}</span>
+            </div>
           </div>
-          <CardDescription class="flex items-center mt-1">
-            <Icon icon="lucide:user" class="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-            {{ currentClass.teacher }}
-          </CardDescription>
         </div>
-        <div class="flex flex-col items-end gap-1">
-          <Badge class="bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-            <Icon icon="lucide:map-pin" class="h-3.5 w-3.5 mr-1" />
-            Room {{ currentClass.room }}
-          </Badge>
-          <Badge
-            v-if="currentClass.section"
-            class="text-xs"
-            variant="outline"
-          >
-            Section {{ currentClass.section }}
-          </Badge>
-        </div>
-      </div>
-    </CardHeader>
 
-    <CardContent class="pb-3">
-      <div class="space-y-4">
-        <!-- Time info -->
-        <div class="flex items-center justify-between text-sm">
-          <div class="flex items-center text-muted-foreground">
-            <Icon icon="lucide:clock" class="h-4 w-4 mr-2" />
-            {{ currentClass.time }}
-            <span v-if="currentClass.duration" class="ml-2 text-xs opacity-70">({{ currentClass.duration }})</span>
+        <!-- Progress -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-muted-foreground">Progress</span>
+            <span class="text-xs font-medium">{{ classProgress }}%</span>
           </div>
-          <span class="text-xs font-medium bg-primary/5 text-primary px-2 py-1 rounded-full">
-            {{ classProgress }}% Complete
-          </span>
-        </div>
-
-        <!-- Grade status -->
-        <div v-if="currentClass.grade_status" class="flex items-center justify-between text-xs">
-          <span class="text-muted-foreground">Grade Status:</span>
-          <Badge
-            :class="getGradeStatusColor(currentClass.grade_status)"
-            variant="secondary"
-          >
-            {{ currentClass.grade_status }}
-          </Badge>
-        </div>
-
-        <!-- Progress bar -->
-        <div>
           <Progress :model-value="classProgress" class="h-1.5" />
         </div>
 
-        <!-- Action buttons -->
+        <!-- Quick actions -->
         <div class="flex gap-2">
           <Link :href="route('schedule.index')" class="flex-1">
-            <Button class="w-full" size="sm">
-              <Icon icon="lucide:book-open" class="h-4 w-4 mr-2" />
+            <Button size="sm" class="w-full text-xs">
+              <Icon icon="lucide:book-open" class="h-3 w-3 mr-1" />
               Materials
             </Button>
           </Link>
-          <Button variant="outline" size="sm" class="flex-1">
-            <Icon icon="lucide:message-square" class="h-4 w-4 mr-2" />
-            Discussion
+          <Button variant="outline" size="sm" class="flex-1 text-xs">
+            <Icon icon="lucide:message-square" class="h-3 w-3 mr-1" />
+            Chat
           </Button>
         </div>
       </div>
     </CardContent>
 
     <!-- Next class info -->
-    <CardFooter v-if="nextClass" class="border-t bg-muted/50 px-6 py-3">
-      <div class="flex items-center justify-between w-full">
-        <div class="flex items-center text-sm">
-          <Icon icon="lucide:arrow-right" class="h-4 w-4 mr-2 text-muted-foreground" />
-          <span class="text-muted-foreground">Next: {{ nextClass.subject }}</span>
-        </div>
-        <span class="text-xs text-muted-foreground">in {{ nextClass.time_until }}</span>
+    <div v-if="nextClass" class="border-t bg-muted/30 px-3 py-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-muted-foreground">Next: {{ nextClass.subject }}</span>
+        <span class="text-xs text-muted-foreground">{{ nextClass.time_until }}</span>
       </div>
-    </CardFooter>
+    </div>
   </Card>
 
   <!-- No current class state -->
   <Card v-else class="border-dashed border-muted-foreground/20">
-    <CardHeader>
-      <CardTitle class="flex items-center">
-        <Icon icon="lucide:coffee" class="h-5 w-5 mr-2 text-muted-foreground" />
-        No Current Class
-      </CardTitle>
-      <CardDescription>
-        You're currently on a break. Your next class will be shown here when it's time.
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div class="flex flex-col items-center justify-center py-6 text-center">
-        <div class="bg-muted rounded-full p-4 mb-4">
-          <Icon icon="lucide:calendar-clock" class="h-8 w-8 text-muted-foreground" />
+    <CardContent class="p-3">
+      <div class="text-center py-4">
+        <div class="bg-amber-100 dark:bg-amber-900/20 rounded-full p-3 w-fit mx-auto mb-3">
+          <Icon icon="lucide:coffee" class="h-6 w-6 text-amber-600 dark:text-amber-400" />
         </div>
-        <h3 class="font-medium mb-1">Free Time</h3>
-        <p class="text-sm text-muted-foreground max-w-xs">
-          Use this time to review your notes, complete assignments, or take a well-deserved break.
+        <h3 class="text-sm font-medium mb-1">Break Time</h3>
+        <p class="text-xs text-muted-foreground mb-3">
+          No classes right now. Perfect time to study!
         </p>
         <Link :href="route('schedule.index')">
-          <Button variant="outline" class="mt-4">
-            <Icon icon="lucide:calendar" class="h-4 w-4 mr-2" />
-            View Full Schedule
+          <Button variant="outline" size="sm" class="text-xs">
+            <Icon icon="lucide:calendar" class="h-3 w-3 mr-1" />
+            View Schedule
           </Button>
         </Link>
       </div>

@@ -10,6 +10,7 @@ use Inertia\Response;
 use App\Models\Students;
 use App\Models\GeneralSettings;
 use App\Models\SubjectEnrolled;
+use App\Services\GeneralSettingsService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 
@@ -17,6 +18,10 @@ final class DashboardController extends Controller
 {
     // Define constant for placeholder text
     private const COMING_SOON = 'Coming Soon';
+
+    public function __construct(
+        private readonly GeneralSettingsService $settingsService
+    ) {}
 
     /**
      * Main dashboard action
@@ -46,11 +51,10 @@ final class DashboardController extends Controller
 
         // Get general settings
         $generalSettings = GeneralSettings::first();
-        
-        // Get current semester and school year
-        $settings = $this->getSettings();
-        $currentSemester = $settings['semester'];
-        $currentSchoolYear = $settings['schoolYear'];
+
+        // Get current semester and school year using the service
+        $currentSemester = $this->settingsService->getCurrentSemester();
+        $currentSchoolYear = $this->settingsService->getCurrentSchoolYearString();
 
         // Get enrollments and calculate stats
         $enrollmentData = $this->getEnrollmentData($student, $currentSemester, $currentSchoolYear);
@@ -85,11 +89,13 @@ final class DashboardController extends Controller
         // Get course information
         $courseInfo = $this->getCourseInfo($student);
 
-        // Fetch the current student enrollment for this academic period
+        // Fetch the current student enrollment for this academic period using the settings service
         $studentEnrollment = \App\Models\StudentEnrollment::query()
             ->where('student_id', $student->id)
-            ->currentAcademicPeriod()
+            ->where('semester', $currentSemester)
+            ->where('school_year', $currentSchoolYear)
             ->latest('created_at')
+            ->withTrashed()
             ->first();
 
         return Inertia::render('Dashboard', [
@@ -111,17 +117,7 @@ final class DashboardController extends Controller
         ]);
     }
 
-    /**
-     * Get application settings
-     */
-    private function getSettings(): array
-    {
-        $settings = GeneralSettings::query()->first();
-        return [
-            'semester' => $settings->semester,
-            'schoolYear' => $settings->getSchoolYear(),
-        ];
-    }
+
 
     /**
      * Get enrollment data for the student
