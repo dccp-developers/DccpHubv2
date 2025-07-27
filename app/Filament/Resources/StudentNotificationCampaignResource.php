@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\StudentNotificationCampaignResource\Pages;
-use App\Filament\Resources\StudentNotificationCampaignResource\RelationManagers;
 use App\Models\StudentNotificationCampaign;
 use App\Models\User;
 use App\Enums\NotificationType;
@@ -17,9 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Auth;
 
 class StudentNotificationCampaignResource extends Resource
 {
@@ -78,6 +75,7 @@ class StudentNotificationCampaignResource extends Resource
                             ->label('Message')
                             ->required()
                             ->maxLength(1000)
+                            ->rows(4)
                             ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('action_text')
@@ -86,8 +84,18 @@ class StudentNotificationCampaignResource extends Resource
 
                         Forms\Components\TextInput::make('action_url')
                             ->label('Action URL')
-                            ->url()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->helperText('Enter a relative path (e.g., /dashboard) or full URL')
+                            ->rule(function () {
+                                return function (string $attribute, $value, \Closure $fail) {
+                                    if ($value && !empty($value)) {
+                                        // Allow relative paths (starting with /) or full URLs
+                                        if (!str_starts_with($value, '/') && !filter_var($value, FILTER_VALIDATE_URL)) {
+                                            $fail('The action URL must be a valid URL or relative path starting with /');
+                                        }
+                                    }
+                                };
+                            }),
                     ])
                     ->columns(2),
 
@@ -111,11 +119,13 @@ class StudentNotificationCampaignResource extends Resource
                     ->schema([
                         Forms\Components\DateTimePicker::make('scheduled_at')
                             ->label('Schedule For')
-                            ->helperText('Leave empty to send immediately'),
+                            ->helperText('Leave empty to send immediately')
+                            ->minDate(now()),
 
                         Forms\Components\DateTimePicker::make('expires_at')
                             ->label('Expires At')
-                            ->helperText('Optional: When this notification should expire'),
+                            ->helperText('When should this notification expire?')
+                            ->minDate(now()),
                     ])
                     ->columns(2),
             ]);
@@ -127,63 +137,55 @@ class StudentNotificationCampaignResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
-                    ->sortable()
-                    ->weight('bold'),
+                    ->sortable(),
 
-                Tables\Columns\BadgeColumn::make('type')
-                    ->formatStateUsing(fn ($state) => NotificationType::from($state)->getLabel())
-                    ->colors([
-                        'primary' => 'general_announcement',
-                        'success' => 'enrollment_approved',
-                        'warning' => 'tuition_due',
-                        'danger' => 'academic_warning',
-                    ]),
+                Tables\Columns\TextColumn::make('type')
+                    ->formatStateUsing(fn ($state) => $state->getLabel())
+                    ->badge()
+                    ->color(fn ($state) => match($state) {
+                        NotificationType::ENROLLMENT_APPROVED => 'success',
+                        NotificationType::ENROLLMENT_REJECTED => 'danger',
+                        NotificationType::TUITION_DUE => 'warning',
+                        NotificationType::TUITION_OVERDUE => 'danger',
+                        NotificationType::ACADEMIC_WARNING => 'danger',
+                        NotificationType::GENERAL_ANNOUNCEMENT => 'primary',
+                        default => 'primary'
+                    }),
 
-                Tables\Columns\BadgeColumn::make('status')
-                    ->formatStateUsing(fn ($state) => NotificationStatus::from($state)->getLabel())
-                    ->colors([
-                        'secondary' => NotificationStatus::DRAFT->value,
-                        'warning' => NotificationStatus::SCHEDULED->value,
-                        'success' => NotificationStatus::SENT->value,
-                        'danger' => NotificationStatus::FAILED->value,
-                    ]),
+                Tables\Columns\TextColumn::make('priority')
+                    ->formatStateUsing(fn ($state) => $state->getLabel())
+                    ->badge()
+                    ->color(fn ($state) => $state->getColor()),
 
-                Tables\Columns\BadgeColumn::make('priority')
-                    ->formatStateUsing(fn ($state) => NotificationPriority::from($state)->getLabel())
-                    ->colors([
-                        'secondary' => NotificationPriority::LOW->value,
-                        'primary' => NotificationPriority::NORMAL->value,
-                        'warning' => NotificationPriority::HIGH->value,
-                        'danger' => NotificationPriority::URGENT->value,
-                    ]),
+                Tables\Columns\TextColumn::make('status')
+                    ->formatStateUsing(fn ($state) => $state->getLabel())
+                    ->badge()
+                    ->color(fn ($state) => $state->getColor()),
 
                 Tables\Columns\TextColumn::make('total_recipients')
                     ->label('Recipients')
-                    ->formatStateUsing(function ($record) {
-                        if ($record->send_to_all_students) {
-                            return 'All Students (' . User::where('role', 'student')->count() . ')';
-                        }
-                        return $record->total_recipients ?: count($record->recipient_ids ?? []);
-                    }),
+                    ->numeric()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('sent_count')
                     ->label('Sent')
-                    ->formatStateUsing(fn ($state, $record) =>
-                        $record->status === NotificationStatus::SENT ?
-                        "{$state}/{$record->total_recipients}" : '-'
-                    ),
+                    ->numeric()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('failed_count')
+                    ->label('Failed')
+                    ->numeric()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('scheduled_at')
                     ->label('Scheduled')
                     ->dateTime()
-                    ->sortable()
-                    ->placeholder('Send Now'),
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('sent_at')
                     ->label('Sent At')
                     ->dateTime()
-                    ->sortable()
-                    ->placeholder('-'),
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Created By')
@@ -195,31 +197,26 @@ class StudentNotificationCampaignResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->options(NotificationStatus::getOptions()),
-
                 Tables\Filters\SelectFilter::make('type')
                     ->options(NotificationType::getOptions()),
 
                 Tables\Filters\SelectFilter::make('priority')
                     ->options(NotificationPriority::getOptions()),
 
-                Tables\Filters\Filter::make('send_to_all_students')
-                    ->label('Send to All Students')
-                    ->query(fn (Builder $query): Builder => $query->where('send_to_all_students', true)),
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(NotificationStatus::getOptions()),
 
                 Tables\Filters\Filter::make('scheduled')
-                    ->label('Scheduled')
                     ->query(fn (Builder $query): Builder => $query->whereNotNull('scheduled_at')),
+
+                Tables\Filters\Filter::make('sent_today')
+                    ->query(fn (Builder $query): Builder => $query->whereDate('sent_at', today())),
             ])
             ->actions([
                 Tables\Actions\Action::make('send')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('success')
-                    ->visible(fn (StudentNotificationCampaign $record) =>
-                        $record->status === NotificationStatus::DRAFT ||
-                        $record->status === NotificationStatus::SCHEDULED
-                    )
+                    ->visible(fn (StudentNotificationCampaign $record) => $record->status === NotificationStatus::DRAFT || $record->status === NotificationStatus::SCHEDULED)
                     ->action(function (StudentNotificationCampaign $record) {
                         $service = app(StudentNotificationCampaignService::class);
 
@@ -241,20 +238,20 @@ class StudentNotificationCampaignResource extends Resource
                     })
                     ->requiresConfirmation(),
 
-                Tables\Actions\Action::make('preview')
-                    ->icon('heroicon-o-eye')
-                    ->color('info')
-                    ->modalHeading('Preview Notification')
-                    ->modalContent(fn (StudentNotificationCampaign $record) => view('filament.notifications.preview', [
-                        'title' => $record->notification_title,
-                        'message' => $record->notification_message,
-                        'type' => $record->type->value,
-                        'priority' => $record->priority->value,
-                        'action_text' => $record->action_text,
-                        'action_url' => $record->action_url,
-                    ]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Close'),
+                Tables\Actions\Action::make('duplicate')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->action(function (StudentNotificationCampaign $record) {
+                        $service = app(StudentNotificationCampaignService::class);
+                        $newCampaign = $service->duplicateCampaign($record);
+
+                        Notification::make()
+                            ->title('Campaign duplicated successfully!')
+                            ->success()
+                            ->send();
+
+                        return redirect()->route('filament.admin.resources.student-notification-campaigns.edit', $newCampaign);
+                    }),
 
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -310,12 +307,12 @@ class StudentNotificationCampaignResource extends Resource
 
     public static function getNavigationIcon(): string
     {
-        return 'heroicon-o-academic-cap';
+        return 'heroicon-o-megaphone';
     }
 
     public static function getNavigationGroup(): string
     {
-        return 'Student Communication';
+        return 'Communication';
     }
 
     public static function getNavigationSort(): int
@@ -328,18 +325,8 @@ class StudentNotificationCampaignResource extends Resource
         return static::getModel()::where('status', NotificationStatus::DRAFT)->count();
     }
 
-    public static function getNavigationLabel(): string
+    public static function getNavigationBadgeColor(): string|array|null
     {
-        return 'Student Notifications';
-    }
-
-    public static function getModelLabel(): string
-    {
-        return 'Student Notification Campaign';
-    }
-
-    public static function getPluralModelLabel(): string
-    {
-        return 'Student Notification Campaigns';
+        return 'warning';
     }
 }

@@ -32,7 +32,10 @@ final class ApiUserController extends Controller
     {
         Gate::authorize('viewAny', User::class);
 
-        return type(Auth::user())->as(User::class)->currentTeam?->users;
+        $user = type(Auth::user())->as(User::class);
+        $user->load('currentTeam.users');
+
+        return $user->currentTeam?->users;
     }
 
     /**

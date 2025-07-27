@@ -31,6 +31,9 @@ final class DashboardController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
+        // Eager load team relationships to prevent lazy loading issues
+        $user->load(['currentTeam', 'ownedTeams', 'teams']);
+
         // Redirect guest users to the guest dashboard
         if (isset($user->role) && $user->role === 'guest') {
             return redirect()->route('enrolee.dashboard');

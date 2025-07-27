@@ -216,6 +216,27 @@ class StudentNotificationCampaignService
     }
 
     /**
+     * Duplicate an existing campaign.
+     */
+    public function duplicateCampaign(StudentNotificationCampaign $campaign): StudentNotificationCampaign
+    {
+        $newCampaign = $campaign->replicate();
+        $newCampaign->title = $campaign->title . ' (Copy)';
+        $newCampaign->status = NotificationStatus::DRAFT;
+        $newCampaign->scheduled_at = null;
+        $newCampaign->sent_at = null;
+        $newCampaign->total_recipients = 0;
+        $newCampaign->sent_count = 0;
+        $newCampaign->failed_count = 0;
+        $newCampaign->error_log = null;
+        $newCampaign->created_by = Auth::id() ?? 1;
+        $newCampaign->updated_by = null;
+        $newCampaign->save();
+
+        return $newCampaign;
+    }
+
+    /**
      * Get recent campaigns.
      */
     public function getRecentCampaigns(int $limit = 10): Collection

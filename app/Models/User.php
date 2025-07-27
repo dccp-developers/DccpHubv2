@@ -54,8 +54,6 @@ use function Illuminate\Events\queueable;
  * @property-read int|null $oauth_connections_count
  * @property-read Collection<int, Team> $ownedTeams
  * @property-read int|null $owned_teams_count
- * @property-read Collection<int, Team> $ownedTeamsBase
- * @property-read int|null $owned_teams_base_count
  * @property-read string $profile_photo_url
  * @property-read Collection<int, Subscription> $subscriptions
  * @property-read int|null $subscriptions_count
@@ -102,6 +100,7 @@ final class User extends Authenticatable implements FilamentUser
 
     use HasProfilePhoto;
     use HasApiTokens;
+    use HasTeams;
     use Notifiable;
     use TwoFactorAuthenticatable;
     use HasPushSubscriptions;
@@ -123,6 +122,7 @@ final class User extends Authenticatable implements FilamentUser
         'is_active',
         'person_id',
         'person_type',
+        'current_team_id',
     ];
 
     /**
@@ -150,15 +150,7 @@ final class User extends Authenticatable implements FilamentUser
     //     'profile_photo_url',
     // ];
 
-    /**
-     * Get the team that the invitation belongs to.
-     *
-     * @return HasMany<Team, covariant $this>
-     */
-    public function ownedTeams(): HasMany
-    {
-        return $this->ownedTeamsBase();
-    }
+
 
     /**
      * Get the Oauth Connections for the user.
