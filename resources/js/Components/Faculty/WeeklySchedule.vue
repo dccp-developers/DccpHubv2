@@ -93,8 +93,8 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Badge } from '@/Components/ui/badge.js'
-import { Button } from '@/Components/ui/button.js'
+import { Badge } from '@/Components/shadcn/ui/badge'
+import { Button } from '@/Components/shadcn/ui/button'
 import { CalendarIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({

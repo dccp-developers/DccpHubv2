@@ -309,7 +309,7 @@ const navigation = ref([
   { name: 'Dashboard', href: route('faculty.dashboard'), icon: HomeIcon, current: route().current('faculty.dashboard') },
   { name: 'My Classes', href: route('faculty.classes.index'), icon: AcademicCapIcon, current: route().current('faculty.classes.*') },
   { name: 'Students', href: route('faculty.students.index'), icon: UsersIcon, current: route().current('faculty.students.*') },
-  { name: 'Schedule', href: '#', icon: CalendarIcon, current: false, isDevelopment: true },
+  { name: 'Schedule', href: route('faculty.schedule.index'), icon: CalendarIcon, current: route().current('faculty.schedule.*') },
   { name: 'Attendance', href: '#', icon: ClipboardDocumentListIcon, current: false, isDevelopment: true },
   { name: 'Grades', href: '#', icon: ChartBarIcon, current: false, isDevelopment: true },
   { name: 'Assignments', href: '#', icon: DocumentTextIcon, current: false, isDevelopment: true },

@@ -46,7 +46,7 @@
               <p class="text-primary-foreground/80 mt-1 text-sm">Manage your classes, students, and academic activities</p>
             </div>
             <div class="flex space-x-2">
-              <Button variant="secondary" size="sm" class="text-xs">
+              <Button variant="secondary" size="sm" class="text-xs" @click="showTeachingGuide = true">
                 <BookOpenIcon class="w-4 h-4 mr-2" />
                 Teaching Guide
               </Button>
@@ -94,7 +94,7 @@
                   <CardTitle class="text-base md:text-lg">Today's Schedule</CardTitle>
                   <CardDescription class="text-xs md:text-sm">{{ getCurrentDateShort() }}</CardDescription>
                 </div>
-                <Button size="sm" variant="outline" class="hidden md:flex">
+                <Button size="sm" variant="outline" class="hidden md:flex" @click="viewAllSchedule">
                   <CalendarIcon class="w-4 h-4 mr-2" />
                   View All
                 </Button>
@@ -105,10 +105,6 @@
                 <CalendarIcon class="mx-auto h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
                 <h3 class="mt-2 text-sm font-medium text-foreground">No classes today</h3>
                 <p class="mt-1 text-xs md:text-sm text-muted-foreground">Enjoy your free day!</p>
-                <Button size="sm" variant="outline" class="mt-3 md:mt-4">
-                  <PlusIcon class="w-4 h-4 mr-2" />
-                  Office Hours
-                </Button>
               </div>
               <div v-else class="space-y-2 md:space-y-3">
                 <div
@@ -159,10 +155,6 @@
                     <FunnelIcon class="w-4 h-4 mr-2" />
                     Filter
                   </Button>
-                  <Button size="sm" class="text-xs">
-                    <PlusIcon class="w-4 h-4 mr-2" />
-                    Add
-                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -171,9 +163,6 @@
                 <BookOpenIcon class="mx-auto h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
                 <h3 class="mt-2 text-sm font-medium text-foreground">No classes assigned</h3>
                 <p class="mt-1 text-xs md:text-sm text-muted-foreground">Contact administration for class assignments.</p>
-                <Button size="sm" variant="outline" class="mt-3 md:mt-4">
-                  Request Assignment
-                </Button>
               </div>
               <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <Card
@@ -394,6 +383,12 @@
         </CardContent>
       </Card>
     </div>
+
+    <!-- Teaching Guide Modal -->
+    <TeachingGuide
+      :open="showTeachingGuide"
+      @update:open="showTeachingGuide = $event"
+    />
   </FacultyLayout>
 </template>
 
@@ -402,9 +397,10 @@ import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import FacultyLayout from '@/Layouts/FacultyLayout.vue'
 import WeeklySchedule from '@/Components/Faculty/WeeklySchedule.vue'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card.js'
-import { Button } from '@/Components/ui/button.js'
-import { Badge } from '@/Components/ui/badge.js'
+import TeachingGuide from '@/Components/Faculty/TeachingGuide.vue'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
+import { Button } from '@/Components/shadcn/ui/button'
+import { Badge } from '@/Components/shadcn/ui/badge'
 import {
   CalendarIcon,
   BookOpenIcon,
@@ -413,7 +409,6 @@ import {
   UsersIcon,
   ClockIcon,
   ChartBarIcon,
-  PlusIcon,
   DocumentTextIcon,
   UserGroupIcon,
   ClipboardDocumentListIcon,
@@ -459,6 +454,9 @@ const scheduleOverview = computed(() => props.scheduleOverview || {})
 // Error handling
 const hasError = computed(() => !!props.error)
 
+// Reactive state
+const showTeachingGuide = ref(false)
+
 // Days of the week for schedule display
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -480,34 +478,22 @@ const quickActions = ref([
     action: () => console.log('Take Attendance')
   },
   {
-    name: 'Grade Assignment',
-    description: 'Grade student submissions',
-    icon: DocumentTextIcon,
-    action: () => console.log('Grade Students')
-  },
-  {
-    name: 'Create Assignment',
-    description: 'Create new assignment',
-    icon: PlusIcon,
-    action: () => console.log('Create Assignment')
-  },
-  {
-    name: 'Schedule Office Hours',
-    description: 'Set availability for students',
-    icon: CalendarIcon,
-    action: () => console.log('Schedule Office Hours')
-  },
-  {
-    name: 'Send Announcement',
-    description: 'Notify all students',
-    icon: BellIcon,
-    action: () => console.log('Send Announcement')
-  },
-  {
-    name: 'Generate Report',
-    description: 'Create class performance report',
+    name: 'View Grades',
+    description: 'View student grades',
     icon: ChartBarIcon,
-    action: () => console.log('Generate Report')
+    action: () => console.log('View Grades')
+  },
+  {
+    name: 'View Schedule',
+    description: 'View your teaching schedule',
+    icon: CalendarIcon,
+    action: () => viewAllSchedule()
+  },
+  {
+    name: 'View Students',
+    description: 'View your students',
+    icon: UsersIcon,
+    action: () => router.visit(route('faculty.students.index'))
   }
 ])
 
@@ -593,7 +579,10 @@ const viewScheduleDetails = (schedule) => {
 }
 
 const viewFullCalendar = () => {
-  console.log('View full calendar')
-  // TODO: Navigate to full calendar page
+  router.visit(route('faculty.schedule.index'))
+}
+
+const viewAllSchedule = () => {
+  router.visit(route('faculty.schedule.index'))
 }
 </script>

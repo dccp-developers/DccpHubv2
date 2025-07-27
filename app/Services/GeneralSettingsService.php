@@ -8,7 +8,6 @@ use App\Models\GeneralSettings as GeneralSetting;
 use App\Models\UserSetting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 
 final class GeneralSettingsService
 {
@@ -18,11 +17,8 @@ final class GeneralSettingsService
 
     public function __construct()
     {
-        // Eager load or cache global settings
-        $this->globalSettings = Cache::rememberForever(
-            'general_settings',
-            fn () => GeneralSetting::first()
-        );
+        // Use the model's getCached method which handles incomplete classes
+        $this->globalSettings = GeneralSetting::getCached();
 
         if (Auth::check()) {
             $this->userSettings = UserSetting::firstOrNew([
@@ -195,5 +191,22 @@ final class GeneralSettingsService
     public function getUserSettingsModel(): ?UserSetting
     {
         return $this->userSettings;
+    }
+
+    /**
+     * Clear the cached global settings and reload them.
+     */
+    public function clearGlobalSettingsCache(): void
+    {
+        GeneralSetting::clearCache();
+        $this->globalSettings = GeneralSetting::getCached();
+    }
+
+    /**
+     * Refresh the global settings from the database.
+     */
+    public function refreshGlobalSettings(): void
+    {
+        $this->clearGlobalSettingsCache();
     }
 }

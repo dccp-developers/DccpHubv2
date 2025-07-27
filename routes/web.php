@@ -23,6 +23,7 @@ use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Faculty\FacultyClassController;
 use App\Http\Controllers\Faculty\FacultyStudentController;
 use App\Http\Controllers\Faculty\FacultySettingsController;
+use App\Http\Controllers\Faculty\FacultyScheduleController;
 use App\Http\Controllers\APKController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Middleware\DetectMobileApp;
@@ -127,6 +128,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
 
         Route::get('/students', [FacultyStudentController::class, 'index'])->name('students.index');
         Route::get('/students/{student}', [FacultyStudentController::class, 'show'])->name('students.show');
+
+        Route::get('/schedule', [FacultyScheduleController::class, 'index'])->name('schedule.index');
+        Route::get('/schedule/{schedule}', [FacultyScheduleController::class, 'show'])->name('schedule.show');
+        Route::post('/schedule/export', [FacultyScheduleController::class, 'export'])->name('schedule.export');
     });
 
     // Faculty Settings Routes

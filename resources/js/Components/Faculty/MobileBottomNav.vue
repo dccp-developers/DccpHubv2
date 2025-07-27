@@ -74,10 +74,9 @@ const navigationItems = [
   },
   {
     name: 'Schedule',
-    href: '#',
+    href: route('faculty.schedule.index'),
     icon: CalendarIcon,
-    current: false,
-    isDevelopment: true
+    current: route().current('faculty.schedule.*')
   },
   {
     name: 'Grades',

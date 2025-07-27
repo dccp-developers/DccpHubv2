@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\ClearResponseCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -76,6 +75,32 @@ final class GeneralSettings extends Model
         Cache::forget('general_settings');
     }
 
+    /**
+     * Get the cached general settings or fetch from database if cache is corrupted.
+     */
+    public static function getCached(): ?self
+    {
+        $cached = Cache::get('general_settings');
+
+        // Check if cached value is valid
+        if ($cached instanceof self) {
+            return $cached;
+        }
+
+        // If cache is corrupted or empty, clear it and fetch fresh data
+        if ($cached instanceof \__PHP_Incomplete_Class || $cached !== null) {
+            self::clearCache();
+        }
+
+        $settings = self::first();
+
+        if ($settings) {
+            Cache::forever('general_settings', $settings);
+        }
+
+        return $settings;
+    }
+
     public function getSchoolYear(): string
     {
         return $this->getSchoolYearStarting().
@@ -113,7 +138,7 @@ final class GeneralSettings extends Model
     {
         parent::boot();
 
-        self::saved(function ($settings): void {
+        self::saved(function (): void {
             self::clearCache();
         });
     }

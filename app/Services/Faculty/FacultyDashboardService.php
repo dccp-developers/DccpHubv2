@@ -246,7 +246,7 @@ final class FacultyDashboardService
         $busyDays = [];
 
         foreach ($weeklySchedule as $day => $schedules) {
-            if ($schedules->isNotEmpty()) {
+            if (!empty($schedules)) {
                 $daysWithClasses++;
                 $dayHours = 0;
 
@@ -267,7 +267,7 @@ final class FacultyDashboardService
             'busiest_day' => !empty($busyDays) ? array_keys($busyDays, max($busyDays))[0] : null,
             'lightest_day' => !empty($busyDays) ? array_keys($busyDays, min($busyDays))[0] : null,
             'average_daily_hours' => $daysWithClasses > 0 ? round($totalWeeklyHours / $daysWithClasses, 1) : 0,
-            'todays_classes_count' => $todaysSchedule->count(),
+            'todays_classes_count' => count($todaysSchedule),
             'next_class' => $this->scheduleService->getNextClass($faculty),
         ];
     }

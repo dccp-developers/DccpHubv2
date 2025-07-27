@@ -30,4 +30,14 @@ final class rooms extends Model
     {
         return $this->hasMany(Classes::class);
     }
+
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class, 'room_id', 'id');
+    }
+
+    public function getSchedulesAttribute()
+    {
+        return $this->schedules()->get();
+    }
 }
