@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\DatabaseNotificationCollection;
 use NotificationChannels\WebPush\HasPushSubscriptions;
+use Illuminate\Support\Facades\DB;
 
 use function Illuminate\Events\queueable;
 
@@ -164,10 +165,12 @@ final class User extends Authenticatable implements FilamentUser
 
     /**
      * Configure the panel access.
+     * Only allow accounts that have matching emails in the users table.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        // Check if this account's email exists in the users table
+        return DB::table('users')->where('email', $this->email)->exists();
     }
 
     public function person()
