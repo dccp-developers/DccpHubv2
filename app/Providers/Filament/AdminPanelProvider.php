@@ -20,6 +20,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Mydnic\VoletFeedbackMessagesFilamentPlugin\VoletFeedbackMessagesFilamentPlugin;
 
 final class AdminPanelProvider extends PanelProvider
 {
@@ -46,6 +47,7 @@ final class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 // FilamentPWAPlugin::make(),
+                new VoletFeedbackMessagesFilamentPlugin(),
             ])
             ->middleware([
                 EncryptCookies::class,

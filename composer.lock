@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3def5c5f85f5096e47ddd818c9931686",
+    "content-hash": "bb7c126d08a738a565d1da1ce0d13d63",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -5416,6 +5416,214 @@
                 "source": "https://github.com/jmespath/jmespath.php/tree/2.8.0"
             },
             "time": "2024-09-04T18:46:31+00:00"
+        },
+        {
+            "name": "mydnic/volet",
+            "version": "v2.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mydnic/volet.git",
+                "reference": "af1c3da99d0b88e65f1a3f3599241aa481e8663c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mydnic/volet/zipball/af1c3da99d0b88e65f1a3f3599241aa481e8663c",
+                "reference": "af1c3da99d0b88e65f1a3f3599241aa481e8663c",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/contracts": "^10.0||^11.0||^12.0",
+                "php": "^8.3",
+                "spatie/laravel-package-tools": "^1.16"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.14",
+                "nunomaduro/collision": "^8.1.1||^7.10.0",
+                "orchestra/testbench": "^10.1.0",
+                "pestphp/pest": "^3.0",
+                "pestphp/pest-plugin-arch": "^3.0",
+                "pestphp/pest-plugin-laravel": "^3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Volet": "Mydnic\\Volet\\Facades\\Volet"
+                    },
+                    "providers": [
+                        "Mydnic\\Volet\\VoletServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Mydnic\\Volet\\": "src/",
+                    "Mydnic\\Volet\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Clément Rigo",
+                    "email": "rigoclement@mydnic.be",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A fully featured feedback component for Laravel, gather user feedbacks, chat, etc",
+            "homepage": "https://github.com/mydnic/volet",
+            "keywords": [
+                "laravel-volet",
+                "mydnic",
+                "volet"
+            ],
+            "support": {
+                "issues": "https://github.com/mydnic/volet/issues",
+                "source": "https://github.com/mydnic/volet/tree/v2.1.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/Mydnic",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-06-03T07:47:39+00:00"
+        },
+        {
+            "name": "mydnic/volet-feature-board",
+            "version": "v1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mydnic/volet-feature-board.git",
+                "reference": "05739f765d2902327cb95fa5360562ce1c7fc34a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mydnic/volet-feature-board/zipball/05739f765d2902327cb95fa5360562ce1c7fc34a",
+                "reference": "05739f765d2902327cb95fa5360562ce1c7fc34a",
+                "shasum": ""
+            },
+            "require": {
+                "mydnic/volet": "^v2.0.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.14",
+                "nunomaduro/collision": "^8.1.1||^7.10.0",
+                "orchestra/testbench": "^10.1.0",
+                "pestphp/pest": "^3.0",
+                "pestphp/pest-plugin-arch": "^3.0",
+                "pestphp/pest-plugin-laravel": "^3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Mydnic\\VoletFeatureBoard\\VoletFeatureBoardServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Mydnic\\VoletFeatureBoard\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mydnic",
+                    "email": "mydnic@mail.com"
+                }
+            ],
+            "description": "A feature board plugin for Volet - Allow users to suggest and vote for features",
+            "support": {
+                "issues": "https://github.com/mydnic/volet-feature-board/issues",
+                "source": "https://github.com/mydnic/volet-feature-board/tree/v1.0.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/mydnic",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-05-13T17:14:03+00:00"
+        },
+        {
+            "name": "mydnic/volet-feedback-messages-filament-plugin",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mydnic/volet-feedback-messages-filament-plugin.git",
+                "reference": "3bb1c963f0dd3fd9431ed9747cb2b6046c39ab80"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mydnic/volet-feedback-messages-filament-plugin/zipball/3bb1c963f0dd3fd9431ed9747cb2b6046c39ab80",
+                "reference": "3bb1c963f0dd3fd9431ed9747cb2b6046c39ab80",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.3",
+                "illuminate/contracts": "^10.0||^11.0||^12.0",
+                "mydnic/volet": "^2.0",
+                "php": "^8.3",
+                "spatie/laravel-package-tools": "^1.16"
+            },
+            "require-dev": {
+                "larastan/larastan": "^2.9||^3.0",
+                "laravel/pint": "^1.14",
+                "nunomaduro/collision": "^8.1.1||^7.10.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "VoletFeedbackMessagesFilamentPlugin": "Mydnic\\VoletFeedbackMessagesFilamentPlugin\\Facades\\VoletFeedbackMessagesFilamentPlugin"
+                    },
+                    "providers": [
+                        "Mydnic\\VoletFeedbackMessagesFilamentPlugin\\VoletFeedbackMessagesFilamentPluginServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Mydnic\\VoletFeedbackMessagesFilamentPlugin\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mydnic",
+                    "email": "rigoclement@mydnic.be",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A Filament plugin to display Volet Feedback Messages",
+            "homepage": "https://github.com/mydnic/volet-feedback-messages-filament-plugin",
+            "keywords": [
+                "laravel",
+                "mydnic",
+                "volet-feedback-messages-filament-plugin"
+            ],
+            "support": {
+                "issues": "https://github.com/mydnic/volet-feedback-messages-filament-plugin/issues",
+                "source": "https://github.com/mydnic/volet-feedback-messages-filament-plugin/tree/v1.0.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/Mydnic",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-04-24T06:56:36+00:00"
         },
         {
             "name": "nesbot/carbon",

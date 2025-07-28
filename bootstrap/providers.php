@@ -9,4 +9,5 @@ return [
     App\Providers\JetstreamServiceProvider::class,
     App\Providers\NotificationServiceProvider::class,
     App\Providers\RouteManagementServiceProvider::class,
+      App\Providers\VoletServiceProvider::class,
 ];
