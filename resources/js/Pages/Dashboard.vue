@@ -106,9 +106,6 @@ const currentDate = new Date().toLocaleDateString('en-US', {
         <!-- Essential Stats (Mobile-First) -->
         <StatsCards
           :stats="stats"
-          :course-info="courseInfo"
-          :semester="semester"
-          :school-year="schoolYear"
         />
 
         <!-- Main Content - Mobile-First Layout -->

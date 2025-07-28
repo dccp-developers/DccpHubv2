@@ -115,6 +115,27 @@ class StudentNotificationCampaignResource extends Resource
                             ->columnSpanFull(),
                     ]),
 
+                Forms\Components\Section::make('Email Notification')
+                    ->schema([
+                        Forms\Components\Toggle::make('send_email')
+                            ->label('Send Email Notification')
+                            ->reactive()
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('email_subject')
+                            ->label('Email Subject')
+                            ->maxLength(255)
+                            ->visible(fn (callable $get) => $get('send_email'))
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('email_message')
+                            ->label('Email Message')
+                            ->maxLength(1000)
+                            ->rows(4)
+                            ->visible(fn (callable $get) => $get('send_email'))
+                            ->columnSpanFull(),
+                    ]),
+
                 Forms\Components\Section::make('Scheduling')
                     ->schema([
                         Forms\Components\DateTimePicker::make('scheduled_at')
@@ -176,6 +197,23 @@ class StudentNotificationCampaignResource extends Resource
                     ->label('Failed')
                     ->numeric()
                     ->sortable(),
+
+                Tables\Columns\IconColumn::make('send_email')
+                    ->label('Email')
+                    ->boolean()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('email_sent_count')
+                    ->label('Email Sent')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('email_failed_count')
+                    ->label('Email Failed')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('scheduled_at')
                     ->label('Scheduled')

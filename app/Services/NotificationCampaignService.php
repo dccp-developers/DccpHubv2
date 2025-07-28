@@ -8,10 +8,12 @@ use App\Models\User;
 use App\Enums\NotificationStatus;
 use App\Enums\NotificationType;
 use App\Services\NotificationService;
+use App\Mail\NotificationCampaignEmail;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class NotificationCampaignService
 {
@@ -50,8 +52,12 @@ class NotificationCampaignService
             $errors = [];
 
             // Send notifications to each recipient
+            $emailSentCount = 0;
+            $emailFailedCount = 0;
+
             foreach ($recipients as $recipient) {
                 try {
+                    // Send in-app notification
                     $this->notificationService->sendToUser(
                         $recipient,
                         $campaign->notification_title,
@@ -63,16 +69,49 @@ class NotificationCampaignService
                         $campaign->priority->value, // priority parameter
                         $campaign->expires_at // expiresAt parameter
                     );
-                    
+
                     $sentCount++;
+
+                    // Send email notification if enabled
+                    if ($campaign->send_email && $recipient->email) {
+                        try {
+                            Mail::to($recipient->email)->send(new NotificationCampaignEmail(
+                                $recipient,
+                                $campaign->email_subject ?: $campaign->notification_title,
+                                $campaign->email_message ?: $campaign->notification_message,
+                                $campaign->notification_title,
+                                $campaign->action_url,
+                                $campaign->action_text,
+                                $campaign->priority->value
+                            ));
+
+                            $emailSentCount++;
+                        } catch (\Exception $emailError) {
+                            $emailFailedCount++;
+                            $errors[] = [
+                                'user_id' => $recipient->id,
+                                'type' => 'email',
+                                'error' => $emailError->getMessage(),
+                                'timestamp' => now()->toISOString(),
+                            ];
+
+                            Log::error('Failed to send email notification', [
+                                'campaign_id' => $campaign->id,
+                                'user_id' => $recipient->id,
+                                'error' => $emailError->getMessage(),
+                            ]);
+                        }
+                    }
+
                 } catch (\Exception $e) {
                     $failedCount++;
                     $errors[] = [
                         'user_id' => $recipient->id,
+                        'type' => 'notification',
                         'error' => $e->getMessage(),
                         'timestamp' => now()->toISOString(),
                     ];
-                    
+
                     Log::error('Failed to send notification to user', [
                         'campaign_id' => $campaign->id,
                         'user_id' => $recipient->id,
@@ -85,6 +124,8 @@ class NotificationCampaignService
             $campaign->update([
                 'sent_count' => $sentCount,
                 'failed_count' => $failedCount,
+                'email_sent_count' => $emailSentCount,
+                'email_failed_count' => $emailFailedCount,
                 'error_log' => $errors,
                 'status' => $failedCount > 0 && $sentCount === 0 ? NotificationStatus::FAILED : NotificationStatus::SENT,
             ]);
@@ -217,6 +258,9 @@ class NotificationCampaignService
             'additional_data' => $customData['additional_data'] ?? [],
             'recipient_ids' => $recipients,
             'send_to_all_faculty' => $recipients === null,
+            'send_email' => $customData['send_email'] ?? false,
+            'email_subject' => $customData['email_subject'] ?? null,
+            'email_message' => $customData['email_message'] ?? null,
             'created_by' => Auth::id(),
         ]);
     }

@@ -68,6 +68,22 @@ class ListNotificationCampaigns extends ListRecords
                         ->label('Send to All Faculty')
                         ->default(true),
 
+                    \Filament\Forms\Components\Toggle::make('send_email')
+                        ->label('Send Email Notification')
+                        ->reactive()
+                        ->default(false),
+
+                    \Filament\Forms\Components\TextInput::make('email_subject')
+                        ->label('Email Subject')
+                        ->maxLength(255)
+                        ->visible(fn (callable $get) => $get('send_email')),
+
+                    \Filament\Forms\Components\Textarea::make('email_message')
+                        ->label('Email Message')
+                        ->maxLength(1000)
+                        ->rows(3)
+                        ->visible(fn (callable $get) => $get('send_email')),
+
                     \Filament\Forms\Components\Toggle::make('send_immediately')
                         ->label('Send Immediately')
                         ->default(false),
@@ -83,6 +99,9 @@ class ListNotificationCampaigns extends ListRecords
                             'notification_message' => $data['message'],
                             'action_text' => $data['action_text'],
                             'action_url' => $data['action_url'],
+                            'send_email' => $data['send_email'] ?? false,
+                            'email_subject' => $data['email_subject'] ?? null,
+                            'email_message' => $data['email_message'] ?? null,
                         ],
                         $data['send_to_all'] ? null : []
                     );
