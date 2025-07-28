@@ -56,6 +56,7 @@ final class OauthConnection extends Model
      */
     protected $casts = [
         'data' => AsCollection::class,
+        'expires_at' => 'datetime',
     ];
 
     /**

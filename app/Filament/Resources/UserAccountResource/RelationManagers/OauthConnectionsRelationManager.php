@@ -102,9 +102,9 @@ class OauthConnectionsRelationManager extends RelationManager
                         if (!$record->expires_at) return 'gray';
                         return $record->expires_at->isPast() ? 'danger' : 'success';
                     })
-                    ->formatStateUsing(function ($record) {
-                        if (!$record->expires_at) return 'Never';
-                        return $record->expires_at->format('M j, Y g:i A');
+                    ->formatStateUsing(function ($state) {
+                        if (!$state) return 'Never';
+                        return $state->format('M j, Y g:i A');
                     }),
 
                 Tables\Columns\TextColumn::make('created_at')

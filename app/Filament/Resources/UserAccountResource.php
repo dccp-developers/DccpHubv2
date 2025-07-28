@@ -96,7 +96,11 @@ class UserAccountResource extends Resource
                                             $role = UserRole::from($state);
                                             $defaultPersonType = $role->getDefaultPersonType();
                                             if ($defaultPersonType) {
-                                                $set('person_type', $defaultPersonType);
+                                                // Convert model class to PersonType enum value
+                                                $personType = PersonType::fromModelClass($defaultPersonType);
+                                                if ($personType) {
+                                                    $set('person_type', $personType->value);
+                                                }
                                             }
                                         }
                                     }),
@@ -174,12 +178,6 @@ class UserAccountResource extends Resource
                             ->visibility('public')
                             ->imageEditor()
                             ->circleCropper(),
-
-                        Forms\Components\Textarea::make('notes')
-                            ->label('Admin Notes')
-                            ->rows(3)
-                            ->columnSpanFull()
-                            ->helperText('Internal notes visible only to administrators'),
                     ])
                     ->collapsible()
                     ->collapsed(),
