@@ -14,12 +14,33 @@ import SidebarMenuButton from "@/Components/shadcn/ui/sidebar/SidebarMenuButton.
 import { Button } from "@/Components/shadcn/ui/button";
 import { Icon } from "@iconify/vue";
 import { Link, router } from "@inertiajs/vue3";
-import { inject, computed } from "vue";
+import { inject, computed, ref, getCurrentInstance } from "vue";
 
 const route = inject("route");
-// Try to inject the sidebar context, but don't throw if it's not available
-const sidebarContext = inject('SidebarContext', null);
-const hasSidebarContext = computed(() => sidebarContext !== null);
+
+// Check if we're in a sidebar context by looking for the sidebar provider
+const instance = getCurrentInstance();
+const hasSidebarContext = computed(() => {
+    // Check if we can find a sidebar context in the component tree
+    let parent = instance?.parent;
+    while (parent) {
+        if (parent.type?.name === 'SidebarProvider' || parent.provides?.Sidebar) {
+            return true;
+        }
+        parent = parent.parent;
+    }
+    return false;
+});
+
+// For mobile detection, we'll use a simple media query
+const isMobile = ref(false);
+if (typeof window !== 'undefined') {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    isMobile.value = mediaQuery.matches;
+    mediaQuery.addEventListener('change', (e) => {
+        isMobile.value = e.matches;
+    });
+}
 
 function logout() {
     router.post(route("logout"));
@@ -58,8 +79,11 @@ const TriggerComponent = computed(() => {
                 <Icon icon="lucide:chevrons-up-down" class="ml-auto size-4" />
             </component>
         </DropdownMenuTrigger>
-        <DropdownMenuContent class="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg" side="bottom"
-            align="end" :side-offset="4">
+        <DropdownMenuContent
+            class="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            :side="hasSidebarContext ? (isMobile ? 'bottom' : 'right') : 'bottom'"
+            align="end"
+            :side-offset="4">
             <DropdownMenuLabel class="p-0 font-normal">
                 <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar class="h-8 w-8 rounded-lg">

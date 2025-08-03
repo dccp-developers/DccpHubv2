@@ -1,257 +1,268 @@
 <template>
-  <div class="min-h-screen bg-background">
-    <!-- Mobile sidebar overlay -->
-    <div v-if="sidebarOpen" class="fixed inset-0 z-40 md:hidden">
-      <div class="fixed inset-0 bg-black/50" @click="sidebarOpen = false"></div>
-    </div>
+  <div>
+    <Sonner position="top-center" />
 
-    <!-- Mobile sidebar -->
+    <!-- Mobile Top Navigation Bar -->
     <div
-      :class="[
-        'fixed inset-y-0 left-0 z-50 w-72 bg-background border-r border-border transform transition-transform duration-300 ease-in-out md:hidden',
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      ]"
+      class="fixed top-0 left-0 right-0 h-14 border-b bg-background z-50 md:hidden flex items-center justify-between px-4"
     >
-      <div class="flex items-center justify-between h-16 px-4 border-b border-border">
-        <div class="flex items-center space-x-2">
-          <ApplicationLogo class="h-8 w-auto" />
-          <span class="text-lg font-semibold text-foreground">Faculty Portal</span>
-        </div>
-        <Button variant="ghost" size="icon" @click="sidebarOpen = false">
-          <XMarkIcon class="h-5 w-5" />
-        </Button>
+      <div class="flex items-center space-x-2">
+        <ApplicationLogo class="w-7 h-7" />
+        <span class="font-bold">Faculty Portal</span>
       </div>
-      <nav class="mt-4 px-2">
-        <SidebarNavigation
-          :navigation="navigation"
-          @showDevelopmentModal="showDevelopmentModal = true"
-        />
-      </nav>
-    </div>
 
-    <!-- Desktop sidebar -->
-    <div class="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
-      <div class="flex flex-col flex-grow bg-background border-r border-border">
-        <div class="flex items-center h-16 px-4 border-b border-border">
-          <ApplicationLogo class="h-8 w-auto" />
-          <span class="ml-2 text-lg font-semibold text-foreground">Faculty Portal</span>
-        </div>
-        <nav class="mt-4 flex-1 px-2">
-          <SidebarNavigation
-            :navigation="navigation"
-            @showDevelopmentModal="showDevelopmentModal = true"
-          />
-        </nav>
-
-        <!-- User profile section -->
-        <div class="flex-shrink-0 border-t border-border p-4">
-          <div class="flex items-center space-x-3">
-            <div class="flex-shrink-0">
-              <img
-                v-if="$page.props.auth.user.profile_photo_url"
-                :src="$page.props.auth.user.profile_photo_url"
-                :alt="$page.props.auth.user.name"
-                class="h-10 w-10 rounded-full object-cover"
-              />
-              <div
-                v-else
-                class="h-10 w-10 rounded-full bg-primary flex items-center justify-center"
-              >
-                <span class="text-sm font-medium text-primary-foreground">
-                  {{ $page.props.auth.user.name.charAt(0) }}
-                </span>
-              </div>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-foreground truncate">{{ $page.props.auth.user.name }}</p>
-              <p class="text-xs text-muted-foreground">Faculty Member</p>
-            </div>
-          </div>
-        </div>
+      <div class="flex items-center gap-2">
+        <SemesterSchoolYearSelector />
+        <div class="font-medium text-sm">{{ $slots.header ? 'Faculty' : 'Dashboard' }}</div>
       </div>
-    </div>
 
-    <!-- Main content -->
-    <div class="md:pl-64 flex flex-col flex-1">
-      <!-- Top navigation -->
-      <div class="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div class="flex items-center justify-between h-16 px-4 sm:px-6">
-          <div class="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              @click="sidebarOpen = true"
-              class="md:hidden"
-            >
-              <Bars3Icon class="h-5 w-5" />
+      <div class="flex items-center gap-2">
+        <!-- Notifications for authenticated users -->
+        <NotificationDropdown ref="notificationDropdown" class="md:hidden" />
+
+        <Sheet v-model:open="isMobileMenuOpen">
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" class="md:hidden">
+              <Icon icon="lucide:menu" class="h-5 w-5" />
             </Button>
-
-            <div class="hidden sm:block">
-              <h1 v-if="$slots.header" class="text-lg font-semibold text-foreground">
-                <slot name="header" />
-              </h1>
+          </SheetTrigger>
+          <SheetContent side="right" class="w-[85vw] max-w-sm p-0">
+            <!-- Header with user profile -->
+            <div class="border-b p-4 bg-secondary/30">
+              <FacultyUserProfile />
             </div>
-          </div>
 
-          <div class="flex items-center space-x-2">
-            <!-- Academic Period Selector -->
-            <div class="hidden md:flex items-center space-x-2">
-              <div class="flex items-center space-x-1 px-3 py-1.5 bg-muted rounded-md">
-                <CalendarIcon class="h-4 w-4 text-muted-foreground" />
-                <DropdownMenu>
-                  <DropdownMenuTrigger as-child>
-                    <Button variant="ghost" size="sm" class="h-auto p-1 text-xs font-medium">
-                      {{ currentSemesterName }} {{ currentSchoolYearString }}
-                      <ChevronDownIcon class="h-3 w-3 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" class="w-64">
-                    <DropdownMenuLabel>Academic Period</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+            <!-- Main menu content -->
+            <div class="overflow-y-auto h-[calc(100vh-180px)]">
+              <!-- Quick Actions Grid -->
+              <div class="p-4 border-b">
+                <h3 class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                  Quick Actions
+                </h3>
+                <div class="grid grid-cols-2 gap-2">
+                  <Link
+                    v-for="item in mobileNavConfig.quickActions"
+                    :key="item.name"
+                    :href="route(item.route)"
+                    class="flex flex-col items-center p-4 rounded-lg hover:bg-secondary/80 transition-colors"
+                    :class="route().current(item.route) ? 'bg-secondary text-primary' : ''"
+                    prefetch
+                  >
+                    <Icon :icon="item.icon" class="h-6 w-6 mb-2" />
+                    <span class="text-sm font-medium">{{ item.name }}</span>
+                  </Link>
+                </div>
+              </div>
 
-                    <!-- Semester Selection -->
-                    <div class="px-2 py-1">
-                      <label class="text-xs font-medium text-muted-foreground">Semester</label>
-                      <div class="mt-1 space-y-1">
-                        <button
-                          v-for="(name, value) in availableSemesters"
-                          :key="value"
-                          @click="updateSemester(parseInt(value))"
-                          :class="[
-                            'w-full text-left px-2 py-1 text-sm rounded hover:bg-accent',
-                            currentSemester === parseInt(value) ? 'bg-accent font-medium' : ''
-                          ]"
-                        >
-                          {{ name }}
-                        </button>
-                      </div>
-                    </div>
+              <!-- Main Menu List -->
+              <div class="p-4">
+                <h3 class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                  Menu
+                </h3>
+                <div class="space-y-1">
+                  <component
+                    v-for="item in mobileNavConfig.mainMenu"
+                    :key="item.name"
+                    v-bind="renderLink(item)"
+                    :is="item.external ? 'a' : Link"
+                    class="flex items-center w-full"
+                    :class="[
+                      'flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors',
+                      !item.external && route().current(item.route)
+                        ? 'bg-secondary text-primary'
+                        : 'hover:bg-secondary/50'
+                    ]"
+                  >
+                    <Icon :icon="item.icon" class="mr-3 h-5 w-5" />
+                    {{ item.name }}
+                  </component>
 
-                    <DropdownMenuSeparator />
+                  <!-- Theme Toggle -->
+                  <button
+                    class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
+                    @click="mode = isDarkMode ? 'light' : 'dark'"
+                  >
+                    <Icon :icon="isDarkMode ? 'lucide:moon' : 'lucide:sun'" class="mr-3 h-5 w-5" />
+                    {{ isDarkMode ? "Dark" : "Light" }} Mode
+                  </button>
 
-                    <!-- School Year Selection -->
-                    <div class="px-2 py-1">
-                      <label class="text-xs font-medium text-muted-foreground">School Year</label>
-                      <div class="mt-1 max-h-32 overflow-y-auto space-y-1">
-                        <button
-                          v-for="(name, value) in availableSchoolYears"
-                          :key="value"
-                          @click="updateSchoolYear(parseInt(value))"
-                          :class="[
-                            'w-full text-left px-2 py-1 text-sm rounded hover:bg-accent',
-                            currentSchoolYear === parseInt(value) ? 'bg-accent font-medium' : ''
-                          ]"
-                        >
-                          {{ name }}
-                        </button>
-                      </div>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  <!-- Test Notification Button (Development) -->
+                  <button
+                    v-if="$page.props.app?.env === 'local'"
+                    class="w-full flex items-center px-4 py-3 text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
+                    @click="sendTestNotificationHandler"
+                  >
+                    <Icon icon="lucide:bell" class="mr-3 h-5 w-5" />
+                    Test Notification
+                  </button>
+                </div>
               </div>
             </div>
 
-            <!-- Theme toggle -->
-            <ThemeToggle />
+            <!-- Footer -->
+            <div class="border-t p-4 bg-background/80 backdrop-blur-sm">
+              <div class="flex items-center justify-between text-sm text-muted-foreground">
+                <span>&copy; {{ new Date().getFullYear() }} Faculty Portal</span>
+                <div class="flex items-center gap-2">
+                  <Icon icon="logos:laravel" class="h-4 w-4" />
+                  <Icon icon="logos:vue" class="h-4 w-4" />
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </div>
 
-            <!-- Notifications -->
-            <NotificationDropdown ref="notificationDropdown" />
+    <SidebarProvider>
+      <Sidebar variant="inset">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" as-child>
+                <Link :href="route('faculty.dashboard')">
+                  <div
+                    class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
+                  >
+                    <Command class="size-4" />
+                  </div>
+                  <div class="grid flex-1 text-left text-sm leading-tight">
+                    <span class="truncate font-medium">Faculty Portal</span>
+                    <span class="truncate text-xs">Teaching Hub</span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+
+        <SidebarContent>
+          <NavMain :items="sidebarData.navMain" />
+          <NavSecondary :items="sidebarData.navSecondary" class="mt-auto" />
+        </SidebarContent>
+
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <FacultyUserProfile />
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+
+      <SidebarInset>
+        <header class="flex h-16 shrink-0 items-center gap-2 hidden md:flex">
+          <div class="flex items-center gap-2 px-4">
+            <SidebarTrigger class="-ml-1" />
+            <Separator
+              orientation="vertical"
+              class="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem class="hidden md:block">
+                  <BreadcrumbLink :href="route('faculty.dashboard')">
+                    Faculty Portal
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator class="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>
+                    <slot name="header">Dashboard</slot>
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+          <div class="ml-auto flex items-center gap-2 px-4">
+            <!-- Notifications for authenticated users -->
+            <NotificationDropdown ref="notificationDropdown" class="hidden md:block" />
+            <SemesterSchoolYearSelector />
 
             <!-- Test Notification Button (Development) -->
             <Button
               v-if="$page.props.app?.env === 'local'"
               variant="ghost"
               size="icon"
-              @click="sendTestNotification"
+              @click="sendTestNotificationHandler"
               title="Send Test Notification"
             >
-              <BeakerIcon class="h-5 w-5" />
+              <Icon icon="lucide:beaker" class="h-5 w-5" />
             </Button>
+          </div>
+        </header>
 
-            <!-- Quick actions dropdown (desktop only) -->
-            <div class="relative hidden sm:block">
-              <Button
-                variant="ghost"
-                size="icon"
-                @click="quickActionsOpen = !quickActionsOpen"
-              >
-                <PlusIcon class="h-5 w-5" />
-              </Button>
+        <main class="flex flex-1 flex-col gap-4 p-4 pt-0 mt-14 md:mt-0">
+          <slot />
+        </main>
 
-              <div
-                v-if="quickActionsOpen"
-                class="absolute right-0 mt-2 w-56 bg-popover border border-border rounded-md shadow-lg py-1 z-50"
-                @click.away="quickActionsOpen = false"
-              >
-                <button
-                  v-for="action in quickActions"
-                  :key="action.name"
-                  @click="action.action"
-                  class="flex items-center w-full px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground"
-                >
-                  <component :is="action.icon" class="h-4 w-4 mr-3 text-muted-foreground" />
-                  {{ action.name }}
-                </button>
-              </div>
+        <!-- Compact Footer -->
+        <footer class="py-3 px-4 border-t mb-14 md:mb-0">
+          <div class="container mx-auto flex flex-wrap items-center justify-between gap-y-4">
+            <!-- Copyright -->
+            <div class="text-center md:text-left">
+              <p class="text-sm text-muted-foreground">
+                &copy; {{ new Date().getFullYear() }} Faculty Portal. All rights reserved.
+              </p>
             </div>
 
-            <!-- Profile dropdown (desktop only) -->
-            <DropdownMenu>
-              <DropdownMenuTrigger as-child>
-                <Button variant="ghost" class="hidden sm:flex items-center space-x-2 h-9">
-                  <img
-                    v-if="$page.props.auth.user.profile_photo_url"
-                    :src="$page.props.auth.user.profile_photo_url"
-                    :alt="$page.props.auth.user.name"
-                    class="h-7 w-7 rounded-full object-cover"
-                  />
-                  <div
-                    v-else
-                    class="h-7 w-7 rounded-full bg-primary flex items-center justify-center"
-                  >
-                    <span class="text-xs font-medium text-primary-foreground">
-                      {{ $page.props.auth.user.name.charAt(0) }}
-                    </span>
-                  </div>
-                  <ChevronDownIcon class="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
+            <!-- Social Links -->
+            <div class="flex items-center gap-3">
+              <Link
+                href="https://github.com/yukazakiri"
+                class="text-muted-foreground hover:text-primary transition-colors"
+                target="_blank"
+              >
+                <Icon icon="lucide:github" class="h-5 w-5" />
+              </Link>
+              <Link
+                href="#"
+                class="text-muted-foreground hover:text-primary transition-colors"
+                target="_blank"
+              >
+                <Icon icon="lucide:twitter" class="h-5 w-5" />
+              </Link>
+            </div>
 
-              <DropdownMenuContent align="end" class="w-48">
-                <DropdownMenuLabel>
-                  Manage Account
-                </DropdownMenuLabel>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem as-child>
-                  <Link :href="route('profile.show')" class="cursor-pointer">
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem @click="logout" class="cursor-pointer">
-                  Log Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <!-- Tech Stack -->
+            <div class="flex items-center gap-2 text-muted-foreground text-sm">
+              <Icon icon="logos:laravel" class="h-4 w-4" />
+              <Icon icon="logos:vue" class="h-4 w-4" />
+              <Icon icon="logos:inertiajs-icon" class="h-4 w-4" />
+              <Icon icon="logos:tailwindcss-icon" class="h-4 w-4" />
+              <Icon icon="logos:vitejs" class="h-4 w-4" />
+            </div>
           </div>
-        </div>
+        </footer>
+      </SidebarInset>
+    </SidebarProvider>
+
+    <!-- Redesigned Mobile Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 border-t bg-background/80 backdrop-blur-sm z-50 md:hidden">
+      <div class="grid grid-cols-5 px-1 py-1">
+        <Link
+          v-for="item in mobileNavConfig.quickActions.slice(0, 4)"
+          :key="item.name"
+          :href="route(item.route)"
+          class="flex flex-col items-center py-2 px-1 rounded-lg transition-colors"
+          :class="
+            route().current(item.route)
+              ? 'text-primary bg-secondary/50'
+              : 'text-muted-foreground hover:bg-secondary/30'
+          "
+          prefetch
+        >
+          <Icon :icon="item.icon" class="h-5 w-5 mb-1" />
+          <span class="text-xs">{{ item.name }}</span>
+        </Link>
+        <button
+          class="flex flex-col items-center py-2 px-1 text-muted-foreground rounded-lg hover:bg-secondary/30 transition-colors"
+          @click="isMobileMenuOpen = true"
+        >
+          <Icon icon="lucide:menu" class="h-5 w-5 mb-1" />
+          <span class="text-xs">Menu</span>
+        </button>
       </div>
-
-      <!-- Page content -->
-      <main class="flex-1 pb-20 md:pb-6">
-        <div class="py-4 md:py-6">
-          <div class="max-w-7xl mx-auto px-4 sm:px-6">
-            <slot />
-          </div>
-        </div>
-      </main>
-
-      <!-- Mobile bottom navigation -->
-      <MobileBottomNav @showDevelopmentModal="showDevelopmentModal = true" />
     </div>
 
     <!-- Development Modal -->
@@ -263,181 +274,269 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { router, Link } from '@inertiajs/vue3'
+import { ref, computed, onMounted, inject, watch } from 'vue'
+import { router, Link, usePage } from '@inertiajs/vue3'
 import axios from 'axios'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
-import { Button } from '@/Components/ui/button.js'
-import ThemeToggle from '@/Components/ui/theme-toggle.vue'
+import { Button } from '@/Components/shadcn/ui/button'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/Components/shadcn/ui/breadcrumb";
+import { Separator } from "@/Components/shadcn/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/Components/shadcn/ui/sidebar";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/Components/shadcn/ui/sheet";
+import Sonner from "@/Components/shadcn/ui/sonner/Sonner.vue";
 import NotificationDropdown from '@/Components/Notifications/NotificationDropdown.vue'
 import { useRealtimeNotifications } from '@/Composables/useRealtimeNotifications'
 import { useNotifications } from '@/Composables/useNotifications'
-import { useToast } from '@/Components/shadcn/ui/toast'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/Components/shadcn/ui/dropdown-menu'
-import SidebarNavigation from '@/Components/Faculty/SidebarNavigation.vue'
-import MobileBottomNav from '@/Components/Faculty/MobileBottomNav.vue'
+import { toast } from "vue-sonner";
+import NavMain from "@/Components/shadcn/NavMain.vue";
+import NavSecondary from "@/Components/shadcn/NavSecondary.vue";
 import DevelopmentModal from '@/Components/ui/DevelopmentModal.vue'
+import SemesterSchoolYearSelector from "@/Components/SemesterSchoolYearSelector.vue";
+import FacultyUserProfile from "@/Components/Faculty/FacultyUserProfile.vue";
+import { useColorMode } from "@vueuse/core";
+import { Icon } from "@iconify/vue";
 import {
-  Bars3Icon,
-  XMarkIcon,
-  PlusIcon,
-  ChevronDownIcon,
-  HomeIcon,
-  AcademicCapIcon,
-  UsersIcon,
-  CalendarIcon,
-  ClipboardDocumentListIcon,
-  ChartBarIcon,
-  DocumentTextIcon,
-  CogIcon,
-  BookOpenIcon,
-  BeakerIcon
-} from '@heroicons/vue/24/outline'
+  LayoutDashboard,
+  Users,
+  Calendar,
+  GraduationCap,
+  ClipboardList,
+  BarChart,
+  FileText,
+  BookOpen,
+  Settings,
+  LifeBuoy,
+  Command,
+} from "lucide-vue-next";
 
 // Reactive state
-const sidebarOpen = ref(false)
-const quickActionsOpen = ref(false)
+const isMobileMenuOpen = ref(false)
 const showDevelopmentModal = ref(false)
 const notificationDropdown = ref(null)
 
+// Page and user data
+const page = usePage();
+const user = computed(() => page.props.auth?.user);
+
 // Notification composables
-const { sendTestNotification: sendTest } = useNotifications()
-const { toast } = useToast()
+const { sendTestNotification } = useNotifications()
 
 // Initialize real-time notifications
 useRealtimeNotifications()
 
 // Route helper function
-const route = (name, params = {}) => {
-  return window.route ? window.route(name, params) : '#'
-}
+const route = inject("route");
 
-// Academic period settings
-const currentSemester = ref(1)
-const currentSchoolYear = ref(new Date().getFullYear())
-const availableSemesters = ref({})
-const availableSchoolYears = ref({})
-const loading = ref(false)
+// Theme management
+const mode = useColorMode({
+    attribute: "class",
+    modes: { light: "", dark: "dark" },
+    initialValue: "light",
+});
+const isDarkMode = computed(() => mode.value === "dark");
 
-// Navigation items
-const navigation = ref([
-  { name: 'Dashboard', href: route('faculty.dashboard'), icon: HomeIcon, current: route().current('faculty.dashboard') },
-  { name: 'My Classes', href: route('faculty.classes.index'), icon: AcademicCapIcon, current: route().current('faculty.classes.*') },
-  { name: 'Students', href: route('faculty.students.index'), icon: UsersIcon, current: route().current('faculty.students.*') },
-  { name: 'Schedule', href: route('faculty.schedule.index'), icon: CalendarIcon, current: route().current('faculty.schedule.*') },
-  { name: 'Attendance', href: '#', icon: ClipboardDocumentListIcon, current: false, isDevelopment: true },
-  { name: 'Grades', href: '#', icon: ChartBarIcon, current: false, isDevelopment: true },
-  { name: 'Assignments', href: '#', icon: DocumentTextIcon, current: false, isDevelopment: true },
-  { name: 'Resources', href: '#', icon: BookOpenIcon, current: false, isDevelopment: true },
-  { name: 'Settings', href: '#', icon: CogIcon, current: false, isDevelopment: true },
-])
+// Enhanced sidebar data structure
+const sidebarData = {
+  navMain: [
+    {
+      title: "Dashboard",
+      url: route("faculty.dashboard"),
+      icon: LayoutDashboard,
+      isActive: route().current("faculty.dashboard"),
+    },
+    {
+      title: "Teaching",
+      url: "#",
+      icon: GraduationCap,
+      items: [
+        {
+          title: "My Classes",
+          url: route("faculty.classes.index"),
+        },
+        {
+          title: "Students",
+          url: route("faculty.students.index"),
+        },
+        {
+          title: "Schedule",
+          url: route("faculty.schedule.index"),
+        },
+      ],
+    },
+    {
+      title: "Academic Tools",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        {
+          title: "Attendance",
+          url: "#",
+        },
+        {
+          title: "Grades",
+          url: "#",
+        },
+        {
+          title: "Assignments",
+          url: "#",
+        },
+        {
+          title: "Resources",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Settings",
+      url: route("profile.show"),
+      icon: Settings,
+      isActive: route().current("profile.*"),
+    },
+  ],
+  navSecondary: [
+    {
+      title: "Support",
+      url: "https://github.com/yukazakiri/DccpHubv2/issues",
+      icon: LifeBuoy,
+    },
+    {
+      title: "Documentation",
+      url: "#",
+      icon: FileText,
+    },
+  ],
+};
 
-// Quick actions
-const quickActions = ref([
-  { name: 'Take Attendance', action: () => showDevelopmentModal.value = true, icon: ClipboardDocumentListIcon },
-  { name: 'Create Assignment', action: () => showDevelopmentModal.value = true, icon: DocumentTextIcon },
-  { name: 'Grade Students', action: () => showDevelopmentModal.value = true, icon: ChartBarIcon },
-  { name: 'Schedule Class', action: () => showDevelopmentModal.value = true, icon: CalendarIcon },
-])
+// Mobile navigation configuration
+const mobileNavConfig = computed(() => ({
+    quickActions: [
+        {
+            name: "Dashboard",
+            icon: "lucide:layout-dashboard",
+            route: "faculty.dashboard",
+        },
+        {
+            name: "Classes",
+            icon: "lucide:graduation-cap",
+            route: "faculty.classes.index",
+        },
+        {
+            name: "Students",
+            icon: "lucide:users",
+            route: "faculty.students.index",
+        },
+        {
+            name: "Schedule",
+            icon: "lucide:calendar",
+            route: "faculty.schedule.index",
+        },
+    ],
+    mainMenu: [
+        {
+            name: "Settings",
+            icon: "lucide:settings",
+            route: "profile.show",
+        },
+        {
+            name: "Support",
+            icon: "lucide:life-buoy",
+            href: "https://github.com/yukazakiri/DccpHubv2/issues",
+            external: true,
+        },
+        {
+            name: "Documentation",
+            icon: "lucide:file-text",
+            route: "#",
+        },
+    ]
+}));
 
-// Computed properties
-const currentSemesterName = computed(() => {
-  return availableSemesters.value[currentSemester.value] || '1st Semester'
-})
-
-const currentSchoolYearString = computed(() => {
-  return availableSchoolYears.value[currentSchoolYear.value] || `${currentSchoolYear.value} - ${currentSchoolYear.value + 1}`
-})
-
-// Methods
-const loadSettings = async () => {
-  try {
-    loading.value = true
-    const response = await axios.get(route('faculty.settings.index'))
-
-    if (response.data.success) {
-      const data = response.data.data
-      currentSemester.value = data.current_semester
-      currentSchoolYear.value = data.current_school_year
-      availableSemesters.value = data.available_semesters
-      availableSchoolYears.value = data.available_school_years
+// Helper functions
+function renderLink(item) {
+    if (item.external) {
+        return {
+            is: "a",
+            href: item.href || route(item.route),
+            target: "_blank",
+        };
     }
-  } catch (error) {
-    console.error('Failed to load settings:', error)
-  } finally {
-    loading.value = false
-  }
+    return {
+        is: Link,
+        href: route(item.route),
+    };
 }
 
-const updateSemester = async (semester) => {
-  try {
-    loading.value = true
-    const response = await axios.patch(route('faculty.settings.semester'), {
-      semester: semester
-    })
-
-    if (response.data.success) {
-      currentSemester.value = semester
-      // Refresh the current page to reload data with new semester
-      router.reload({ only: ['stats', 'classes', 'todaysSchedule', 'weeklySchedule', 'classEnrollments'] })
-    }
-  } catch (error) {
-    console.error('Failed to update semester:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-const updateSchoolYear = async (schoolYear) => {
-  try {
-    loading.value = true
-    const response = await axios.patch(route('faculty.settings.school-year'), {
-      school_year: schoolYear
-    })
-
-    if (response.data.success) {
-      currentSchoolYear.value = schoolYear
-      // Refresh the current page to reload data with new school year
-      router.reload({ only: ['stats', 'classes', 'todaysSchedule', 'weeklySchedule', 'classEnrollments'] })
-    }
-  } catch (error) {
-    console.error('Failed to update school year:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-const logout = () => {
-  router.post(route('logout'))
+function logout() {
+    router.post(route("logout"));
 }
 
 // Send test notification
-const sendTestNotification = async () => {
-  try {
-    await sendTest()
-    // Refresh the notification dropdown
-    if (notificationDropdown.value) {
-      notificationDropdown.value.refresh()
+const sendTestNotificationHandler = async () => {
+    try {
+        await sendTestNotification();
+        // Refresh the notification dropdown
+        if (notificationDropdown.value) {
+            notificationDropdown.value.refresh();
+        }
+    } catch (error) {
+        console.error('Failed to send test notification:', error);
+        toast.error('Failed to send test notification');
     }
-  } catch (error) {
-    console.error('Failed to send test notification:', error)
-    toast({
-      title: 'Error',
-      description: 'Failed to send test notification',
-      variant: 'destructive'
-    })
-  }
-}
+};
 
-// Load settings on component mount
+// Handle flash messages
+const handleFlashMessages = () => {
+    // Safely check if flash exists in page props
+    if (!page.props.flash) return;
+
+    try {
+        if (page.props.flash.success) {
+            toast.success(page.props.flash.success);
+        }
+
+        if (page.props.flash.error) {
+            toast.error(page.props.flash.error);
+        }
+
+        if (page.props.flash.message) {
+            toast.info(page.props.flash.message);
+        }
+    } catch (error) {
+        console.error('Error displaying toast notification:', error);
+    }
+};
+
 onMounted(() => {
-  loadSettings()
-})
+    // Handle flash messages on initial load
+    handleFlashMessages();
+});
+
+// Watch for flash messages when page changes
+watch(() => page.props.flash, () => {
+    handleFlashMessages();
+}, { deep: true });
+
+
 </script>

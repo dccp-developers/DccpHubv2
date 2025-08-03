@@ -1,22 +1,25 @@
 <script setup>
-import AppSidebarContent from "@/Components/AppSidebarContent.vue";
-import AppTeamManager from "@/Components/AppTeamManager.vue";
-import AppUserManager from "@/Components/AppUserManager.vue";
-import Breadcrumb from "@/Components/shadcn/ui/breadcrumb/Breadcrumb.vue";
-import BreadcrumbItem from "@/Components/shadcn/ui/breadcrumb/BreadcrumbItem.vue";
-import BreadcrumbLink from "@/Components/shadcn/ui/breadcrumb/BreadcrumbLink.vue";
-import BreadcrumbList from "@/Components/shadcn/ui/breadcrumb/BreadcrumbList.vue";
-import Separator from "@/Components/shadcn/ui/separator/Separator.vue";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/Components/shadcn/ui/breadcrumb";
+import { Separator } from "@/Components/shadcn/ui/separator";
 import {
     Sidebar,
+    SidebarContent,
     SidebarFooter,
     SidebarHeader,
     SidebarInset,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarProvider,
+    SidebarTrigger,
 } from "@/Components/shadcn/ui/sidebar";
-import SidebarMenu from "@/Components/shadcn/ui/sidebar/SidebarMenu.vue";
-import SidebarMenuItem from "@/Components/shadcn/ui/sidebar/SidebarMenuItem.vue";
-import SidebarProvider from "@/Components/shadcn/ui/sidebar/SidebarProvider.vue";
-import SidebarTrigger from "@/Components/shadcn/ui/sidebar/SidebarTrigger.vue";
 import Sonner from "@/Components/shadcn/ui/sonner/Sonner.vue";
 import NotificationDropdown from "@/Components/Notifications/NotificationDropdown.vue";
 import { useSeoMetaTags } from "@/Composables/useSeoMetaTags.js";
@@ -24,7 +27,7 @@ import { useRealtimeNotifications } from "@/Composables/useRealtimeNotifications
 import { useNotifications } from "@/Composables/useNotifications";
 import { onMounted, ref, computed, inject, watch } from "vue";
 import { Icon } from "@iconify/vue";
-import { Link, usePage } from "@inertiajs/vue3";
+import { Link, usePage, router } from "@inertiajs/vue3";
 import { Button } from "@/Components/shadcn/ui/button";
 import {
     Sheet,
@@ -35,6 +38,20 @@ import { useColorMode } from "@vueuse/core";
 import AppLogoIcon from "@/Components/AppLogoIcon.vue";
 import SemesterSchoolYearSelector from "@/Components/SemesterSchoolYearSelector.vue";
 import { toast } from "vue-sonner";
+import NavMain from "@/Components/shadcn/NavMain.vue";
+import NavSecondary from "@/Components/shadcn/NavSecondary.vue";
+import AppTeamManager from "@/Components/AppTeamManager.vue";
+import AppUserManager from "@/Components/AppUserManager.vue";
+import {
+    LayoutDashboard,
+    Settings,
+    Calendar,
+    Banknote,
+    Book,
+    LifeBuoy,
+    FileText,
+    Command,
+} from "lucide-vue-next";
 
 const props = defineProps({
     title: String,
@@ -132,88 +149,61 @@ const isDarkMode = computed(() => mode.value === "dark");
 const isMobileMenuOpen = ref(false);
 const appName = "DccpHub";
 
-// Navigation configuration (same as in AppSidebarContent)
-const navigationConfig = [
+// Enhanced sidebar data structure
+const sidebarData = {
+  user: computed(() => ({
+    name: user.value?.name || "User",
+    email: user.value?.email || "user@example.com",
+    avatar: user.value?.profile_photo_url || null,
+  })),
+  navMain: [
     {
-        label: "Platform",
-        items: [
-            {
-                name: "Dashboard",
-                icon: "lucide:layout-dashboard",
-                route: "dashboard",
-            },
-            { name: "Settings", icon: "lucide:settings", route: "profile.show" },
-            { name: "Schedule", icon: "lucide:calendar", route: "schedule.index" },
-            { name: "Tuition", icon: "lucide:banknote", route: "tuition.index" },
-            { name: "Subjects", icon: "lucide:book", route: "subjects.index" },
-        ],
+      title: "Dashboard",
+      url: route("dashboard"),
+      icon: LayoutDashboard,
+      isActive: route().current("dashboard"),
     },
     {
-        label: null,
-        class: "mt-auto",
-        items: [
-            {
-                name: "Support",
-                icon: "lucide:life-buoy",
-                href: "https://github.com/yukazakiri/DccpHubv2/issues",
-                external: true,
-            },
-            {
-                name: "Change-Log",
-                icon: "lucide:file-text",
-                route: "changelog.index",
-                external: false,
-            },
-        ],
+      title: "Academic",
+      url: "#",
+      icon: Book,
+      items: [
+        {
+          title: "Schedule",
+          url: route("schedule.index"),
+        },
+        {
+          title: "Subjects",
+          url: route("subjects.index"),
+        },
+        {
+          title: "Tuition",
+          url: route("tuition.index"),
+        },
+      ],
     },
-];
-
-// Selected items for mobile bottom navigation
-const mobileNavItems = computed(() => {
-    return [
-        navigationConfig[0].items[0], // Dashboard
-        navigationConfig[0].items[2], // Schedule
-        navigationConfig[0].items[3], // Tuition
-        navigationConfig[0].items[4], // Subjects
-        { name: "Menu", icon: "lucide:menu", action: "toggleMenu" },
-    ];
-});
-function logout() {
-    router.post(route("logout"));
-}
-
-// Send test notification (for development)
-const sendTestNotificationHandler = async () => {
-    try {
-        await sendTestNotification();
-        // Refresh the notification dropdown
-        if (notificationDropdown.value) {
-            notificationDropdown.value.refresh();
-        }
-    } catch (error) {
-        console.error('Failed to send test notification:', error);
-        toast.error('Failed to send test notification');
-    }
+    {
+      title: "Settings",
+      url: route("profile.show"),
+      icon: Settings,
+      isActive: route().current("profile.*"),
+    },
+  ],
+  navSecondary: [
+    {
+      title: "Support",
+      url: "https://github.com/yukazakiri/DccpHubv2/issues",
+      icon: LifeBuoy,
+    },
+    {
+      title: "Change-Log",
+      url: route("changelog.index"),
+      icon: FileText,
+    },
+  ],
 };
 
-// Get current page title
-const currentPageTitle = computed(() => props.title || appName);
-
-function renderLink(item) {
-    if (item.external) {
-        return {
-            is: "a",
-            href: item.href || route(item.route),
-            target: "_blank",
-        };
-    }
-    return {
-        is: Link,
-        href: route(item.route),
-    };
-}
-
-// Reorganize navigation for mobile
+// Mobile navigation configuration
 const mobileNavConfig = computed(() => ({
     quickActions: [
         {
@@ -256,6 +246,43 @@ const mobileNavConfig = computed(() => ({
         },
     ]
 }));
+
+function logout() {
+    router.post(route("logout"));
+}
+
+// Send test notification (for development)
+const sendTestNotificationHandler = async () => {
+    try {
+        await sendTestNotification();
+        // Refresh the notification dropdown
+        if (notificationDropdown.value) {
+            notificationDropdown.value.refresh();
+        }
+    } catch (error) {
+        console.error('Failed to send test notification:', error);
+        toast.error('Failed to send test notification');
+    }
+};
+
+// Get current page title
+const currentPageTitle = computed(() => props.title || appName);
+
+function renderLink(item) {
+    if (item.external) {
+        return {
+            is: "a",
+            href: item.href || route(item.route),
+            target: "_blank",
+        };
+    }
+    return {
+        is: Link,
+        href: route(item.route),
+    };
+}
+
+
 </script>
 
 <template>
@@ -272,7 +299,7 @@ const mobileNavConfig = computed(() => ({
 
             <div class="flex items-center gap-2">
                 <SemesterSchoolYearSelector />
-                <div class="font-medium text-sm">{{ currentPageTitle }}</div>
+                <div class="font-medium text-sm">{{ title || appName }}</div>
             </div>
 
             <div class="flex items-center gap-2">
@@ -366,16 +393,34 @@ const mobileNavConfig = computed(() => ({
         </div>
 
         <SidebarProvider>
-            <Sidebar>
+            <Sidebar variant="inset">
                 <SidebarHeader>
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <AppTeamManager v-if="$page.props.jetstream.hasTeamFeatures" />
+                            <SidebarMenuButton size="lg" as-child>
+                                <Link :href="route('dashboard')">
+                                    <div
+                                        class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
+                                    >
+                                        <Command class="size-4" />
+                                    </div>
+                                    <div class="grid flex-1 text-left text-sm leading-tight">
+                                        <span class="truncate font-medium">{{ appName }}</span>
+                                        <span class="truncate text-xs">Student Portal</span>
+                                    </div>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem v-if="$page.props.jetstream.hasTeamFeatures">
+                            <AppTeamManager />
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarHeader>
 
-                <AppSidebarContent />
+                <SidebarContent>
+                    <NavMain :items="sidebarData.navMain" />
+                    <NavSecondary :items="sidebarData.navSecondary" class="mt-auto" />
+                </SidebarContent>
 
                 <SidebarFooter>
                     <SidebarMenu>
@@ -387,32 +432,35 @@ const mobileNavConfig = computed(() => ({
             </Sidebar>
 
             <SidebarInset>
-                <header
-                    class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:block hidden">
-                    <div class="flex items-center justify-between w-full gap-2 px-4 mt-4">
-                        <div class="flex items-center gap-2">
-                            <SidebarTrigger class="" />
-                            <Separator orientation="vertical" class="mr-2 h-4 hidden md:block" />
-                            <Breadcrumb>
-                                <BreadcrumbList>
-                                    <BreadcrumbItem>
-                                        <BreadcrumbLink>
-                                            {{ title }}
-                                        </BreadcrumbLink>
-                                    </BreadcrumbItem>
-                                </BreadcrumbList>
-                            </Breadcrumb>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <!-- Notifications for authenticated users -->
-                            <NotificationDropdown
-                                v-if="user"
-                                ref="notificationDropdown"
-                                class="hidden md:block"
-                            />
-                            <SemesterSchoolYearSelector />
-                        </div>
+                <header class="flex h-16 shrink-0 items-center gap-2 hidden md:flex">
+                    <div class="flex items-center gap-2 px-4">
+                        <SidebarTrigger class="-ml-1" />
+                        <Separator
+                            orientation="vertical"
+                            class="mr-2 data-[orientation=vertical]:h-4"
+                        />
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                <BreadcrumbItem class="hidden md:block">
+                                    <BreadcrumbLink :href="route('dashboard')">
+                                        {{ appName }}
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator class="hidden md:block" />
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage>{{ title || 'Dashboard' }}</BreadcrumbPage>
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
+                    </div>
+                    <div class="ml-auto flex items-center gap-2 px-4">
+                        <!-- Notifications for authenticated users -->
+                        <NotificationDropdown
+                            v-if="user"
+                            ref="notificationDropdown"
+                            class="hidden md:block"
+                        />
+                        <SemesterSchoolYearSelector />
                     </div>
                 </header>
                 <main class="flex flex-1 flex-col gap-4 p-4 pt-0 mt-14 md:mt-0">
