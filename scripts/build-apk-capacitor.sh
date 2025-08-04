@@ -266,6 +266,75 @@ copy_apk_files() {
     fi
 }
 
+# Function to commit APK to repository
+commit_apk_to_repo() {
+    print_status "Committing APK to repository..."
+
+    # Create releases directory in the repository
+    REPO_RELEASES_DIR="$PROJECT_ROOT/releases"
+    /bin/mkdir -p "$REPO_RELEASES_DIR"
+
+    # Copy APK to releases directory with a standard name
+    REPO_APK_PATH="$REPO_RELEASES_DIR/DCCPHub-latest.apk"
+    TIMESTAMPED_APK_PATH="$REPO_RELEASES_DIR/DCCPHub-${TIMESTAMP}.apk"
+
+    if [ -f "$APK_OUTPUT_DIR/$APK_FILENAME" ]; then
+        # Copy with timestamp
+        cp "$APK_OUTPUT_DIR/$APK_FILENAME" "$TIMESTAMPED_APK_PATH"
+
+        # Copy as latest
+        cp "$APK_OUTPUT_DIR/$APK_FILENAME" "$REPO_APK_PATH"
+
+        print_success "APK copied to repository releases directory"
+
+        # Check if we're in a git repository
+        if [ -d ".git" ]; then
+            print_status "Adding APK to git..."
+
+            # Add the APK files to git
+            git add "$REPO_APK_PATH" "$TIMESTAMPED_APK_PATH"
+
+            # Create commit message
+            COMMIT_MSG="build: Update APK build ${TIMESTAMP}
+
+- APK Size: $APK_SIZE
+- Build Type: Debug
+- Platform: Android
+- Timestamp: $TIMESTAMP
+- Custom DCCP branding included"
+
+            # Check if there are changes to commit
+            if git diff --cached --quiet; then
+                print_warning "No changes to commit (APK might be identical)"
+            else
+                # Commit the APK
+                git commit -m "$COMMIT_MSG"
+                print_success "APK committed to repository"
+
+                # Ask if user wants to push
+                echo ""
+                read -p "Push APK to remote repository? (y/N): " -n 1 -r
+                echo ""
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    print_status "Pushing to remote repository..."
+                    if git push origin main; then
+                        print_success "APK pushed to remote repository"
+                    else
+                        print_warning "Failed to push to remote repository"
+                    fi
+                fi
+            fi
+        else
+            print_warning "Not in a git repository, skipping git operations"
+        fi
+
+        return 0
+    else
+        print_error "APK file not found for repository commit"
+        return 1
+    fi
+}
+
 # Function to display build summary
 display_summary() {
     echo ""
@@ -275,8 +344,9 @@ display_summary() {
     ls -la "$APK_OUTPUT_DIR"/*.apk 2>/dev/null || echo "No APK files found"
     echo ""
     echo "📦 APK Size: $APK_SIZE"
-    echo "🌐 Download URL: https://portal.dccp.edu.ph/apk/download/DCCPHub_latest.apk"
+    echo "🌐 Download URL: https://portal.dccp.edu.ph/download/apk"
     echo "📁 Storage Path: $APK_OUTPUT_DIR"
+    echo "📁 Repository Path: $PROJECT_ROOT/releases/"
     echo ""
     echo "🔧 Build Information:"
     echo "   • Build Type: Debug"
@@ -287,7 +357,7 @@ display_summary() {
     echo "   1. Test the APK on an Android device"
     echo "   2. For release build, run: cd android && ./gradlew assembleRelease"
     echo "   3. Download from: https://portal.dccp.edu.ph/download/apk"
-    echo "   4. To create GitHub release, run: git tag v1.0.x && git push origin v1.0.x"
+    echo "   4. To create GitHub release, run: ./scripts/create-github-release.sh"
     echo ""
 }
 
@@ -297,6 +367,9 @@ main() {
     build_apk
 
     if copy_apk_files; then
+        # Commit APK to repository
+        commit_apk_to_repo
+
         display_summary
         print_success "🎉 DCCPHub APK build process completed successfully!"
         exit 0

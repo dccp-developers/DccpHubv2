@@ -1,0 +1,3 @@
+# This directory contains committed APK files for GitHub releases
+# APK files are built locally and committed to the repository
+# The GitHub workflow uses these committed APKs to create releases
