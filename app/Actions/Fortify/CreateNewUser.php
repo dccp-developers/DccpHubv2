@@ -81,9 +81,9 @@ final class CreateNewUser implements CreatesNewUsers
      */
     private function getPersonData(string $inputId): ?array
     {
-        // Check Faculty by faculty_id_number first, then by UUID
+        // Check Faculty by faculty_id_number first, then by UUID (only if it looks like a UUID)
         $faculty = Faculty::query()->where('faculty_id_number', $inputId)->first();
-        if (!$faculty) {
+        if (!$faculty && $this->isValidUuid($inputId)) {
             $faculty = Faculty::query()->where('id', $inputId)->first();
         }
         if ($faculty) {
@@ -117,6 +117,14 @@ final class CreateNewUser implements CreatesNewUsers
         }
 
         return null;
+    }
+
+    /**
+     * Check if a string is a valid UUID format.
+     */
+    private function isValidUuid(string $uuid): bool
+    {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid) === 1;
     }
 
     /**

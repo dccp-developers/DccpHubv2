@@ -276,7 +276,7 @@ const togglePasswordConfirmationVisibility = () => {
                     </Label>
                     <p class="text-sm text-muted-foreground">
                         {{ userType === 'instructor'
-                            ? 'Enter your 8-digit faculty ID number to verify your affiliation'
+                            ? 'Enter your 7-digit faculty ID number to verify your affiliation'
                             : 'Enter your student ID to verify your affiliation'
                         }}
                     </p>
@@ -288,7 +288,7 @@ const togglePasswordConfirmationVisibility = () => {
                         type="text"
                         required
                         v-model="idForm.id"
-                        :placeholder="userType === 'instructor' ? 'Enter your 8-digit faculty ID (e.g., 10000001)' : 'Enter your student ID'"
+                        :placeholder="userType === 'instructor' ? 'Enter your 7-digit faculty ID (e.g., 1000001)' : 'Enter your student ID'"
                         class="pl-10"
                     />
                 </div>
@@ -304,7 +304,7 @@ const togglePasswordConfirmationVisibility = () => {
                         </div>
                         <div class="text-sm text-blue-800">
                             <p class="font-medium">Faculty ID Number Format</p>
-                            <p>Your faculty ID is an 8-digit number (e.g., 10000001, 10000002). If you don't know your faculty ID number, please contact the administration office.</p>
+                            <p>Your faculty ID is a 7-digit number (e.g., 1000001, 1000002). If you don't know your faculty ID number, please contact the administration office.</p>
                         </div>
                     </div>
                 </div>

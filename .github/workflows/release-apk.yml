@@ -1,0 +1,269 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'resources/**'
+      - 'public/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'scripts/build-apk-capacitor.sh'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Capacitor CLI
+        run: npm install -g @capacitor/cli
+
+      - name: Get latest release tag
+        id: get_latest_tag
+        run: |
+          # Get the latest release tag, default to v0.0.0 if none exists
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Calculate next version
+        id: next_version
+        run: |
+          LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
+          VERSION_BUMP="${{ github.event.inputs.version_bump || 'patch' }}"
+          
+          # Remove 'v' prefix if present
+          CURRENT_VERSION=${LATEST_TAG#v}
+          
+          # Split version into parts
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          
+          # Increment based on bump type
+          case $VERSION_BUMP in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "version_number=${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
+          echo "Next version: $NEW_VERSION"
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Setup Capacitor Android project
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap copy android
+          npx cap sync android
+
+      - name: Copy custom app icons
+        run: |
+          # Source images from public folder
+          ICON_192="public/android-chrome-192x192.png"
+          ICON_512="public/android-chrome-512x512.png"
+          
+          if [ -f "$ICON_192" ] && [ -f "$ICON_512" ]; then
+            echo "Copying custom app icons..."
+            ANDROID_RES="android/app/src/main/res"
+            
+            # Generate different sizes for Android using ImageMagick
+            mkdir -p temp_icons
+            convert "$ICON_512" -resize 48x48 "temp_icons/ic_launcher_mdpi.png"
+            convert "$ICON_512" -resize 72x72 "temp_icons/ic_launcher_hdpi.png"
+            convert "$ICON_512" -resize 96x96 "temp_icons/ic_launcher_xhdpi.png"
+            convert "$ICON_512" -resize 144x144 "temp_icons/ic_launcher_xxhdpi.png"
+            convert "$ICON_512" -resize 192x192 "temp_icons/ic_launcher_xxxhdpi.png"
+            
+            # Copy resized icons to Android project
+            cp "temp_icons/ic_launcher_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher.png"
+            cp "temp_icons/ic_launcher_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher_round.png"
+            cp "temp_icons/ic_launcher_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher_foreground.png"
+            
+            cp "temp_icons/ic_launcher_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher.png"
+            cp "temp_icons/ic_launcher_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher_round.png"
+            cp "temp_icons/ic_launcher_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher_foreground.png"
+            
+            cp "temp_icons/ic_launcher_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher.png"
+            cp "temp_icons/ic_launcher_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher_round.png"
+            cp "temp_icons/ic_launcher_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher_foreground.png"
+            
+            cp "temp_icons/ic_launcher_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher.png"
+            cp "temp_icons/ic_launcher_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher_round.png"
+            cp "temp_icons/ic_launcher_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher_foreground.png"
+            
+            cp "temp_icons/ic_launcher_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher.png"
+            cp "temp_icons/ic_launcher_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher_round.png"
+            cp "temp_icons/ic_launcher_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher_foreground.png"
+            
+            rm -rf temp_icons
+            echo "Custom app icons copied successfully"
+          else
+            echo "Android Chrome icons not found, using default icons"
+          fi
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew clean
+          ./gradlew assembleDebug
+
+      - name: Rename APK
+        id: rename_apk
+        run: |
+          APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
+          NEW_APK_NAME="DCCPHub-${{ steps.next_version.outputs.version_number }}.apk"
+          
+          if [ -f "$APK_PATH" ]; then
+            mv "$APK_PATH" "$NEW_APK_NAME"
+            echo "apk_path=$NEW_APK_NAME" >> $GITHUB_OUTPUT
+            echo "apk_name=$NEW_APK_NAME" >> $GITHUB_OUTPUT
+            
+            # Get APK size
+            APK_SIZE=$(du -h "$NEW_APK_NAME" | cut -f1)
+            echo "apk_size=$APK_SIZE" >> $GITHUB_OUTPUT
+            
+            echo "APK renamed to: $NEW_APK_NAME"
+            echo "APK size: $APK_SIZE"
+          else
+            echo "APK not found at expected location"
+            exit 1
+          fi
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat > release_notes.md << EOF
+          # DCCPHub Mobile App ${{ steps.next_version.outputs.new_version }}
+          
+          ## 📱 Android APK Download
+          
+          Download the latest DCCPHub mobile app for Android devices.
+          
+          ### 📋 Installation Instructions
+          
+          1. **Download** the APK file below
+          2. **Enable** "Install from unknown sources" in your Android settings:
+             - Go to Settings > Security > Unknown Sources (Android 7 and below)
+             - Go to Settings > Apps > Special Access > Install Unknown Apps (Android 8+)
+          3. **Install** the downloaded APK file
+          4. **Open** the DCCPHub app and sign in
+          
+          ### ✨ Features
+          
+          - 🔐 **Secure Authentication** with Google OAuth
+          - 📊 **Dashboard** with real-time data
+          - 📱 **Mobile-optimized** interface
+          - 🔄 **Offline support** with PWA capabilities
+          - 🎨 **Custom branding** with DCCP logo
+          
+          ### 📊 Build Information
+          
+          - **Version**: ${{ steps.next_version.outputs.version_number }}
+          - **Build Type**: Debug
+          - **Platform**: Android
+          - **Size**: ${{ steps.rename_apk.outputs.apk_size }}
+          - **Built**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          ### 🔧 Technical Details
+          
+          - Built with Capacitor and Android Gradle
+          - Targets Android API 34
+          - Minimum Android version: 7.0 (API 24)
+          - Uses custom DCCP branding and icons
+          
+          ---
+          
+          **Note**: This is a debug build for testing purposes. For production use, please contact the development team.
+          EOF
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.next_version.outputs.new_version }}
+          release_name: DCCPHub Mobile App ${{ steps.next_version.outputs.new_version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+
+      - name: Upload APK to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.rename_apk.outputs.apk_path }}
+          asset_name: ${{ steps.rename_apk.outputs.apk_name }}
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Output release information
+        run: |
+          echo "🎉 Release created successfully!"
+          echo "📱 APK: ${{ steps.rename_apk.outputs.apk_name }}"
+          echo "📦 Size: ${{ steps.rename_apk.outputs.apk_size }}"
+          echo "🔗 Release URL: ${{ steps.create_release.outputs.html_url }}"
+          echo "📥 Download URL: ${{ steps.create_release.outputs.html_url }}/download/${{ steps.rename_apk.outputs.apk_name }}"

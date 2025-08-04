@@ -26,6 +26,7 @@ use App\Http\Controllers\Faculty\FacultyStudentController;
 use App\Http\Controllers\Faculty\FacultySettingsController;
 use App\Http\Controllers\Faculty\FacultyScheduleController;
 use App\Http\Controllers\APKController;
+use App\Http\Controllers\GitHubReleaseController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Middleware\DetectMobileApp;
 
@@ -57,10 +58,19 @@ Route::prefix('apk')->group(function () {
     Route::post('/generate', [APKController::class, 'generateAPK'])->name('apk.generate');
     Route::get('/download/{filename}', [APKController::class, 'downloadAPK'])->name('apk.download');
     Route::get('/status', [APKController::class, 'getAPKStatus'])->name('apk.status');
+
+    // GitHub Release Routes (optimized downloads)
+    Route::get('/releases', [GitHubReleaseController::class, 'getAllReleases'])->name('apk.releases');
+    Route::get('/releases/latest', [GitHubReleaseController::class, 'getLatestRelease'])->name('apk.releases.latest');
+    Route::get('/releases/latest/download', [GitHubReleaseController::class, 'downloadLatestAPK'])->name('apk.releases.download.latest');
+    Route::get('/releases/{version}/download', [GitHubReleaseController::class, 'downloadReleaseAPK'])->name('apk.releases.download.version');
+    Route::post('/releases/cache/clear', [GitHubReleaseController::class, 'clearCache'])->name('apk.releases.cache.clear');
 });
 
-// Direct APK download route for latest version
-Route::get('/storage/apk/DCCPHub_latest.apk', [APKController::class, 'downloadLatestAPK'])->name('apk.latest');
+// Direct APK download routes (with GitHub release optimization)
+Route::get('/storage/apk/DCCPHub_latest.apk', [GitHubReleaseController::class, 'downloadLatestAPK'])->name('apk.latest');
+Route::get('/download/apk', [GitHubReleaseController::class, 'downloadLatestAPK'])->name('apk.download.latest');
+Route::get('/download/apk/{version}', [GitHubReleaseController::class, 'downloadReleaseAPK'])->name('apk.download.version');
 
 // Mobile OAuth routes for Capacitor Social Login
 Route::prefix('auth')->group(function () {

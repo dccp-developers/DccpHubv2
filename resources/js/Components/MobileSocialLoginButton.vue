@@ -1,7 +1,6 @@
 <script setup>
 import { Button } from '@/Components/shadcn/ui/button'
 import { Icon } from '@iconify/vue'
-import { useChangeCase } from '@vueuse/integrations/useChangeCase'
 import { ref, onMounted } from 'vue'
 
 const props = defineProps({
@@ -22,13 +21,18 @@ const isLoading = ref(false)
 onMounted(() => {
   // Check for Capacitor
   isMobileApp.value = !!(window.Capacitor && window.Capacitor.isNativePlatform())
-  
+
   // Also check user agent as fallback
   if (!isMobileApp.value) {
     const userAgent = navigator.userAgent || ''
-    isMobileApp.value = userAgent.includes('DCCPHub-Mobile-App') || 
+    isMobileApp.value = userAgent.includes('DCCPHub-Mobile-App') ||
                        userAgent.includes('Capacitor')
   }
+
+  // Debug provider object
+  console.log('MobileSocialLoginButton provider:', props.provider)
+  console.log('Provider slug:', props.provider?.slug)
+  console.log('Provider type:', typeof props.provider?.slug)
 })
 
 // Handle OAuth login
@@ -89,6 +93,29 @@ const handleMobileAppOAuth = async () => {
   }
 }
 
+// Get provider name with fallback
+const getProviderName = () => {
+  try {
+    if (!props.provider || typeof props.provider !== 'object') {
+      console.warn('Invalid provider object:', props.provider)
+      return 'Google'
+    }
+
+    const slug = props.provider.slug
+    if (!slug || typeof slug !== 'string') {
+      console.warn('Invalid provider slug:', slug)
+      return 'Google'
+    }
+
+    // Capitalize first letter and handle common cases
+    const name = slug.charAt(0).toUpperCase() + slug.slice(1).toLowerCase()
+    return name === 'X' ? 'X' : name
+  } catch (error) {
+    console.error('Error getting provider name:', error)
+    return 'Google'
+  }
+}
+
 
 </script>
 
@@ -108,6 +135,11 @@ const handleMobileAppOAuth = async () => {
       icon="mdi:loading" 
       class="mr-2 h-4 w-4 animate-spin" 
     />
-    {{ isLoading ? 'Signing in...' : `Sign In With ${useChangeCase(provider.slug, 'sentenceCase')}` }}
+    <template v-if="isLoading">
+      Signing in...
+    </template>
+    <template v-else>
+      Sign In With {{ getProviderName() }}
+    </template>
   </Button>
 </template>

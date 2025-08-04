@@ -200,10 +200,7 @@ final class User extends Authenticatable implements FilamentUser
         return Storage::disk($disk)->get($this->profile_photo_path);
     }
 
-    public function UserPerson()
-    {
-        return $this->morphTo();
-    }
+
 
     /**
      * Get the student record if this user is a student.
@@ -232,12 +229,13 @@ final class User extends Authenticatable implements FilamentUser
 
     public function getIsStudentAttribute()
     {
-        return $this->hasOne(Students::class, 'person_id');
+        return $this->role === 'student' &&
+               ($this->person_type === Students::class || $this->person_type === ShsStudents::class);
     }
 
     public function getIsFacultyAttribute()
     {
-        return $this->hasOne(Faculty::class, 'person_id');
+        return $this->role === 'faculty' && $this->person_type === Faculty::class;
     }
 
     /**
@@ -254,7 +252,7 @@ final class User extends Authenticatable implements FilamentUser
      */
     public function isFaculty(): bool
     {
-        return $this->role === 'faculty' && $this->faculty()->exists();
+        return $this->role === 'faculty' && $this->person_type === Faculty::class;
     }
 
     /**

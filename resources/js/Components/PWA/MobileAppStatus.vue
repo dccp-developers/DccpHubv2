@@ -40,8 +40,8 @@ onMounted(() => {
 
 // APK download function
 const downloadAPK = () => {
-  // Download via Laravel route for proper MIME type handling
-  window.open('/storage/apk/DCCPHub_latest.apk', '_blank');
+  // Use optimized GitHub release download route with fallback
+  window.open('/download/apk', '_blank');
 };
 
 // Generate APK function (opens PWA Builder)

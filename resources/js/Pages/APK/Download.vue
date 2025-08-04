@@ -20,9 +20,42 @@
             </div>
 
             <p class="mt-6 text-gray-500 dark:text-gray-400 leading-relaxed">
-              Download the DCCPHub mobile app to access your academic information on the go. 
+              Download the DCCPHub mobile app to access your academic information on the go.
               The app provides all the features of the web portal in a convenient mobile format.
             </p>
+
+            <!-- GitHub Release Section -->
+            <div v-if="releaseInfo && releaseInfo.success && releaseInfo.release" class="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <div class="flex items-start">
+                <svg class="h-6 w-6 text-blue-400 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                </svg>
+                <div class="ml-3 flex-1">
+                  <h3 class="text-lg font-medium text-blue-800 dark:text-blue-200">
+                    Latest Release: {{ releaseInfo.release.tag_name }}
+                  </h3>
+                  <p class="mt-1 text-sm text-blue-700 dark:text-blue-300">
+                    Published {{ formatDate(releaseInfo.release.published_at) }}
+                  </p>
+                  <div v-if="releaseInfo.release.apk_available" class="mt-4">
+                    <div class="flex items-center space-x-4 text-sm text-blue-600 dark:text-blue-400">
+                      <span>📱 {{ releaseInfo.release.apk_name }}</span>
+                      <span>📦 {{ releaseInfo.release.apk_size_human }}</span>
+                      <span>⬇️ {{ releaseInfo.release.apk_download_count }} downloads</span>
+                    </div>
+                    <button
+                      @click="downloadFromGitHub"
+                      class="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors duration-200"
+                    >
+                      <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                      </svg>
+                      Download Latest Release
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <!-- APK Status Section -->
             <div class="mt-8">
@@ -146,12 +179,14 @@ const loading = ref(true)
 const generating = ref(false)
 const error = ref(null)
 const apkStatus = ref(null)
+const releaseInfo = ref(null)
+const releaseLoading = ref(true)
 
 const getAPKStatus = async () => {
   try {
     loading.value = true
     error.value = null
-    
+
     const response = await axios.get('/apk/status')
     apkStatus.value = response.data
   } catch (err) {
@@ -160,6 +195,24 @@ const getAPKStatus = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const getReleaseInfo = async () => {
+  try {
+    releaseLoading.value = true
+
+    const response = await axios.get('/apk/releases/latest')
+    releaseInfo.value = response.data
+  } catch (err) {
+    console.error('Error fetching release info:', err)
+    // Don't show error for releases, just fall back to local APK
+  } finally {
+    releaseLoading.value = false
+  }
+}
+
+const downloadFromGitHub = () => {
+  window.open('/download/apk', '_blank')
 }
 
 const downloadAPK = (apkFile) => {
@@ -193,5 +246,6 @@ const formatDate = (dateString) => {
 
 onMounted(() => {
   getAPKStatus()
+  getReleaseInfo()
 })
 </script>

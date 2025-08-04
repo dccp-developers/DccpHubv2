@@ -37,6 +37,10 @@
             }
         }
     </script>
+
+    <!-- Umami Analytics -->
+    <script defer src="http://dccp-umami-63a1ab-46-250-224-248.traefik.me/script.js" data-website-id="765decc6-fc2b-476e-bb82-63a7ceab5950"></script>
+
     <!-- Scripts -->
     @routes
     @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])

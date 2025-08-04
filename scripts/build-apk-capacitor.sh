@@ -37,6 +37,91 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to copy custom app icons
+copy_app_icons() {
+    print_status "Copying custom app icons from public folder..."
+
+    # Source images from public folder
+    ICON_192="$PROJECT_ROOT/public/android-chrome-192x192.png"
+    ICON_512="$PROJECT_ROOT/public/android-chrome-512x512.png"
+
+    # Check if source icons exist
+    if [ ! -f "$ICON_192" ] || [ ! -f "$ICON_512" ]; then
+        print_warning "Android Chrome icons not found in public folder. Using default Capacitor icons."
+        return 0
+    fi
+
+    # Android mipmap directories
+    ANDROID_RES="$PROJECT_ROOT/android/app/src/main/res"
+
+    # Create temporary directory for resized icons
+    TEMP_ICONS_DIR="$PROJECT_ROOT/temp_icons"
+    /bin/mkdir -p "$TEMP_ICONS_DIR"
+
+    # Check if ImageMagick is available for resizing
+    if command -v convert &> /dev/null; then
+        print_status "Using ImageMagick to resize icons..."
+
+        # Generate different sizes for Android
+        convert "$ICON_512" -resize 48x48 "$TEMP_ICONS_DIR/ic_launcher_mdpi.png"
+        convert "$ICON_512" -resize 72x72 "$TEMP_ICONS_DIR/ic_launcher_hdpi.png"
+        convert "$ICON_512" -resize 96x96 "$TEMP_ICONS_DIR/ic_launcher_xhdpi.png"
+        convert "$ICON_512" -resize 144x144 "$TEMP_ICONS_DIR/ic_launcher_xxhdpi.png"
+        convert "$ICON_512" -resize 192x192 "$TEMP_ICONS_DIR/ic_launcher_xxxhdpi.png"
+
+        # Copy resized icons to Android project
+        cp "$TEMP_ICONS_DIR/ic_launcher_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher_round.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher_foreground.png"
+
+        cp "$TEMP_ICONS_DIR/ic_launcher_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher_round.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher_foreground.png"
+
+        cp "$TEMP_ICONS_DIR/ic_launcher_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher_round.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher_foreground.png"
+
+        cp "$TEMP_ICONS_DIR/ic_launcher_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher_round.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher_foreground.png"
+
+        cp "$TEMP_ICONS_DIR/ic_launcher_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher_round.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher_foreground.png"
+
+        print_success "Custom app icons copied successfully"
+    else
+        print_warning "ImageMagick not found. Copying 192x192 icon to all sizes (may not be optimal)."
+
+        # Fallback: copy 192x192 to all mipmap directories
+        cp "$ICON_192" "$ANDROID_RES/mipmap-mdpi/ic_launcher.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-mdpi/ic_launcher_round.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-mdpi/ic_launcher_foreground.png"
+
+        cp "$ICON_192" "$ANDROID_RES/mipmap-hdpi/ic_launcher.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-hdpi/ic_launcher_round.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-hdpi/ic_launcher_foreground.png"
+
+        cp "$ICON_192" "$ANDROID_RES/mipmap-xhdpi/ic_launcher.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-xhdpi/ic_launcher_round.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-xhdpi/ic_launcher_foreground.png"
+
+        cp "$ICON_192" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher_round.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher_foreground.png"
+
+        cp "$ICON_192" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher_round.png"
+        cp "$ICON_192" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher_foreground.png"
+
+        print_success "Custom app icons copied (using 192x192 for all sizes)"
+    fi
+
+    # Clean up temporary directory
+    /bin/rm -rf "$TEMP_ICONS_DIR"
+}
+
 # Function to check prerequisites
 check_prerequisites() {
     print_status "Checking prerequisites..."
@@ -99,7 +184,11 @@ build_apk() {
         exit 1
     fi
 
-    # Step 3: Sync Capacitor
+    # Step 3: Copy custom app icons
+    print_status "Copying custom app icons..."
+    copy_app_icons
+
+    # Step 4: Sync Capacitor
     print_status "Syncing Capacitor..."
     if npx cap sync android; then
         print_success "Capacitor synced successfully"
@@ -108,7 +197,7 @@ build_apk() {
         exit 1
     fi
 
-    # Step 4: Build APK using Gradle
+    # Step 5: Build APK using Gradle
     print_status "Building APK with Gradle..."
     cd android
 
@@ -197,7 +286,8 @@ display_summary() {
     echo "📋 Next Steps:"
     echo "   1. Test the APK on an Android device"
     echo "   2. For release build, run: cd android && ./gradlew assembleRelease"
-    echo "   3. Download from: https://portal.dccp.edu.ph/apk/download/DCCPHub_latest.apk"
+    echo "   3. Download from: https://portal.dccp.edu.ph/download/apk"
+    echo "   4. To create GitHub release, run: git tag v1.0.x && git push origin v1.0.x"
     echo ""
 }
 

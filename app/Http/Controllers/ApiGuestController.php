@@ -57,6 +57,14 @@ final class ApiGuestController extends Controller
         ]);
     }
 
+    /**
+     * Check if a string is a valid UUID format
+     */
+    private function isValidUuid(string $uuid): bool
+    {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1;
+    }
+
     public function checkId(Request $request)
     {
         $request->validate(['id' => 'required', 'email' => 'required']);
@@ -89,8 +97,8 @@ final class ApiGuestController extends Controller
             // First try to find by faculty_id_number (new system)
             $faculty = Faculty::query()->where('faculty_id_number', $id)->first();
 
-            // If not found by faculty_id_number, try by UUID (legacy system)
-            if (!$faculty) {
+            // If not found by faculty_id_number, try by UUID (legacy system) only if it looks like a UUID
+            if (!$faculty && $this->isValidUuid($id)) {
                 $faculty = Faculty::query()->where('id', $id)->first();
             }
 

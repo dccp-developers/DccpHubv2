@@ -21,7 +21,7 @@ final class FacultyFactory extends Factory
     {
         return [
             'id' => $this->faker->unique()->regexify('FAC[0-9]{3}'),
-            'faculty_id_number' => $this->faker->unique()->numberBetween(10000001, 99999999),
+            'faculty_id_number' => $this->faker->unique()->numberBetween(1000001, 9999999),
             'first_name' => $this->faker->firstName(),
             'last_name' => $this->faker->lastName(),
             'middle_name' => $this->faker->firstName(),
