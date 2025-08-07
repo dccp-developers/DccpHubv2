@@ -6,8 +6,8 @@ export APP_ENV=local
 export APP_DEBUG=true
 
 # Install/update dependencies if needed
-composer install --no-dev --optimize-autoloader
-npm ci --production
+# composer install --no-dev --optimize-autoloader
+# npm ci --production
 
 # Clear and cache Laravel configurations
 php artisan config:cache
@@ -17,7 +17,7 @@ php artisan icon:cache
 
 # Start the FrankenPHP server
 php artisan octane:start --server=frankenphp --host=127.0.0.1 --port=28562 --admin-port=28563 &
-php artisan queue:work redis --queue=assessments,pdf-generation --sleep=3 --tries=3 &
+php artisan queue:work redis --queue=default,assessments,pdf-generation --sleep=3 --tries=3 &
 # php artisan nightwatch:agent &
 php artisan horizon &
 wait

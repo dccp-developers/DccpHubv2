@@ -94,6 +94,7 @@ jobs:
             echo "Found committed APK: $APK_PATH"
             echo "Renamed to: $NEW_APK_NAME"
             echo "APK size: $APK_SIZE"
+            echo "Note: APK includes custom DCCP branding and adaptive icons"
           else
             echo "No committed APK found in releases/ directory"
             echo "Please build and commit an APK first using: ./scripts/build-apk-capacitor.sh"

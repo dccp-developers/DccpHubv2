@@ -62,35 +62,53 @@ copy_app_icons() {
     if command -v convert &> /dev/null; then
         print_status "Using ImageMagick to resize icons..."
 
-        # Generate different sizes for Android
+        # Generate different sizes for Android (legacy icons)
         convert "$ICON_512" -resize 48x48 "$TEMP_ICONS_DIR/ic_launcher_mdpi.png"
         convert "$ICON_512" -resize 72x72 "$TEMP_ICONS_DIR/ic_launcher_hdpi.png"
         convert "$ICON_512" -resize 96x96 "$TEMP_ICONS_DIR/ic_launcher_xhdpi.png"
         convert "$ICON_512" -resize 144x144 "$TEMP_ICONS_DIR/ic_launcher_xxhdpi.png"
         convert "$ICON_512" -resize 192x192 "$TEMP_ICONS_DIR/ic_launcher_xxxhdpi.png"
 
-        # Copy resized icons to Android project
+        # Generate adaptive icon foreground sizes (larger for proper display)
+        convert "$ICON_512" -resize 108x108 "$TEMP_ICONS_DIR/ic_launcher_foreground_mdpi.png"
+        convert "$ICON_512" -resize 162x162 "$TEMP_ICONS_DIR/ic_launcher_foreground_hdpi.png"
+        convert "$ICON_512" -resize 216x216 "$TEMP_ICONS_DIR/ic_launcher_foreground_xhdpi.png"
+        convert "$ICON_512" -resize 324x324 "$TEMP_ICONS_DIR/ic_launcher_foreground_xxhdpi.png"
+        convert "$ICON_512" -resize 432x432 "$TEMP_ICONS_DIR/ic_launcher_foreground_xxxhdpi.png"
+
+        # Copy legacy icons (for older Android versions)
         cp "$TEMP_ICONS_DIR/ic_launcher_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher.png"
         cp "$TEMP_ICONS_DIR/ic_launcher_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher_round.png"
-        cp "$TEMP_ICONS_DIR/ic_launcher_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher_foreground.png"
 
         cp "$TEMP_ICONS_DIR/ic_launcher_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher.png"
         cp "$TEMP_ICONS_DIR/ic_launcher_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher_round.png"
-        cp "$TEMP_ICONS_DIR/ic_launcher_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher_foreground.png"
 
         cp "$TEMP_ICONS_DIR/ic_launcher_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher.png"
         cp "$TEMP_ICONS_DIR/ic_launcher_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher_round.png"
-        cp "$TEMP_ICONS_DIR/ic_launcher_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher_foreground.png"
 
         cp "$TEMP_ICONS_DIR/ic_launcher_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher.png"
         cp "$TEMP_ICONS_DIR/ic_launcher_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher_round.png"
-        cp "$TEMP_ICONS_DIR/ic_launcher_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher_foreground.png"
 
         cp "$TEMP_ICONS_DIR/ic_launcher_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher.png"
         cp "$TEMP_ICONS_DIR/ic_launcher_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher_round.png"
-        cp "$TEMP_ICONS_DIR/ic_launcher_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher_foreground.png"
 
-        print_success "Custom app icons copied successfully"
+        # Copy adaptive icon foregrounds (for Android 8.0+)
+        cp "$TEMP_ICONS_DIR/ic_launcher_foreground_mdpi.png" "$ANDROID_RES/mipmap-mdpi/ic_launcher_foreground.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_foreground_hdpi.png" "$ANDROID_RES/mipmap-hdpi/ic_launcher_foreground.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_foreground_xhdpi.png" "$ANDROID_RES/mipmap-xhdpi/ic_launcher_foreground.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_foreground_xxhdpi.png" "$ANDROID_RES/mipmap-xxhdpi/ic_launcher_foreground.png"
+        cp "$TEMP_ICONS_DIR/ic_launcher_foreground_xxxhdpi.png" "$ANDROID_RES/mipmap-xxxhdpi/ic_launcher_foreground.png"
+
+        # Update adaptive icon background color to DCCP branding
+        print_status "Updating adaptive icon background color..."
+        cat > "$ANDROID_RES/values/ic_launcher_background.xml" << EOF
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>
+EOF
+
+        print_success "Custom app icons and adaptive icon configuration updated successfully"
     else
         print_warning "ImageMagick not found. Copying 192x192 icon to all sizes (may not be optimal)."
 

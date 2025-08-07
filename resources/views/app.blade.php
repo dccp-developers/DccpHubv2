@@ -39,7 +39,7 @@
     </script>
 
     <!-- Umami Analytics -->
-    <script defer src="http://dccp-umami-63a1ab-46-250-224-248.traefik.me/script.js" data-website-id="765decc6-fc2b-476e-bb82-63a7ceab5950"></script>
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="c3f8e397-1612-4b95-8963-c20a654f02f6"></script>
 
     <!-- Scripts -->
     @routes
