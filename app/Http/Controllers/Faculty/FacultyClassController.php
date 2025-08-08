@@ -11,12 +11,14 @@ use App\Services\Faculty\FacultyClassService;
 use App\Services\Faculty\FacultyScheduleService;
 use App\Services\Faculty\ClassAttendanceManagementService;
 use App\Services\Faculty\FacultyStatsService;
+use App\Services\AttendanceService;
 use App\Enums\AttendanceMethod;
 use App\Enums\AttendancePolicy;
 use App\Services\GeneralSettingsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,7 +29,8 @@ final class FacultyClassController extends Controller
         private readonly FacultyScheduleService $scheduleService,
         private readonly FacultyStatsService $statsService,
         private readonly ClassAttendanceManagementService $attendanceManagementService,
-        private readonly GeneralSettingsService $settingsService
+        private readonly GeneralSettingsService $settingsService,
+        private readonly AttendanceService $attendanceService
     ) {}
 
     /**
@@ -103,7 +106,7 @@ final class FacultyClassController extends Controller
     public function show(Request $request, Classes $class): Response
     {
         $user = $request->user();
-        
+
         // Ensure the user is a faculty member
         if (!$user->isFaculty()) {
             abort(403, 'Only faculty members can access this page.');
@@ -220,28 +223,32 @@ final class FacultyClassController extends Controller
     {
         $enrollments = $class->ClassStudents;
         $totalStudents = $enrollments->count();
-        
-        // Calculate attendance rate (placeholder - would need actual attendance data)
-        $attendanceRate = 85; // Default placeholder
-        
-        // Calculate grade distribution
+
+        // Calculate attendance rate from actual attendance records
+        $attendanceStats = $this->attendanceService->calculateClassStats($class->id);
+        $attendanceRate = $attendanceStats['attendance_rate'] ?? 0;
+
+        // Calculate percentage-based grade distribution (no letter grades)
         $gradeDistribution = [
-            'A' => $enrollments->where('total_average', '>=', 90)->count(),
-            'B' => $enrollments->whereBetween('total_average', [80, 89])->count(),
-            'C' => $enrollments->whereBetween('total_average', [70, 79])->count(),
-            'D' => $enrollments->whereBetween('total_average', [60, 69])->count(),
-            'F' => $enrollments->where('total_average', '<', 60)->count(),
+            '90-100' => $enrollments->whereBetween('total_average', [90, 100])->count(),
+            '80-89' => $enrollments->whereBetween('total_average', [80, 89.99])->count(),
+            '75-79' => $enrollments->whereBetween('total_average', [75, 79.99])->count(),
+            'Below 75' => $enrollments->where('total_average', '<', 75)->count(),
         ];
-        
-        // Calculate average grade
+
+        // Calculate average grade (percentage)
         $averageGrade = $enrollments->whereNotNull('total_average')->avg('total_average') ?? 0;
-        
+
+        // Passing rate based on >= 75%
+        $passingCount = $enrollments->where('total_average', '>=', 75)->count();
+        $passingRate = $totalStudents > 0 ? round(($passingCount / $totalStudents) * 100, 1) : 0;
+
         return [
             'total_students' => $totalStudents,
-            'attendance_rate' => $attendanceRate,
+            'attendance_rate' => round($attendanceRate, 1),
             'average_grade' => round($averageGrade, 2),
             'grade_distribution' => $gradeDistribution,
-            'passing_rate' => $totalStudents > 0 ? round((($totalStudents - $gradeDistribution['F']) / $totalStudents) * 100, 1) : 0,
+            'passing_rate' => $passingRate,
         ];
     }
 
@@ -501,4 +508,406 @@ final class FacultyClassController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get students for a class (faculty only)
+     */
+    public function students(Request $request, Classes $class): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->isFaculty()) {
+            abort(403, 'Only faculty members can access this.');
+        }
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+        if ($class->faculty_id !== $faculty->id) {
+            abort(403, 'You can only access your own classes.');
+        }
+
+        $enrollments = $class->ClassStudents()->with('student')->get();
+        $data = $enrollments->map(function ($enrollment) {
+            $s = $enrollment->student;
+            return [
+                'id' => $s->id,
+                'student_id' => $s->student_id ?? $s->id,
+                'name' => $s->full_name ?? trim(($s->first_name ?? '') . ' ' . ($s->last_name ?? '')),
+                'email' => $s->email,
+                'status' => $s->status ?? ($enrollment->status ? 'active' : 'inactive'),
+            ];
+        });
+
+        return response()->json(['success' => true, 'data' => $data]);
+    }
+
+    /**
+     * Update class information (faculty only)
+     */
+    public function update(Request $request, Classes $class): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->isFaculty()) {
+            abort(403, 'Only faculty members can update classes.');
+        }
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+        if ($class->faculty_id !== $faculty->id) {
+            abort(403, 'You can only update your own classes.');
+        }
+
+        $validated = $request->validate([
+            'subject_code' => 'nullable|string|max:50',
+            'subject_title' => 'nullable|string|max:255',
+            'section' => 'nullable|string|max:50',
+            'room' => 'nullable|string|max:100',
+            'units' => 'nullable|integer|min:1|max:10',
+            'schedule' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        // Persist simple fields available on Classes model
+        $class->subject_code = $validated['subject_code'] ?? $class->subject_code;
+        $class->section = $validated['section'] ?? $class->section;
+        // Note: mapping room (string) to room_id and schedule editing can be added later.
+        $class->save();
+
+        return response()->json(['success' => true, 'message' => 'Class updated.']);
+    }
+
+    /**
+     * Reset all attendance data for a class
+     */
+    public function resetAttendance(Request $request, Classes $class): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->isFaculty()) {
+            abort(403, 'Only faculty members can reset attendance.');
+        }
+
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+
+        if ($class->faculty_id !== $faculty->id) {
+            abort(403, 'You can only reset attendance for your own classes.');
+        }
+
+        try {
+            $result = $this->attendanceManagementService->resetClassAttendance($class->id, $faculty->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attendance data has been reset successfully.',
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            logger()->error('Failed to reset attendance data', [
+                'class_id' => $class->id,
+                'faculty_id' => $faculty->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reset attendance data. Please try again.',
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Update a single student's grades for a class (percentage-based)
+     */
+    public function updateGrades(Request $request, Classes $class): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->isFaculty()) {
+            abort(403, 'Only faculty members can update grades.');
+        }
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+        if ($class->faculty_id !== $faculty->id) {
+            abort(403, 'You can only update grades for your own classes.');
+        }
+
+        $validated = $request->validate([
+            'student_id' => 'required',
+            'prelim_grade' => 'nullable|numeric|min:0|max:100',
+            'midterm_grade' => 'nullable|numeric|min:0|max:100',
+            'finals_grade' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        try {
+            $enrollment = \App\Models\class_enrollments::where('class_id', $class->id)
+                ->where('student_id', $validated['student_id'])
+                ->firstOrFail();
+
+            foreach (['prelim_grade', 'midterm_grade', 'finals_grade'] as $field) {
+                if (array_key_exists($field, $validated)) {
+                    $enrollment->{$field} = $validated[$field];
+                }
+            }
+
+            $components = array_filter([
+                $enrollment->prelim_grade,
+                $enrollment->midterm_grade,
+                $enrollment->finals_grade,
+            ], fn($v) => $v !== null);
+            $enrollment->total_average = count($components) > 0 ? round(array_sum($components) / count($components), 2) : null;
+
+            $enrollment->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Grades updated successfully.',
+                'data' => [
+                    'student_id' => (string) $enrollment->student_id,
+                    'prelim_grade' => $enrollment->prelim_grade,
+                    'midterm_grade' => $enrollment->midterm_grade,
+                    'finals_grade' => $enrollment->finals_grade,
+                    'total_average' => $enrollment->total_average,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to update grades', [
+                'class_id' => $class->id,
+                'student_id' => $validated['student_id'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update grades.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk update student grades for a class
+     */
+    public function bulkUpdateGrades(Request $request, Classes $class): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->isFaculty()) {
+            abort(403, 'Only faculty members can update grades.');
+        }
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+        if ($class->faculty_id !== $faculty->id) {
+            abort(403, 'You can only update grades for your own classes.');
+        }
+
+        $validated = $request->validate([
+            'grades_data' => 'required|array',
+            'grades_data.*.student_id' => 'required',
+            'grades_data.*.prelim_grade' => 'nullable|numeric|min:0|max:100',
+            'grades_data.*.midterm_grade' => 'nullable|numeric|min:0|max:100',
+            'grades_data.*.finals_grade' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $updated = 0;
+        $errors = [];
+
+        \DB::transaction(function () use ($class, $validated, &$updated, &$errors) {
+            foreach ($validated['grades_data'] as $row) {
+                try {
+                    $enrollment = \App\Models\class_enrollments::where('class_id', $class->id)
+                        ->where('student_id', $row['student_id'])
+                        ->first();
+
+                    if (!$enrollment) {
+                        $errors[] = [
+                            'student_id' => $row['student_id'],
+                            'error' => 'Enrollment not found',
+                        ];
+                        continue;
+                    }
+
+                    foreach (['prelim_grade', 'midterm_grade', 'finals_grade'] as $field) {
+                        if (array_key_exists($field, $row)) {
+                            $enrollment->{$field} = $row[$field];
+                        }
+                    }
+
+                    $components = array_filter([
+                        $enrollment->prelim_grade,
+                        $enrollment->midterm_grade,
+                        $enrollment->finals_grade,
+                    ], fn($v) => $v !== null);
+                    $enrollment->total_average = count($components) > 0 ? round(array_sum($components) / count($components), 2) : null;
+
+                    $enrollment->save();
+                    $updated++;
+                } catch (\Throwable $e) {
+                    $errors[] = [
+                        'student_id' => $row['student_id'] ?? null,
+                        'error' => $e->getMessage(),
+                    ];
+                }
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Updated grades for {$updated} students." . (count($errors) ? ' Some records had errors.' : ''),
+            'data' => [
+                'updated_count' => $updated,
+                'errors' => $errors,
+            ],
+        ]);
+    }
+
+    /**
+     * Import grades from CSV. Expected columns: student_id, prelim|prelim_grade, midterm|midterm_grade, finals|finals_grade
+     */
+    public function importGrades(Request $request, Classes $class): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->isFaculty()) {
+            abort(403, 'Only faculty members can import grades.');
+        }
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+        if ($class->faculty_id !== $faculty->id) {
+            abort(403, 'You can only import grades for your own classes.');
+        }
+
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+        ]);
+
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+        if ($handle === false) {
+            return response()->json(['success' => false, 'message' => 'Unable to read uploaded file.'], 400);
+        }
+
+        $header = fgetcsv($handle);
+        if (!$header) {
+            return response()->json(['success' => false, 'message' => 'CSV is empty.'], 400);
+        }
+
+        $index = [];
+        foreach ($header as $i => $col) {
+            $key = strtolower(trim((string) $col));
+            $index[$key] = $i;
+        }
+
+        if (!array_key_exists('student_id', $index)) {
+            return response()->json(['success' => false, 'message' => 'Missing required column: student_id'], 400);
+        }
+
+        $updated = 0;
+        $errors = [];
+
+        \DB::beginTransaction();
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                $studentId = $row[$index['student_id']] ?? null;
+                if (!$studentId) { continue; }
+
+                $prelim = null; $midterm = null; $finals = null;
+                foreach (['prelim', 'prelim_grade'] as $k) { if (isset($index[$k])) { $prelim = $row[$index[$k]]; break; } }
+                foreach (['midterm', 'midterm_grade'] as $k) { if (isset($index[$k])) { $midterm = $row[$index[$k]]; break; } }
+                foreach (['finals', 'finals_grade'] as $k) { if (isset($index[$k])) { $finals = $row[$index[$k]]; break; } }
+
+                try {
+                    $enrollment = \App\Models\class_enrollments::where('class_id', $class->id)
+                        ->where('student_id', $studentId)
+                        ->first();
+
+                    if (!$enrollment) {
+                        $errors[] = [
+                            'student_id' => $studentId,
+                            'error' => 'Enrollment not found',
+                        ];
+                        continue;
+                    }
+
+                    if ($prelim !== null && $prelim !== '') { $enrollment->prelim_grade = max(0, min(100, (float) $prelim)); }
+                    if ($midterm !== null && $midterm !== '') { $enrollment->midterm_grade = max(0, min(100, (float) $midterm)); }
+                    if ($finals !== null && $finals !== '') { $enrollment->finals_grade = max(0, min(100, (float) $finals)); }
+
+                    $components = array_filter([
+                        $enrollment->prelim_grade,
+                        $enrollment->midterm_grade,
+                        $enrollment->finals_grade,
+                    ], fn($v) => $v !== null);
+                    $enrollment->total_average = count($components) > 0 ? round(array_sum($components) / count($components), 2) : null;
+
+                    $enrollment->save();
+                    $updated++;
+                } catch (\Throwable $e) {
+                    $errors[] = [
+                        'student_id' => $studentId,
+                        'error' => $e->getMessage(),
+                    ];
+                }
+            }
+            \DB::commit();
+        } catch (\Throwable $e) {
+            \DB::rollBack();
+            fclose($handle);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to import grades.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+        fclose($handle);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Imported grades for {$updated} students." . (count($errors) ? ' Some rows had errors.' : ''),
+            'data' => [
+                'updated_count' => $updated,
+                'errors' => $errors,
+            ],
+        ]);
+    }
+
+    /**
+     * Export grades to CSV (Student ID, Student Name, Prelim, Midterm, Finals, Total Average)
+     */
+    public function exportGrades(Request $request, Classes $class)
+    {
+        $user = $request->user();
+        if (!$user->isFaculty()) {
+            abort(403, 'Only faculty members can export grades.');
+        }
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+        if ($class->faculty_id !== $faculty->id) {
+            abort(403, 'You can only export grades for your own classes.');
+        }
+
+        $enrollments = \App\Models\class_enrollments::where('class_id', $class->id)
+            ->with(['student', 'ShsStudent'])
+            ->get();
+
+        $filename = 'grades_class_' . $class->id . '_' . now()->format('Ymd_His') . '.csv';
+
+        $callback = function () use ($enrollments) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Student ID', 'Student Name', 'Prelim', 'Midterm', 'Finals', 'Total Average']);
+            foreach ($enrollments as $e) {
+                $id = $e->ShsStudent?->student_lrn ?? $e->student?->id ?? $e->student_id;
+                $name = $e->ShsStudent?->fullname ?? trim(($e->student->first_name ?? '') . ' ' . ($e->student->last_name ?? ''));
+                fputcsv($handle, [
+                    $id,
+                    $name,
+                    $e->prelim_grade,
+                    $e->midterm_grade,
+                    $e->finals_grade,
+                    $e->total_average,
+                ]);
+            }
+            fclose($handle);
+        };
+
+        return response()->streamDownload($callback, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
 }

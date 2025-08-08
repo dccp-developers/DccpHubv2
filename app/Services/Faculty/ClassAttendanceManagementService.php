@@ -263,7 +263,7 @@ class ClassAttendanceManagementService
             'updated_count' => count($updated),
             'updated_records' => $updated,
             'session_stats' => $this->getSessionStatistics(
-                $this->getClassAttendanceData($classId, $date)['roster']
+                collect($this->getClassAttendanceData($classId, $date)['roster'])
             ),
         ];
     }
@@ -406,6 +406,39 @@ class ClassAttendanceManagementService
             'attendance' => [
                 'status' => $attendance?->status ?? AttendanceStatus::ABSENT->value,
             ],
+        ];
+    }
+
+    /**
+     * Reset all attendance data for a class
+     */
+    public function resetClassAttendance(int $classId, string $facultyId): array
+    {
+        $settings = $this->getAttendanceSettings($classId);
+        if (!$settings || $settings->faculty_id !== $facultyId) {
+            throw new \Exception('You can only reset attendance for your own classes.');
+        }
+
+        // Delete all attendance records for this class
+        $deletedAttendances = Attendance::where('class_id', $classId)->delete();
+
+        // Delete attendance settings
+        $settings->delete();
+
+        // Delete any attendance sessions or method-specific data
+        try {
+            $this->attendanceMethodService->resetMethodData($classId);
+        } catch (\Exception $e) {
+            // Log but don't fail if method service doesn't have reset functionality
+            logger()->warning('Failed to reset method data', [
+                'class_id' => $classId,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return [
+            'deleted_attendances' => $deletedAttendances,
+            'message' => 'All attendance data has been reset successfully.',
         ];
     }
 }

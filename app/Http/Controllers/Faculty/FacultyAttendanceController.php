@@ -58,6 +58,8 @@ final class FacultyAttendanceController extends Controller
             // Get dashboard summary
             $dashboardSummary = $this->facultyAttendanceService->getFacultyDashboardSummary($faculty->id);
 
+            $dailyAbsences = $this->facultyAttendanceService->getDailyAbsencesByClass($faculty->id, days: 7, limitClasses: 5);
+
             return Inertia::render('Faculty/Attendance/Index', [
                 'faculty' => [
                     'id' => $faculty->id,
@@ -67,6 +69,7 @@ final class FacultyAttendanceController extends Controller
                 'classes' => $classesData,
                 'summary' => $dashboardSummary,
                 'attendance_statuses' => AttendanceStatus::options(),
+                'daily_absences' => $dailyAbsences,
             ]);
         } catch (\Exception $e) {
             logger()->error('Faculty attendance dashboard error', [

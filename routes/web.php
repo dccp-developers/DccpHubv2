@@ -207,6 +207,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         // Faculty Classes Management
         Route::get('/classes', [FacultyClassController::class, 'index'])->name('classes.index');
         Route::get('/classes/{class}', [FacultyClassController::class, 'show'])->name('classes.show');
+        Route::get('/classes/{class}/students', [FacultyClassController::class, 'students'])->name('classes.students');
+        Route::put('/classes/{class}', [FacultyClassController::class, 'update'])->name('classes.update');
 
         // Faculty Class Attendance Management
         Route::post('/classes/{class}/attendance/setup', [FacultyClassController::class, 'setupAttendance'])->name('classes.attendance.setup');
@@ -214,6 +216,13 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         Route::post('/classes/{class}/attendance/initialize', [FacultyClassController::class, 'initializeAttendance'])->name('classes.attendance.initialize');
         Route::post('/classes/{class}/attendance/update', [FacultyClassController::class, 'updateAttendance'])->name('classes.attendance.update');
         Route::post('/classes/{class}/attendance/bulk-update', [FacultyClassController::class, 'bulkUpdateAttendance'])->name('classes.attendance.bulk-update');
+        Route::delete('/classes/{class}/attendance/reset', [FacultyClassController::class, 'resetAttendance'])->name('classes.attendance.reset');
+
+        // Faculty Class Grades Management
+        Route::post('/classes/{class}/grades/update', [FacultyClassController::class, 'updateGrades'])->name('classes.grades.update');
+        Route::post('/classes/{class}/grades/bulk-update', [FacultyClassController::class, 'bulkUpdateGrades'])->name('classes.grades.bulk-update');
+        Route::post('/classes/{class}/grades/import', [FacultyClassController::class, 'importGrades'])->name('classes.grades.import');
+        Route::get('/classes/{class}/grades/export', [FacultyClassController::class, 'exportGrades'])->name('classes.grades.export');
 
         // Faculty Students Management
         Route::get('/students', [FacultyStudentController::class, 'index'])->name('students.index');

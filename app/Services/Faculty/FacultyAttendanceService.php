@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Faculty-specific Attendance Service
- * 
+ *
  * Handles attendance operations from the faculty perspective
  */
 final class FacultyAttendanceService
@@ -54,7 +54,7 @@ final class FacultyAttendanceService
     public function getClassRosterWithAttendance(int $classId, \DateTimeInterface $date): array
     {
         $class = Classes::with(['Subject', 'ShsSubject', 'Faculty', 'Room'])->findOrFail($classId);
-        
+
         $enrollments = class_enrollments::with(['student', 'ShsStudent'])
             ->where('class_id', $classId)
             ->get();
@@ -62,7 +62,7 @@ final class FacultyAttendanceService
         $roster = [];
         foreach ($enrollments as $enrollment) {
             $student = $enrollment->EnrolledStudent();
-            
+
             // Get attendance for the specific date
             $attendance = Attendance::where('class_enrollment_id', $enrollment->id)
                 ->where('date', $date->format('Y-m-d'))
@@ -148,7 +148,7 @@ final class FacultyAttendanceService
             ->map(function ($session) use ($classId) {
                 $date = Carbon::parse($session->date);
                 $stats = $this->getSessionStats($classId, $date);
-                
+
                 return [
                     'date' => $date,
                     'student_count' => $session->student_count,
@@ -211,10 +211,10 @@ final class FacultyAttendanceService
     public function getFacultyDashboardSummary(string $facultyId): array
     {
         $classes = Classes::where('faculty_id', $facultyId)->get();
-        
+
         $totalClasses = $classes->count();
         $totalStudents = class_enrollments::whereIn('class_id', $classes->pluck('id'))->count();
-        
+
         // Get recent attendance data (last 30 days)
         $recentDate = now()->subDays(30);
         $recentAttendances = Attendance::whereIn('class_id', $classes->pluck('id'))
@@ -239,7 +239,7 @@ final class FacultyAttendanceService
             ->map(function ($session) {
                 $class = Classes::find($session->class_id);
                 $stats = $this->getSessionStats($session->class_id, Carbon::parse($session->date));
-                
+
                 return [
                     'class' => $class,
                     'date' => Carbon::parse($session->date),
@@ -264,17 +264,17 @@ final class FacultyAttendanceService
     {
         $classes = Classes::where('faculty_id', $facultyId)->pluck('id');
         $weeks = [];
-        
+
         for ($i = 3; $i >= 0; $i--) {
             $weekStart = now()->subWeeks($i)->startOfWeek();
             $weekEnd = $weekStart->copy()->endOfWeek();
-            
+
             $weekAttendances = Attendance::whereIn('class_id', $classes)
                 ->whereBetween('date', [$weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')])
                 ->get();
 
             $stats = $this->attendanceService->calculateAttendanceStats($weekAttendances);
-            
+
             $weeks[] = [
                 'week' => $weekStart->format('M j'),
                 'attendance_rate' => $stats['attendance_rate'],
@@ -282,6 +282,89 @@ final class FacultyAttendanceService
         }
 
         return $weeks;
+    }
+
+    /**
+     * Get daily absences by class for a faculty over the past N days
+     */
+    public function getDailyAbsencesByClass(string $facultyId, int $days = 7, int $limitClasses = 5): array
+    {
+        // Get classes for this faculty
+        $classes = Classes::where('faculty_id', $facultyId)
+            ->select('id', 'subject_code', 'section')
+            ->get();
+
+        if ($classes->isEmpty()) {
+            return [
+                'data' => [],
+                'categories' => [],
+            ];
+        }
+
+        $classIds = $classes->pluck('id')->all();
+        $classLabels = $classes->mapWithKeys(function ($c) {
+            $label = trim(($c->subject_code ?? '') . '-' . ($c->section ?? ''));
+            return [$c->id => $label];
+        });
+
+        $end = Carbon::today();
+        $start = $end->copy()->subDays(max(0, $days - 1));
+
+        // Query absent counts grouped by class and date
+        $rows = Attendance::whereIn('class_id', $classIds)
+            ->whereBetween('date', [$start->format('Y-m-d'), $end->format('Y-m-d')])
+            ->where('status', AttendanceStatus::ABSENT->value)
+            ->select('class_id', 'date', DB::raw('COUNT(*) as cnt'))
+            ->groupBy('class_id', 'date')
+            ->get();
+
+        // Aggregate totals to pick top classes
+        $totalsByClass = [];
+        foreach ($rows as $row) {
+            $totalsByClass[$row->class_id] = ($totalsByClass[$row->class_id] ?? 0) + (int) $row->cnt;
+        }
+
+        // Sort classes by total absences desc and limit
+        arsort($totalsByClass);
+        $topClassIds = array_slice(array_keys($totalsByClass), 0, $limitClasses);
+
+        // If no absences found, still provide up to limitClasses categories based on available classes
+        if (empty($topClassIds)) {
+            $topClassIds = array_slice($classIds, 0, min($limitClasses, count($classIds)));
+        }
+
+        $categories = array_values(array_map(function ($classId) use ($classLabels) {
+            return (string) ($classLabels[$classId] ?? (string) $classId);
+        }, $topClassIds));
+
+        // Index counts by [Y-m-d][class_id] => cnt for faster lookup
+        $countsByDayClass = [];
+        foreach ($rows as $row) {
+            $dateKey = Carbon::parse($row->date)->format('Y-m-d');
+            $countsByDayClass[$dateKey][$row->class_id] = (int) $row->cnt;
+        }
+
+        // Build time series for each day
+        $data = [];
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $dateKey = $cursor->format('Y-m-d');
+            $label = $cursor->format('M j');
+
+            $entry = ['date' => $label];
+            foreach ($topClassIds as $cid) {
+                $labelKey = (string) ($classLabels[$cid] ?? (string) $cid);
+                $entry[$labelKey] = $countsByDayClass[$dateKey][$cid] ?? 0;
+            }
+
+            $data[] = $entry;
+            $cursor->addDay();
+        }
+
+        return [
+            'data' => $data,
+            'categories' => $categories,
+        ];
     }
 
     /**

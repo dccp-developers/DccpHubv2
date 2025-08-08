@@ -185,7 +185,8 @@ final class FacultyDashboardService
             $query->where('faculty_id', $faculty->id);
         })->whereNotNull('total_average')->avg('total_average');
 
-        return round($averageGrade ?? 0.0, 1);
+        // avg() may return a numeric string; cast to float for PHP 8.4 strict typing
+        return round((float)($averageGrade ?? 0.0), 1);
     }
 
     /**

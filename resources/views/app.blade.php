@@ -39,9 +39,7 @@
     </script>
 
     <!-- Umami Analytics -->
-  <script defer src="https://cloud.umami.is/script.js" data-website-id="c3f8e397-1612-4b95-8963-c20a654f02f6"></script>
-
-    <!-- Scripts -->
+      <!-- Scripts -->
     @routes
     @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
     @inertiaHead

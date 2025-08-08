@@ -34,14 +34,16 @@
       </label>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
-          v-for="method in availableMethods"
+          v-for="method in methodsWithDisabled"
           :key="method.value"
-          @click="form.attendance_method = method.value"
+          @click="!method.disabled && (form.attendance_method = method.value)"
           :class="[
-            'p-4 border rounded-lg cursor-pointer transition-all',
+            'p-4 border rounded-lg transition-all',
             form.attendance_method === method.value
               ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50'
+              : method.disabled
+                ? 'border-border opacity-50 cursor-not-allowed'
+                : 'border-border hover:border-primary/50 cursor-pointer'
           ]"
         >
           <div class="flex items-center space-x-3">
@@ -284,8 +286,15 @@ const form = ref({
   notes: props.initialSettings?.notes ?? ''
 })
 
-const availableMethods = computed(() => {
-  return props.methods || []
+const availableMethods = computed(() => props.methods || [])
+
+// Mark specific methods as disabled in the UI selection
+const methodsWithDisabled = computed(() => {
+  const disabledValues = new Set(['qr_code', 'attendance_code', 'self_checkin', 'hybrid'])
+  return (availableMethods.value || []).map((m) => ({
+    ...m,
+    disabled: disabledValues.has(m.value),
+  }))
 })
 
 const requiresStudentAction = computed(() => {

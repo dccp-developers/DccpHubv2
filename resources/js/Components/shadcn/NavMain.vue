@@ -34,7 +34,12 @@ defineProps({
       >
         <SidebarMenuItem>
           <SidebarMenuButton as-child :tooltip="item.title">
-            <a :href="item.url">
+            <a
+              :href="item.disabled ? undefined : item.url"
+              :aria-disabled="item.disabled || undefined"
+              :tabindex="item.disabled ? -1 : 0"
+              @click="item.disabled && $event.preventDefault()"
+            >
               <component :is="item.icon" />
               <span>{{ item.title }}</span>
             </a>
@@ -53,7 +58,12 @@ defineProps({
                   :key="subItem.title"
                 >
                   <SidebarMenuSubButton as-child>
-                    <a :href="subItem.url">
+                    <a
+                      :href="subItem.disabled ? undefined : subItem.url"
+                      :aria-disabled="subItem.disabled || undefined"
+                      :tabindex="subItem.disabled ? -1 : 0"
+                      @click="subItem.disabled && $event.preventDefault()"
+                    >
                       <span>{{ subItem.title }}</span>
                     </a>
                   </SidebarMenuSubButton>

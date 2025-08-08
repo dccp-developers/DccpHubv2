@@ -300,7 +300,7 @@ function renderLink(item) {
 
 <template>
     <div>
-        <Sonner position="top-center" />
+        <Sonner position="top-center" rich-colors close-button expand />
 
         <!-- Mobile Top Navigation Bar -->
         <div

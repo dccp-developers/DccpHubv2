@@ -137,7 +137,7 @@ final class FacultyClassService
         $gradesCount = $grades->count();
 
         return [
-            'average_grade' => $gradesCount > 0 ? round($grades->avg(), 2) : 0,
+            'average_grade' => $gradesCount > 0 ? round((float) $grades->avg(), 2) : 0,
             'passing_rate' => $gradesCount > 0 ? round(($passingGrades->count() / $gradesCount) * 100, 1) : 0,
             'highest_grade' => $grades->max() ?? 0,
             'lowest_grade' => $grades->min() ?? 0,
@@ -186,15 +186,20 @@ final class FacultyClassService
     private function formatClassItemDetailed(Classes $class): array
     {
         $basicInfo = $this->formatClassItem($class);
-        
+
         return array_merge($basicInfo, [
             'students' => $class->ClassStudents->map(function ($enrollment) {
                 return [
                     'id' => $enrollment->student->id,
+                    'student_id' => (string) $enrollment->student_id, // identifier used in enrollments/attendance
                     'name' => $enrollment->student->first_name . ' ' . $enrollment->student->last_name,
                     'student_number' => $enrollment->student->student_id,
                     'email' => $enrollment->student->email,
                     'status' => $enrollment->status,
+                    'prelim_grade' => $enrollment->prelim_grade,
+                    'midterm_grade' => $enrollment->midterm_grade,
+                    'finals_grade' => $enrollment->finals_grade,
+                    'total_average' => $enrollment->total_average,
                 ];
             }),
             'schedules' => $class->Schedule->map(function ($schedule) {

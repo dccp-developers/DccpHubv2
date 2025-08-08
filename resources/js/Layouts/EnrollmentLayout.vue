@@ -1,8 +1,10 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import { Icon } from '@iconify/vue' // Assuming Iconify is used for icons
+import Sonner from '@/Components/shadcn/ui/sonner/Sonner.vue'
 </script>
 
+  <Sonner position="top-center" rich-colors close-button expand />
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4 py-8">
     <!-- Optional: Logo or School Name Header -->

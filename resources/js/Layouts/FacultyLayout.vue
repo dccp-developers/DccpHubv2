@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Sonner position="top-center" />
+    <Sonner position="top-center" rich-colors close-button expand />
 
     <!-- Mobile Top Navigation Bar -->
     <div
@@ -40,17 +40,22 @@
                   Quick Actions
                 </h3>
                 <div class="grid grid-cols-2 gap-2">
-                  <Link
+                  <component
                     v-for="item in mobileNavConfig.quickActions"
                     :key="item.name"
-                    :href="route(item.route)"
-                    class="flex flex-col items-center p-4 rounded-lg hover:bg-secondary/80 transition-colors"
-                    :class="route().current(item.route) ? 'bg-secondary text-primary' : ''"
-                    prefetch
+                    :is="item.disabled ? 'div' : Link"
+                    v-bind="item.disabled ? { 'aria-disabled': true, tabindex: -1 } : { href: route(item.route) }"
+                    class="flex flex-col items-center p-4 rounded-lg transition-colors"
+                    :class="[
+                      route().current(item.route)
+                        ? 'bg-secondary text-primary'
+                        : 'hover:bg-secondary/80',
+                      item.disabled ? 'opacity-50 pointer-events-none cursor-not-allowed' : ''
+                    ]"
                   >
                     <Icon :icon="item.icon" class="h-6 w-6 mb-2" />
                     <span class="text-sm font-medium">{{ item.name }}</span>
-                  </Link>
+                  </component>
                 </div>
               </div>
 
@@ -64,14 +69,16 @@
                     v-for="item in mobileNavConfig.mainMenu"
                     :key="item.name"
                     v-bind="renderLink(item)"
-                    :is="item.external ? 'a' : Link"
+                    :is="item.disabled ? 'button' : (item.external ? 'a' : Link)"
                     class="flex items-center w-full"
                     :class="[
                       'flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors',
                       !item.external && route().current(item.route)
                         ? 'bg-secondary text-primary'
-                        : 'hover:bg-secondary/50'
+                        : 'hover:bg-secondary/50',
+                      item.disabled ? 'opacity-50 pointer-events-none cursor-not-allowed' : ''
                     ]"
+                    @click="item.disabled && $event.preventDefault()"
                   >
                     <Icon :icon="item.icon" class="mr-3 h-5 w-5" />
                     {{ item.name }}
@@ -405,14 +412,17 @@ const sidebarData = {
         {
           title: "Grades",
           url: "#",
+          disabled: true,
         },
         {
           title: "Assignments",
           url: "#",
+          disabled: true,
         },
         {
           title: "Resources",
           url: "#",
+          disabled: true,
         },
       ],
     },
@@ -432,6 +442,7 @@ const sidebarData = {
     {
       title: "Documentation",
       url: "#",
+      disabled: true,
       icon: FileText,
     },
   ],
@@ -482,6 +493,7 @@ const mobileNavConfig = computed(() => ({
             name: "Documentation",
             icon: "lucide:file-text",
             route: "#",
+            disabled: true,
         },
     ]
 }));

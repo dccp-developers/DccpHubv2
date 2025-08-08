@@ -8,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-    <Sonner position="top-center" />
+    <Sonner position="top-center" rich-colors close-button expand />
     <transition name="fade" mode="out-in">
         <AuthLayout :title="title" :description="description">
             <slot />

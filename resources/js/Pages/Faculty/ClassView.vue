@@ -49,7 +49,7 @@
               </Badge>
             </div>
             <h2 class="text-base md:text-lg text-muted-foreground mb-4">{{ classData.subject_title || 'No title available' }}</h2>
-            
+
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div class="flex items-center space-x-2">
                 <MapPinIcon class="w-4 h-4 text-muted-foreground" />
@@ -69,17 +69,12 @@
               </div>
             </div>
           </div>
-          
+
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <Button variant="outline" size="sm" @click="goBack" class="w-full sm:w-auto">
               <ArrowLeftIcon class="w-4 h-4 mr-2" />
               <span class="hidden sm:inline">Back to Dashboard</span>
               <span class="sm:hidden">Back</span>
-            </Button>
-            <Button size="sm" class="w-full sm:w-auto">
-              <CogIcon class="w-4 h-4 mr-2" />
-              <span class="hidden sm:inline">Manage Class</span>
-              <span class="sm:hidden">Manage</span>
             </Button>
           </div>
         </div>
@@ -264,7 +259,7 @@
                   <p class="text-muted-foreground">No schedule set for this class yet.</p>
                 </CardContent>
               </Card>
-              
+
               <Card v-for="schedule in schedules" :key="schedule.id">
                 <CardContent class="p-4">
                   <div class="flex items-center justify-between">
@@ -301,25 +296,44 @@
             <div class="flex items-center justify-between">
               <h3 class="text-lg font-semibold text-foreground">Grade Management</h3>
               <div class="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" @click="showImportDialog = true">
                   <DocumentArrowUpIcon class="w-4 h-4 mr-2" />
                   Import Grades
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" @click="exportGrades">
                   <DocumentArrowDownIcon class="w-4 h-4 mr-2" />
                   Export Grades
                 </Button>
               </div>
             </div>
 
+            <!-- Import Info Dialog -->
+            <Dialog :open="showImportDialog" @update:open="showImportDialog = $event">
+              <DialogContent class="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Import Grades (CSV)</DialogTitle>
+                  <DialogDescription>
+                    Expected columns: student_id, prelim, midterm, finals. Values must be 0-100. You can also use prelim_grade, midterm_grade, finals_grade as column names.
+                  </DialogDescription>
+                </DialogHeader>
+                <div class="space-y-3">
+                  <input type="file" @change="handleFileChange" accept=".csv,text/csv" />
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" @click="showImportDialog = false">Cancel</Button>
+                  <Button :disabled="!importFile" @click="submitImport">Upload</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <!-- Grade Distribution Chart -->
             <Card>
               <CardContent class="p-6">
                 <h4 class="text-lg font-semibold text-foreground mb-4">Grade Distribution</h4>
-                <div class="grid grid-cols-5 gap-4">
-                  <div v-for="(count, grade) in stats.grade_distribution" :key="grade" class="text-center">
+                <div class="grid grid-cols-4 gap-4">
+                  <div v-for="(count, range) in stats.grade_distribution" :key="range" class="text-center">
                     <div class="text-2xl font-bold text-foreground">{{ count }}</div>
-                    <div class="text-sm text-muted-foreground">Grade {{ grade }}</div>
+                    <div class="text-sm text-muted-foreground">Range {{ range }}</div>
                   </div>
                 </div>
               </CardContent>
@@ -334,16 +348,16 @@
                       Student
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Midterm
+                      Prelim (%)
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Finals
+                      Midterm (%)
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Total Average
+                      Finals (%)
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Letter Grade
+                      Total Average (%)
                     </th>
                   </tr>
                 </thead>
@@ -358,18 +372,28 @@
                       <div class="text-sm font-medium text-foreground">{{ student.name }}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                      {{ student.midterm_grade || 'N/A' }}
+                      <input type="number" min="0" max="100" step="0.01" class="w-24 border border-border rounded px-2 py-1 bg-background"
+                        :value="gradeEdits[student.student_id]?.prelim_grade ?? ''"
+                        @input="updateGradeEdit(student.student_id, 'prelim_grade', $event.target.value)"
+                        @change="saveSingleGrade(student.student_id)"
+                        :placeholder="student.prelim_grade ?? '—'" />
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                      {{ student.finals_grade || 'N/A' }}
+                      <input type="number" min="0" max="100" step="0.01" class="w-24 border border-border rounded px-2 py-1 bg-background"
+                        :value="gradeEdits[student.student_id]?.midterm_grade ?? ''"
+                        @input="updateGradeEdit(student.student_id, 'midterm_grade', $event.target.value)"
+                        @change="saveSingleGrade(student.student_id)"
+                        :placeholder="student.midterm_grade ?? '—'" />
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                      {{ student.total_average || 'N/A' }}
+                      <input type="number" min="0" max="100" step="0.01" class="w-24 border border-border rounded px-2 py-1 bg-background"
+                        :value="gradeEdits[student.student_id]?.finals_grade ?? ''"
+                        @input="updateGradeEdit(student.student_id, 'finals_grade', $event.target.value)"
+                        @change="saveSingleGrade(student.student_id)"
+                        :placeholder="student.finals_grade ?? '—'" />
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <Badge :variant="getGradeBadgeVariant(student.total_average)" class="text-xs">
-                        {{ getLetterGrade(student.total_average) }}
-                      </Badge>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                      {{ computeAverage(gradeEdits[student.student_id], student) }}
                     </td>
                   </tr>
                 </tbody>
@@ -423,6 +447,10 @@
                   <Button variant="outline" size="sm" @click="showAttendanceSettings = true">
                     <CogIcon class="w-4 h-4 mr-2" />
                     Settings
+                  </Button>
+                  <Button variant="destructive" size="sm" @click="showResetConfirmation = true">
+                    <Icon icon="heroicons:arrow-path" class="w-4 h-4 mr-2" />
+                    Reset Attendance
                   </Button>
                 </div>
               </div>
@@ -642,6 +670,59 @@
               @close="showAttendanceSettings = false"
               @settings-updated="handleSettingsUpdate"
             />
+
+            <!-- Reset Attendance Confirmation Dialog -->
+            <Dialog :open="showResetConfirmation" @update:open="showResetConfirmation = $event">
+              <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle class="flex items-center gap-2">
+                    <Icon icon="heroicons:exclamation-triangle" class="w-5 h-5 text-destructive" />
+                    Reset Attendance Data
+                  </DialogTitle>
+                  <DialogDescription>
+                    This action will permanently delete all attendance records for this class. This cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <div class="space-y-4">
+                  <div class="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                      <Icon icon="heroicons:exclamation-triangle" class="w-5 h-5 text-destructive mt-0.5" />
+                      <div class="space-y-1">
+                        <p class="text-sm font-medium text-destructive">Warning: This action is irreversible</p>
+                        <ul class="text-sm text-muted-foreground space-y-1">
+                          <li>• All attendance records will be deleted</li>
+                          <li>• Attendance statistics will be reset</li>
+                          <li>• Historical data will be lost</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="reset-confirmation">Type "RESET" to confirm:</Label>
+                    <Input
+                      id="reset-confirmation"
+                      v-model="resetConfirmationText"
+                      placeholder="Type RESET to confirm"
+                      class="font-mono"
+                    />
+                  </div>
+                </div>
+                <DialogFooter class="gap-2">
+                  <Button variant="outline" @click="showResetConfirmation = false">
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    @click="resetAttendanceData"
+                    :disabled="resetConfirmationText !== 'RESET' || isResetting"
+                  >
+                    <Icon v-if="isResetting" icon="heroicons:arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+                    <Icon v-else icon="heroicons:trash" class="w-4 h-4 mr-2" />
+                    {{ isResetting ? 'Resetting...' : 'Reset Attendance' }}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
@@ -650,12 +731,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import FacultyLayout from '@/Layouts/FacultyLayout.vue'
 import { Card, CardContent } from '@/Components/ui/card.js'
 import { Button } from '@/Components/ui/button.js'
 import { Badge } from '@/Components/ui/badge.js'
+import { Input } from '@/Components/shadcn/ui/input'
+import { Label } from '@/Components/shadcn/ui/label'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/shadcn/ui/dialog'
+import { Icon } from '@iconify/vue'
 import AttendanceSetupForm from '@/Components/Faculty/AttendanceSetupForm.vue'
 import AttendanceSettingsModal from '@/Components/Faculty/AttendanceSettingsModal.vue'
 import AttendanceMethodDisplay from '@/Components/Faculty/AttendanceMethodDisplay.vue'
@@ -707,13 +792,42 @@ const selectedDate = ref(new Date().toISOString().split('T')[0])
 const attendanceData = ref(props.attendance?.data || null)
 const attendanceLoading = ref(false)
 const showAttendanceSettings = ref(false)
+const showResetConfirmation = ref(false)
+const resetConfirmationText = ref('')
+const isResetting = ref(false)
 
 // Computed properties
 const classData = computed(() => props.classData || {})
 const schedules = computed(() => props.schedules || [])
 const stats = computed(() => props.stats || {})
-const performance = computed(() => props.performance || {})
 
+// Grades editing state
+const showImportDialog = ref(false)
+const importFile = ref(null)
+const gradeEdits = ref({})
+
+// Initialize gradeEdits with existing values using computed
+const initializeGradeEdits = () => {
+  if (props.classData?.students) {
+    props.classData.students.forEach(s => {
+      if (!gradeEdits.value[s.student_id]) {
+        gradeEdits.value[s.student_id] = {
+          prelim_grade: s.prelim_grade ?? null,
+          midterm_grade: s.midterm_grade ?? null,
+          finals_grade: s.finals_grade ?? null,
+        }
+      }
+    })
+  }
+}
+
+// Initialize on mount and when data changes
+initializeGradeEdits()
+
+// Watch for changes in classData and reinitialize
+watch(() => props.classData?.students, () => {
+  initializeGradeEdits()
+}, { deep: true })
 
 // Tab configuration
 const tabs = [
@@ -968,21 +1082,128 @@ const getStatusVariant = (status) => {
   }
 }
 
-const getLetterGrade = (average) => {
-  if (!average) return 'N/A'
-  if (average >= 90) return 'A'
-  if (average >= 80) return 'B'
-  if (average >= 70) return 'C'
-  if (average >= 60) return 'D'
-  return 'F'
+const resetAttendanceData = async () => {
+  if (resetConfirmationText.value !== 'RESET') {
+    toast.error('Please type "RESET" to confirm')
+    return
+  }
+
+  isResetting.value = true
+
+  try {
+    const response = await axios.delete(route('faculty.classes.attendance.reset', props.classData.id))
+
+    if (response.data.success) {
+      // Close dialog first so toast is visible above overlay
+      showResetConfirmation.value = false
+      toast.success('Attendance data has been reset successfully')
+
+      // Reset local state immediately (no full reload)
+      attendanceData.value = null
+      resetConfirmationText.value = ''
+
+      // Update attendance setup status so UI returns to setup state
+      if (props.attendance) {
+        props.attendance.is_setup = false
+        props.attendance.settings = null
+        props.attendance.data = null
+      }
+    } else {
+      toast.error(response.data.message || 'Failed to reset attendance data')
+    }
+  } catch (error) {
+    console.error('Failed to reset attendance:', error)
+    toast.error('Failed to reset attendance data. Please try again.')
+  } finally {
+    isResetting.value = false
+  }
 }
 
-const getGradeBadgeVariant = (average) => {
-  if (!average) return 'secondary'
-  if (average >= 90) return 'default'
-  if (average >= 80) return 'default'
-  if (average >= 70) return 'secondary'
-  if (average >= 60) return 'secondary'
-  return 'destructive'
+// Grades helpers and actions
+const updateGradeEdit = (studentId, field, value) => {
+  if (!gradeEdits.value[studentId]) {
+    gradeEdits.value[studentId] = {}
+  }
+  gradeEdits.value[studentId][field] = value === '' ? null : Number(value)
 }
+
+const handleFileChange = (e) => {
+  importFile.value = e.target.files?.[0] || null
+}
+
+const submitImport = async () => {
+  if (!importFile.value) return
+  try {
+    const form = new FormData()
+    form.append('file', importFile.value)
+    await axios.post(route('faculty.classes.grades.import', props.classData.id), form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    toast.success('Grades imported successfully')
+    showImportDialog.value = false
+    importFile.value = null
+    // Refresh page data to reflect imports
+    router.reload({ only: ['classData', 'stats'] })
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Failed to import grades')
+  }
+}
+
+const exportGrades = async () => {
+  try {
+    window.location.href = route('faculty.classes.grades.export', props.classData.id)
+  } catch (err) {
+    toast.error('Failed to export grades')
+  }
+}
+
+const computeAverage = (editRow, student) => {
+  const prelim = editRow?.prelim_grade ?? student.prelim_grade ?? null
+  const midterm = editRow?.midterm_grade ?? student.midterm_grade ?? null
+  const finals = editRow?.finals_grade ?? student.finals_grade ?? null
+  const parts = [prelim, midterm, finals].filter(v => v !== null && v !== undefined)
+  if (!parts.length) return '—'
+  const avg = parts.reduce((a, b) => a + Number(b), 0) / parts.length
+  return avg.toFixed(2)
+}
+
+const saveSingleGrade = async (studentId) => {
+  try {
+    const payload = { student_id: studentId }
+    const row = gradeEdits.value[studentId] || {}
+
+    // Only include grades that have been modified
+    ;['prelim_grade', 'midterm_grade', 'finals_grade'].forEach(k => {
+      if (row[k] !== undefined && row[k] !== null && row[k] !== '') {
+        payload[k] = Number(row[k])
+      }
+    })
+
+    // Don't send empty payload
+    if (Object.keys(payload).length === 1) {
+      toast.info('No changes to save')
+      return
+    }
+
+    const { data } = await axios.post(route('faculty.classes.grades.update', props.classData.id), payload)
+    if (data.success) {
+      toast.success('Grade saved successfully')
+      // Update in-memory classData student
+      const s = props.classData.students.find(s => s.student_id === studentId)
+      if (s) {
+        s.prelim_grade = data.data.prelim_grade
+        s.midterm_grade = data.data.midterm_grade
+        s.finals_grade = data.data.finals_grade
+        s.total_average = data.data.total_average
+      }
+      // Update stats card after save
+      router.reload({ only: ['stats'] })
+    }
+  } catch (err) {
+    const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Failed to save grade'
+    toast.error(errorMsg)
+    console.error('Grade save error:', err.response?.data || err.message)
+  }
+}
+
 </script>
