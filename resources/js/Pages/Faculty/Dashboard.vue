@@ -254,6 +254,17 @@
 
       <!-- Additional Faculty Features -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Attendance Widget -->
+        <div>
+          <AttendanceWidget
+            :overallStats="attendanceOverallStats"
+            :classesData="classes"
+            :recentSessions="recentAttendanceSessions"
+            :attendanceTrend="attendanceTrend"
+            :studentsAtRisk="studentsAtRisk"
+          />
+        </div>
+
         <!-- Recent Activities -->
         <div class="lg:col-span-2">
           <Card>
@@ -398,6 +409,7 @@ import { router } from '@inertiajs/vue3'
 import FacultyLayout from '@/Layouts/FacultyLayout.vue'
 import WeeklySchedule from '@/Components/Faculty/WeeklySchedule.vue'
 import TeachingGuide from '@/Components/Faculty/TeachingGuide.vue'
+import AttendanceWidget from '@/Components/Faculty/AttendanceWidget.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
 import { Button } from '@/Components/shadcn/ui/button'
 import { Badge } from '@/Components/shadcn/ui/badge'
@@ -437,7 +449,16 @@ const props = defineProps({
   currentSemester: String,
   schoolYear: String,
   scheduleOverview: Object,
-  error: String
+  error: String,
+  attendanceData: {
+    type: Object,
+    default: () => ({
+      overallStats: { attendance_rate: 0, total: 0, present_count: 0 },
+      recentSessions: [],
+      attendanceTrend: [],
+      studentsAtRisk: 0
+    })
+  }
 })
 
 // Computed properties
@@ -450,6 +471,12 @@ const recentActivities = computed(() => props.recentActivities || [])
 const upcomingDeadlines = computed(() => props.upcomingDeadlines || [])
 const performanceMetrics = computed(() => props.performanceMetrics || {})
 const scheduleOverview = computed(() => props.scheduleOverview || {})
+
+// Attendance data
+const attendanceOverallStats = computed(() => props.attendanceData?.overallStats || { attendance_rate: 0, total: 0, present_count: 0 })
+const recentAttendanceSessions = computed(() => props.attendanceData?.recentSessions || [])
+const attendanceTrend = computed(() => props.attendanceData?.attendanceTrend || [])
+const studentsAtRisk = computed(() => props.attendanceData?.studentsAtRisk || 0)
 
 // Error handling
 const hasError = computed(() => !!props.error)

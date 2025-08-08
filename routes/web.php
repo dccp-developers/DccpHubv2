@@ -3,8 +3,14 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Log; // Added Log facade import
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+
+// ============================================================================
+// CONTROLLER IMPORTS
+// ============================================================================
+
+// Core Controllers
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\TuitionController;
 use App\Http\Controllers\WelcomeController;
@@ -12,25 +18,41 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SubjectsController;
 use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\User\OauthController;
 use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\User\LoginLinkController;
 use App\Http\Controllers\PendingEnrollmentController;
-use App\Http\Controllers\EnrollmentAuthController; // Added
+use App\Http\Controllers\EnrollmentAuthController;
 use App\Http\Controllers\GuestDashboardController;
+
+// Authentication Controllers
+use App\Http\Controllers\User\OauthController;
+use App\Http\Controllers\User\LoginLinkController;
+use App\Http\Controllers\SocialAuthController;
+
+// Student Controllers
 use App\Http\Controllers\Student\EnrollmentController;
 use App\Http\Controllers\Student\StudentSettingsController;
+use App\Http\Controllers\Student\StudentAttendanceController;
+
+// Faculty Controllers
 use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Faculty\FacultyClassController;
 use App\Http\Controllers\Faculty\FacultyStudentController;
 use App\Http\Controllers\Faculty\FacultySettingsController;
 use App\Http\Controllers\Faculty\FacultyScheduleController;
+use App\Http\Controllers\Faculty\FacultyAttendanceController;
+
+// Mobile & APK Controllers
 use App\Http\Controllers\APKController;
 use App\Http\Controllers\GitHubReleaseController;
-use App\Http\Controllers\SocialAuthController;
+
+// Middleware
 use App\Http\Middleware\DetectMobileApp;
 
-// Redirect root to login for mobile app, or welcome for web
+// ============================================================================
+// PUBLIC ROUTES
+// ============================================================================
+
+// Root route - redirect to login for mobile app, or welcome for web
 Route::get('/', function () {
     // Check if this is a mobile app request using our middleware
     $isMobileApp = DetectMobileApp::isMobileApp(request());
@@ -52,6 +74,10 @@ Route::get('/', function () {
 // Welcome/Landing page route (for web users who want to see it)
 Route::get('/welcome', [WelcomeController::class, 'home'])->name('welcome');
 
+// ============================================================================
+// MOBILE APP & APK ROUTES
+// ============================================================================
+
 // APK Generation and Download Routes
 Route::prefix('apk')->group(function () {
     Route::get('/', [APKController::class, 'downloadPage'])->name('apk.page');
@@ -72,6 +98,10 @@ Route::get('/storage/apk/DCCPHub_latest.apk', [GitHubReleaseController::class, '
 Route::get('/download/apk', [GitHubReleaseController::class, 'downloadLatestAPK'])->name('apk.download.latest');
 Route::get('/download/apk/{version}', [GitHubReleaseController::class, 'downloadReleaseAPK'])->name('apk.download.version');
 
+// ============================================================================
+// AUTHENTICATION ROUTES
+// ============================================================================
+
 // Mobile OAuth routes for Capacitor Social Login
 Route::prefix('auth')->group(function () {
     Route::post('/google/callback/mobile', [SocialAuthController::class, 'handleMobileCallback'])->name('auth.mobile.callback');
@@ -80,6 +110,41 @@ Route::prefix('auth')->group(function () {
         return response()->json(['status' => 'Mobile OAuth routes working', 'timestamp' => now()]);
     })->name('auth.mobile.test');
 });
+
+// OAuth and Magic Link Authentication
+Route::prefix('auth')->group(function () {
+    // OAuth
+    Route::get('/redirect/{provider}', [OauthController::class, 'redirect'])->name('oauth.redirect');
+    Route::get('/callback/{provider}', [OauthController::class, 'callback'])->name('oauth.callback');
+
+    // Magic Link
+    Route::middleware('throttle:login-link')->group(function () {
+        Route::post('/login-link', [LoginLinkController::class, 'store'])->name('login-link.store');
+        Route::get('/login-link/{token}', [LoginLinkController::class, 'login'])
+            ->name('login-link.login')
+            ->middleware('signed');
+    });
+});
+
+// ============================================================================
+// ENROLLMENT ROUTES
+// ============================================================================
+
+// Online Enrollment Route
+Route::get('/enroll', [PendingEnrollmentController::class, 'create'])->name('enroll');
+Route::post('/pending-enrollment', [PendingEnrollmentController::class, 'store'])->name('pending-enrollment.store');
+Route::post('/enroll/confirm', [PendingEnrollmentController::class, 'confirm'])->name('enroll.confirm');
+
+// Enrollment Google Auth Routes
+Route::prefix('enrollment/auth')->group(function () {
+    Route::get('/google/redirect', [EnrollmentAuthController::class, 'redirectToGoogle'])->name('enrollment.google.redirect');
+    Route::get('/callback/google', [EnrollmentAuthController::class, 'handleGoogleCallback'])->name('enrollment.google.callback');
+    Route::get('/google/logout', [EnrollmentAuthController::class, 'logout'])->name('enrollment.google.logout');
+});
+
+// ============================================================================
+// TESTING & UTILITY ROUTES
+// ============================================================================
 
 // Test Notifications
 Route::get('/test-toast-success', function() {
@@ -111,38 +176,64 @@ Route::get('/offline', function () {
     return view('vendor.laravelpwa.offline');
 })->name('offline');
 
-Route::prefix('auth')->group(
-    function () {
-        // OAuth
-        Route::get('/redirect/{provider}', [OauthController::class, 'redirect'])->name('oauth.redirect');
-        Route::get('/callback/{provider}', [OauthController::class, 'callback'])->name('oauth.callback');
-        // Magic Link
-        Route::middleware('throttle:login-link')->group(function () {
-            Route::post('/login-link', [LoginLinkController::class, 'store'])->name('login-link.store');
-            Route::get('/login-link/{token}', [LoginLinkController::class, 'login'])
-                ->name('login-link.login')
-                ->middleware('signed');
-        });
-    }
-);
+// Payment Process Route
+Route::get('/payment-process', function () {
+    return Inertia::render('PaymentProcess');
+})->name('payment.process');
+
+// ============================================================================
+// AUTHENTICATED ROUTES
+// ============================================================================
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
+
+    // ========================================================================
+    // DASHBOARD ROUTES
+    // ========================================================================
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/faculty/dashboard', FacultyDashboardController::class)->name('faculty.dashboard');
     Route::get('/enrolee', GuestDashboardController::class)->name('enrolee.dashboard');
+
+    // ========================================================================
+    // AUTHENTICATION MANAGEMENT
+    // ========================================================================
     Route::delete('/auth/destroy/{provider}', [OauthController::class, 'destroy'])->name('oauth.destroy');
 
-    // Faculty Routes
+    // ========================================================================
+    // FACULTY ROUTES
+    // ========================================================================
     Route::prefix('faculty')->name('faculty.')->group(function () {
+
+        // Faculty Classes Management
         Route::get('/classes', [FacultyClassController::class, 'index'])->name('classes.index');
         Route::get('/classes/{class}', [FacultyClassController::class, 'show'])->name('classes.show');
 
+        // Faculty Class Attendance Management
+        Route::post('/classes/{class}/attendance/setup', [FacultyClassController::class, 'setupAttendance'])->name('classes.attendance.setup');
+        Route::get('/classes/{class}/attendance/data', [FacultyClassController::class, 'getAttendanceData'])->name('classes.attendance.data');
+        Route::post('/classes/{class}/attendance/initialize', [FacultyClassController::class, 'initializeAttendance'])->name('classes.attendance.initialize');
+        Route::post('/classes/{class}/attendance/update', [FacultyClassController::class, 'updateAttendance'])->name('classes.attendance.update');
+        Route::post('/classes/{class}/attendance/bulk-update', [FacultyClassController::class, 'bulkUpdateAttendance'])->name('classes.attendance.bulk-update');
+
+        // Faculty Students Management
         Route::get('/students', [FacultyStudentController::class, 'index'])->name('students.index');
         Route::get('/students/{student}', [FacultyStudentController::class, 'show'])->name('students.show');
 
+        // Faculty Schedule Management
         Route::get('/schedule', [FacultyScheduleController::class, 'index'])->name('schedule.index');
         Route::get('/schedule/{schedule}', [FacultyScheduleController::class, 'show'])->name('schedule.show');
         Route::post('/schedule/export', [FacultyScheduleController::class, 'export'])->name('schedule.export');
+
+        // Faculty Attendance Management
+        Route::prefix('attendance')->name('attendance.')->group(function () {
+            Route::get('/', [FacultyAttendanceController::class, 'index'])->name('index');
+            Route::get('/class/{class}', [FacultyAttendanceController::class, 'showClass'])->name('class.show');
+            Route::post('/class/{class}/mark', [FacultyAttendanceController::class, 'markAttendance'])->name('class.mark');
+            Route::patch('/attendance/{attendance}', [FacultyAttendanceController::class, 'updateAttendance'])->name('update');
+            Route::get('/class/{class}/export', [FacultyAttendanceController::class, 'exportAttendance'])->name('class.export');
+            Route::get('/reports', [FacultyAttendanceController::class, 'reports'])->name('reports');
+            Route::get('/analytics', [FacultyAttendanceController::class, 'analytics'])->name('analytics');
+        });
     });
 
     // Faculty Settings Routes
@@ -153,16 +244,24 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         Route::patch('/both', [FacultySettingsController::class, 'updateBoth'])->name('both');
     });
 
-    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    // ========================================================================
+    // STUDENT ROUTES
+    // ========================================================================
+    Route::prefix('student')->name('student.')->group(function () {
 
-    Route::resource('/subscriptions', SubscriptionController::class)
-        ->names('subscriptions')
-        ->only(['index', 'create', 'store', 'show']);
+        // Student Enrollment
+        Route::get('/enroll/subjects', [EnrollmentController::class, 'showEnrollmentForm'])->name('enroll.subjects');
+        Route::post('/enroll/subjects', [EnrollmentController::class, 'processEnrollment'])->name('enroll.subjects.submit');
 
-    // Student Enrollment Routes
-    Route::prefix('student')->group(function () {
-        Route::get('/enroll/subjects', [EnrollmentController::class, 'showEnrollmentForm'])->name('student.enroll.subjects');
-        Route::post('/enroll/subjects', [EnrollmentController::class, 'processEnrollment'])->name('student.enroll.subjects.submit');
+        // Student Attendance
+        Route::prefix('attendance')->name('attendance.')->group(function () {
+            Route::get('/', [StudentAttendanceController::class, 'index'])->name('index');
+            Route::get('/class/{class}', [StudentAttendanceController::class, 'showClass'])->name('class.show');
+            Route::get('/statistics', [StudentAttendanceController::class, 'statistics'])->name('statistics');
+            Route::get('/history', [StudentAttendanceController::class, 'history'])->name('history');
+            Route::get('/export', [StudentAttendanceController::class, 'export'])->name('export');
+            Route::get('/data', [StudentAttendanceController::class, 'getAttendanceData'])->name('data');
+        });
     });
 
     // Student Settings Routes
@@ -173,14 +272,21 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         Route::patch('/both', [StudentSettingsController::class, 'updateBoth'])->name('both');
     });
 
+    // ========================================================================
+    // SHARED ACADEMIC ROUTES
+    // ========================================================================
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/tuition', [TuitionController::class, 'index'])->name('tuition.index');
     Route::get('/subjects', [SubjectsController::class, 'index'])->name('subjects.index');
     Route::get('/changelog', [ChangelogController::class, 'index'])->name('changelog.index');
-});
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
 
-Route::get('/payment-process', function () {
-    return Inertia::render('PaymentProcess');
-})->name('payment.process');
+    // ========================================================================
+    // SUBSCRIPTION ROUTES
+    // ========================================================================
+    Route::resource('/subscriptions', SubscriptionController::class)
+        ->names('subscriptions')
+        ->only(['index', 'create', 'store', 'show']);
+});
 
 

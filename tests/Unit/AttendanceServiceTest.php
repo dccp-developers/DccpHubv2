@@ -1,0 +1,316 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Unit;
+
+use Tests\TestCase;
+use App\Services\AttendanceService;
+use App\Models\Attendance;
+use App\Models\Classes;
+use App\Models\class_enrollments;
+use App\Models\Students;
+use App\Models\Faculty;
+use App\Enums\AttendanceStatus;
+use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
+
+class AttendanceServiceTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private AttendanceService $attendanceService;
+    private Classes $class;
+    private Students $student;
+    private Faculty $faculty;
+    private class_enrollments $enrollment;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        $this->attendanceService = app(AttendanceService::class);
+        
+        // Create test data
+        $this->faculty = Faculty::factory()->create(['id' => 'FAC001']);
+        $this->student = Students::factory()->create(['student_id' => 'STU001']);
+        $this->class = Classes::factory()->create(['faculty_id' => $this->faculty->id]);
+        $this->enrollment = class_enrollments::factory()->create([
+            'class_id' => $this->class->id,
+            'student_id' => $this->student->student_id,
+        ]);
+    }
+
+    /** @test */
+    public function it_can_mark_attendance_for_a_student(): void
+    {
+        $date = Carbon::today();
+        $status = AttendanceStatus::PRESENT;
+        $remarks = 'Test remarks';
+
+        $attendance = $this->attendanceService->markAttendance(
+            $this->class->id,
+            $this->student->student_id,
+            $status,
+            $date,
+            $remarks,
+            $this->faculty->id
+        );
+
+        $this->assertInstanceOf(Attendance::class, $attendance);
+        $this->assertEquals($this->class->id, $attendance->class_id);
+        $this->assertEquals($this->student->student_id, $attendance->student_id);
+        $this->assertEquals($status->value, $attendance->status);
+        $this->assertEquals($date->format('Y-m-d'), $attendance->date);
+        $this->assertEquals($remarks, $attendance->remarks);
+        $this->assertEquals($this->faculty->id, $attendance->marked_by);
+    }
+
+    /** @test */
+    public function it_updates_existing_attendance_for_same_date(): void
+    {
+        $date = Carbon::today();
+
+        // Mark initial attendance
+        $firstAttendance = $this->attendanceService->markAttendance(
+            $this->class->id,
+            $this->student->student_id,
+            AttendanceStatus::ABSENT,
+            $date,
+            'Initially absent',
+            $this->faculty->id
+        );
+
+        // Update attendance for same date
+        $updatedAttendance = $this->attendanceService->markAttendance(
+            $this->class->id,
+            $this->student->student_id,
+            AttendanceStatus::PRESENT,
+            $date,
+            'Now present',
+            $this->faculty->id
+        );
+
+        $this->assertEquals($firstAttendance->id, $updatedAttendance->id);
+        $this->assertEquals(AttendanceStatus::PRESENT->value, $updatedAttendance->status);
+        $this->assertEquals('Now present', $updatedAttendance->remarks);
+
+        // Ensure only one record exists
+        $this->assertEquals(1, Attendance::where('class_id', $this->class->id)
+            ->where('student_id', $this->student->student_id)
+            ->where('date', $date->format('Y-m-d'))
+            ->count());
+    }
+
+    /** @test */
+    public function it_can_mark_bulk_attendance(): void
+    {
+        $date = Carbon::today();
+        $attendanceData = [
+            [
+                'student_id' => $this->student->student_id,
+                'status' => AttendanceStatus::PRESENT->value,
+                'remarks' => 'Present today',
+            ],
+        ];
+
+        $results = $this->attendanceService->markBulkAttendance(
+            $this->class->id,
+            $attendanceData,
+            $date,
+            $this->faculty->id
+        );
+
+        $this->assertInstanceOf(Collection::class, $results);
+        $this->assertCount(1, $results);
+        $this->assertEquals(AttendanceStatus::PRESENT->value, $results->first()->status);
+    }
+
+    /** @test */
+    public function it_calculates_attendance_statistics_correctly(): void
+    {
+        // Create test attendance records
+        $attendances = collect([
+            new Attendance(['status' => AttendanceStatus::PRESENT->value]),
+            new Attendance(['status' => AttendanceStatus::PRESENT->value]),
+            new Attendance(['status' => AttendanceStatus::ABSENT->value]),
+            new Attendance(['status' => AttendanceStatus::LATE->value]),
+            new Attendance(['status' => AttendanceStatus::EXCUSED->value]),
+        ]);
+
+        $stats = $this->attendanceService->calculateAttendanceStats($attendances);
+
+        $this->assertEquals(5, $stats['total']);
+        $this->assertEquals(2, $stats['present']);
+        $this->assertEquals(1, $stats['absent']);
+        $this->assertEquals(1, $stats['late']);
+        $this->assertEquals(1, $stats['excused']);
+        $this->assertEquals(0, $stats['partial']);
+        $this->assertEquals(3, $stats['present_count']); // present + late + partial
+        $this->assertEquals(60.0, $stats['attendance_rate']); // 3/5 * 100
+        $this->assertEquals(20.0, $stats['absence_rate']); // 1/5 * 100
+    }
+
+    /** @test */
+    public function it_handles_empty_attendance_collection(): void
+    {
+        $stats = $this->attendanceService->calculateAttendanceStats(collect());
+
+        $this->assertEquals(0, $stats['total']);
+        $this->assertEquals(0, $stats['present']);
+        $this->assertEquals(0, $stats['absent']);
+        $this->assertEquals(0, $stats['late']);
+        $this->assertEquals(0, $stats['excused']);
+        $this->assertEquals(0, $stats['partial']);
+        $this->assertEquals(0, $stats['present_count']);
+        $this->assertEquals(0, $stats['attendance_rate']);
+        $this->assertEquals(0, $stats['absence_rate']);
+    }
+
+    /** @test */
+    public function it_can_get_class_attendance_for_date_range(): void
+    {
+        $startDate = Carbon::today()->subDays(7);
+        $endDate = Carbon::today();
+
+        // Create attendance records within and outside the range
+        Attendance::factory()->create([
+            'class_id' => $this->class->id,
+            'date' => $startDate->format('Y-m-d'),
+            'status' => AttendanceStatus::PRESENT->value,
+        ]);
+
+        Attendance::factory()->create([
+            'class_id' => $this->class->id,
+            'date' => $startDate->subDays(1)->format('Y-m-d'), // Outside range
+            'status' => AttendanceStatus::ABSENT->value,
+        ]);
+
+        $attendances = $this->attendanceService->getClassAttendance(
+            $this->class->id,
+            $startDate->addDays(1), // Reset to original start date
+            $endDate
+        );
+
+        $this->assertCount(1, $attendances);
+        $this->assertEquals(AttendanceStatus::PRESENT->value, $attendances->first()->status);
+    }
+
+    /** @test */
+    public function it_can_get_student_attendance(): void
+    {
+        // Create attendance records for the student
+        Attendance::factory()->count(3)->create([
+            'student_id' => $this->student->student_id,
+            'class_id' => $this->class->id,
+            'status' => AttendanceStatus::PRESENT->value,
+        ]);
+
+        // Create attendance for another student
+        $otherStudent = Students::factory()->create(['student_id' => 'STU002']);
+        Attendance::factory()->create([
+            'student_id' => $otherStudent->student_id,
+            'class_id' => $this->class->id,
+            'status' => AttendanceStatus::ABSENT->value,
+        ]);
+
+        $attendances = $this->attendanceService->getStudentAttendance($this->student->student_id);
+
+        $this->assertCount(3, $attendances);
+        $attendances->each(function ($attendance) {
+            $this->assertEquals($this->student->student_id, $attendance->student_id);
+        });
+    }
+
+    /** @test */
+    public function it_can_calculate_student_class_stats(): void
+    {
+        // Create mixed attendance records
+        Attendance::factory()->create([
+            'student_id' => $this->student->student_id,
+            'class_id' => $this->class->id,
+            'status' => AttendanceStatus::PRESENT->value,
+        ]);
+
+        Attendance::factory()->create([
+            'student_id' => $this->student->student_id,
+            'class_id' => $this->class->id,
+            'status' => AttendanceStatus::ABSENT->value,
+        ]);
+
+        $stats = $this->attendanceService->calculateStudentClassStats(
+            $this->student->student_id,
+            $this->class->id
+        );
+
+        $this->assertEquals(2, $stats['total']);
+        $this->assertEquals(1, $stats['present']);
+        $this->assertEquals(1, $stats['absent']);
+        $this->assertEquals(50.0, $stats['attendance_rate']);
+    }
+
+    /** @test */
+    public function it_can_generate_class_report(): void
+    {
+        $startDate = Carbon::today()->subDays(7);
+        $endDate = Carbon::today();
+
+        // Create attendance records
+        Attendance::factory()->create([
+            'class_enrollment_id' => $this->enrollment->id,
+            'student_id' => $this->student->student_id,
+            'class_id' => $this->class->id,
+            'date' => $startDate->format('Y-m-d'),
+            'status' => AttendanceStatus::PRESENT->value,
+        ]);
+
+        $report = $this->attendanceService->generateClassReport(
+            $this->class->id,
+            $startDate,
+            $endDate
+        );
+
+        $this->assertArrayHasKey('class', $report);
+        $this->assertArrayHasKey('period', $report);
+        $this->assertArrayHasKey('students', $report);
+        $this->assertArrayHasKey('summary', $report);
+
+        $this->assertEquals($this->class->id, $report['class']->id);
+        $this->assertEquals($startDate->format('Y-m-d'), $report['period']['start']->format('Y-m-d'));
+        $this->assertEquals($endDate->format('Y-m-d'), $report['period']['end']->format('Y-m-d'));
+        $this->assertCount(1, $report['students']);
+    }
+
+    /** @test */
+    public function it_can_get_attendance_trends(): void
+    {
+        $startDate = Carbon::today()->subWeeks(4);
+        $endDate = Carbon::today();
+
+        // Create attendance records across different weeks
+        for ($i = 0; $i < 4; $i++) {
+            Attendance::factory()->create([
+                'class_id' => $this->class->id,
+                'date' => $startDate->copy()->addWeeks($i)->format('Y-m-d'),
+                'status' => AttendanceStatus::PRESENT->value,
+            ]);
+        }
+
+        $trends = $this->attendanceService->getAttendanceTrends(
+            $this->class->id,
+            $startDate,
+            $endDate,
+            'week'
+        );
+
+        $this->assertIsArray($trends);
+        $this->assertGreaterThan(0, count($trends));
+
+        foreach ($trends as $trend) {
+            $this->assertArrayHasKey('period', $trend);
+            $this->assertArrayHasKey('period_end', $trend);
+            $this->assertArrayHasKey('stats', $trend);
+        }
+    }
+}

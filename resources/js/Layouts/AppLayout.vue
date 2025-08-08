@@ -169,6 +169,14 @@ const sidebarData = {
       icon: Book,
       items: [
         {
+          title: "Attendance",
+          url: route("student.attendance.index"),
+        },
+        {
+          title: "Attendance History",
+          url: route("student.attendance.history"),
+        },
+        {
           title: "Schedule",
           url: route("schedule.index"),
         },
@@ -212,14 +220,14 @@ const mobileNavConfig = computed(() => ({
             route: "dashboard",
         },
         {
+            name: "Attendance",
+            icon: "lucide:clipboard-list",
+            route: "student.attendance.index",
+        },
+        {
             name: "Schedule",
             icon: "lucide:calendar",
             route: "schedule.index",
-        },
-        {
-            name: "Tuition",
-            icon: "lucide:banknote",
-            route: "tuition.index",
         },
         {
             name: "Subjects",
@@ -228,6 +236,11 @@ const mobileNavConfig = computed(() => ({
         },
     ],
     mainMenu: [
+        {
+            name: "Attendance Stats",
+            icon: "lucide:bar-chart-3",
+            route: "student.attendance.statistics",
+        },
         {
             name: "Settings",
             icon: "lucide:settings",

@@ -6,7 +6,8 @@ import {
   CurrentClassCard,
   WeeklyScheduleTimeline,
   QuickActionsCard,
-  GradesCard
+  GradesCard,
+  AttendanceCard
 } from './Dashboard/Components';
 import EnrollmentNotice from '@/Components/Dashboard/EnrollmentNotice.vue';
 
@@ -63,6 +64,23 @@ const props = defineProps({
   studentEnrollment: {
     type: Object,
     required: true
+  },
+  attendanceData: {
+    type: Object,
+    default: () => ({
+      stats: {
+        total: 0,
+        present: 0,
+        absent: 0,
+        late: 0,
+        excused: 0,
+        partial: 0,
+        present_count: 0,
+        attendance_rate: 0,
+      },
+      alerts: [],
+      recentClasses: []
+    })
   }
 });
 
@@ -122,8 +140,15 @@ const currentDate = new Date().toLocaleDateString('en-US', {
             :currentDay="new Date().toLocaleDateString('en-US', { weekday: 'long' })"
           />
 
-          <!-- Desktop: Two Column Layout for Secondary Content -->
-          <div class="hidden md:grid md:grid-cols-2 gap-4">
+          <!-- Desktop: Three Column Layout for Secondary Content -->
+          <div class="hidden md:grid md:grid-cols-3 gap-4">
+            <!-- Attendance Overview -->
+            <AttendanceCard
+              :attendanceStats="attendanceData.stats"
+              :attendanceAlerts="attendanceData.alerts"
+              :recentClasses="attendanceData.recentClasses"
+            />
+
             <!-- Recent Grades -->
             <GradesCard :recentGrades="recentGrades" />
 
@@ -133,6 +158,13 @@ const currentDate = new Date().toLocaleDateString('en-US', {
 
           <!-- Mobile: Single Column for Secondary Content -->
           <div class="md:hidden space-y-3">
+            <!-- Attendance Overview -->
+            <AttendanceCard
+              :attendanceStats="attendanceData.stats"
+              :attendanceAlerts="attendanceData.alerts"
+              :recentClasses="attendanceData.recentClasses"
+            />
+
             <!-- Recent Grades -->
             <GradesCard :recentGrades="recentGrades" />
 

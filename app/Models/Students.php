@@ -218,6 +218,14 @@ final class Students extends Model
         return $this->hasMany(StudentTuition::class, 'student_id', 'id');
     }
 
+    /**
+     * Get the attendance records for this student
+     */
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class, 'student_id', 'id');
+    }
+
     public function StudentTransactions()
     {
         return $this->hasMany(StudentTransactions::class, 'student_id', 'id');

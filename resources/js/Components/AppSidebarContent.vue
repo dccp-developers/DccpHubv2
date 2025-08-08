@@ -38,6 +38,8 @@ const navigationConfig = [
         icon: "lucide:layout-dashboard",
         route: "dashboard",
       },
+      { name: "Attendance", icon: "lucide:clipboard-list", route: "student.attendance.index" },
+      { name: "Attendance History", icon: "lucide:history", route: "student.attendance.history" },
       { name: "Settings", icon: "lucide:settings", route: "profile.show" },
       { name: "Schedule", icon: "lucide:calendar", route: "schedule.index" },
       { name: "Tuition", icon: "lucide:banknote", route: "tuition.index" },
@@ -69,9 +71,9 @@ const navigationConfig = [
 const mobileNavItems = computed(() => {
   return [
     navigationConfig[0].items[0], // Dashboard
-    navigationConfig[0].items[2], // Schedule
-    navigationConfig[0].items[3], // Tuition
-    navigationConfig[0].items[4], // Subjects
+    navigationConfig[0].items[1], // Attendance
+    navigationConfig[0].items[3], // Schedule
+    navigationConfig[0].items[5], // Subjects
     { name: "Menu", icon: "lucide:menu", action: "toggleMenu" },
   ];
 });

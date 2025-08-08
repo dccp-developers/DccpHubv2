@@ -11,6 +11,7 @@ use App\Models\Students;
 use App\Models\GeneralSettings;
 use App\Models\SubjectEnrolled;
 use App\Services\GeneralSettingsService;
+use App\Services\Student\StudentAttendanceService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 
@@ -20,7 +21,8 @@ final class DashboardController extends Controller
     private const COMING_SOON = 'Coming Soon';
 
     public function __construct(
-        private readonly GeneralSettingsService $settingsService
+        private readonly GeneralSettingsService $settingsService,
+        private readonly StudentAttendanceService $studentAttendanceService
     ) {}
 
     /**
@@ -104,6 +106,9 @@ final class DashboardController extends Controller
             ->withTrashed()
             ->first();
 
+        // Get attendance data for dashboard widget
+        $attendanceData = $this->getAttendanceData($student);
+
         return Inertia::render('Dashboard', [
             'student' => $studentData,
             'stats' => $statsData,
@@ -121,6 +126,7 @@ final class DashboardController extends Controller
             'schoolYear' => $currentSchoolYear,
             'generalSettings' => $generalSettings,
             'studentEnrollment' => $studentEnrollment,
+            'attendanceData' => $attendanceData,
         ]);
     }
 
@@ -323,5 +329,71 @@ final class DashboardController extends Controller
         ])->values()->all();
 
         return $weeklySchedule;
+    }
+
+    /**
+     * Get attendance data for dashboard widget
+     */
+    private function getAttendanceData($student): array
+    {
+        try {
+            // Get the correct student identifier based on student type
+            if ($student instanceof \App\Models\Students) {
+                // College student - use the id as student_id for attendance records
+                $studentId = (string) $student->id;
+            } elseif ($student instanceof \App\Models\ShsStudents) {
+                // SHS student - use student_lrn
+                $studentId = $student->student_lrn;
+            } else {
+                $studentId = null;
+            }
+
+            if (!$studentId) {
+                return $this->getDefaultAttendanceData();
+            }
+
+            // Get basic attendance stats
+            $dashboardData = $this->studentAttendanceService->getStudentDashboardData($studentId);
+
+            return [
+                'stats' => $dashboardData['overall_stats'],
+                'alerts' => collect($dashboardData['attendance_alerts'])->take(3)->toArray(), // Limit to 3 alerts
+                'recentClasses' => array_map(function ($classData) {
+                    return [
+                        'class' => $classData['class'],
+                        'last_attendance' => $classData['recent_attendances'][0] ?? null,
+                    ];
+                }, collect($dashboardData['classes'])->take(5)->toArray()) // Limit to 5 recent classes
+            ];
+        } catch (\Exception $e) {
+            // Log error and return default data
+            logger()->error('Failed to get attendance data for dashboard', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return $this->getDefaultAttendanceData();
+        }
+    }
+
+    /**
+     * Get default attendance data when service fails
+     */
+    private function getDefaultAttendanceData(): array
+    {
+        return [
+            'stats' => [
+                'total' => 0,
+                'present' => 0,
+                'absent' => 0,
+                'late' => 0,
+                'excused' => 0,
+                'partial' => 0,
+                'present_count' => 0,
+                'attendance_rate' => 0,
+            ],
+            'alerts' => [],
+            'recentClasses' => []
+        ];
     }
 }

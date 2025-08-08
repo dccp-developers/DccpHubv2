@@ -197,6 +197,14 @@ final class Classes extends Model
     }
 
     /**
+     * Get the attendance records for this class
+     */
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class, 'class_id');
+    }
+
+    /**
      * Get the courses associated with this class
      */
     public function courses()

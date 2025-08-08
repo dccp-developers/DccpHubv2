@@ -132,6 +132,14 @@ final class Faculty extends Authenticatable implements FilamentUser, HasAvatar
         );
     }
 
+    /**
+     * Get the attendance records marked by this faculty
+     */
+    public function markedAttendances()
+    {
+        return $this->hasMany(Attendance::class, 'marked_by', 'id');
+    }
+
     // Update or add this method to ensure we always return a string
     public function getNameAttribute(): string
     {

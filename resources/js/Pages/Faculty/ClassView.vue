@@ -378,30 +378,270 @@
           </div>
 
           <!-- Attendance Tab -->
-          <div v-if="activeTab === 'attendance'" class="space-y-4">
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-foreground">Attendance Management</h3>
-              <div class="flex items-center space-x-2">
-                <Button size="sm">
-                  <ClipboardDocumentListIcon class="w-4 h-4 mr-2" />
-                  Take Attendance
-                </Button>
-                <Button variant="outline" size="sm">
-                  <DocumentArrowDownIcon class="w-4 h-4 mr-2" />
-                  Export Report
-                </Button>
+          <div v-if="activeTab === 'attendance'" class="space-y-6">
+            <!-- Attendance Setup Section -->
+            <div v-if="!attendance.is_setup" class="space-y-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-foreground">Setup Attendance Tracking</h3>
               </div>
+
+              <Card>
+                <CardContent class="p-6">
+                  <div class="text-center mb-6">
+                    <ClipboardDocumentListIcon class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 class="text-lg font-semibold mb-2">Configure Attendance for This Class</h4>
+                    <p class="text-muted-foreground">Set up attendance tracking to start recording student attendance for each class session.</p>
+                  </div>
+
+                  <AttendanceSetupForm
+                    :class-data="classData"
+                    :methods="attendance.methods"
+                    :policies="attendance.policies"
+                    @setup-complete="handleAttendanceSetup"
+                  />
+                </CardContent>
+              </Card>
             </div>
 
-            <Card>
-              <CardContent class="p-8 text-center">
-                <ClipboardDocumentListIcon class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p class="text-muted-foreground mb-4">Attendance tracking feature coming soon.</p>
-                <Button>
-                  Set up Attendance
-                </Button>
-              </CardContent>
-            </Card>
+            <!-- Attendance Management Section -->
+            <div v-else class="space-y-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-foreground">Attendance Management</h3>
+                <div class="flex items-center space-x-2">
+                  <Button
+                    size="sm"
+                    @click="initializeAttendance"
+                    :disabled="attendanceLoading"
+                  >
+                    <ClipboardDocumentListIcon class="w-4 h-4 mr-2" />
+                    {{ attendanceData?.session_stats ? 'Manage Attendance' : 'Start Attendance' }}
+                  </Button>
+                  <Button variant="outline" size="sm" @click="exportAttendance">
+                    <DocumentArrowDownIcon class="w-4 h-4 mr-2" />
+                    Export Report
+                  </Button>
+                  <Button variant="outline" size="sm" @click="showAttendanceSettings = true">
+                    <CogIcon class="w-4 h-4 mr-2" />
+                    Settings
+                  </Button>
+                </div>
+              </div>
+
+              <!-- Attendance Date Selector -->
+              <Card>
+                <CardContent class="p-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                      <div>
+                        <label class="text-sm font-medium text-foreground">Date:</label>
+                        <input
+                          type="date"
+                          v-model="selectedDate"
+                          @change="loadAttendanceData"
+                          class="ml-2 px-3 py-1 border border-border rounded-md text-sm"
+                        />
+                      </div>
+                      <div v-if="attendanceData?.session_stats" class="text-sm text-muted-foreground">
+                        {{ attendanceData.session_stats.present + attendanceData.session_stats.late }}/{{ attendanceData.session_stats.total }} Present
+                        ({{ attendanceData.session_stats.attendance_rate }}%)
+                      </div>
+                    </div>
+                    <div v-if="attendanceData?.settings?.method" class="text-sm text-muted-foreground">
+                      Method: {{ attendanceData.settings.method.label }}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <!-- Method-specific Display -->
+              <AttendanceMethodDisplay
+                v-if="attendanceData?.session_data"
+                :session-data="attendanceData.session_data"
+                :method-settings="attendanceData.settings"
+                @refresh-method="refreshAttendanceMethod"
+              />
+
+              <!-- Simple Attendance Table -->
+              <div v-if="attendanceData?.roster?.length" class="space-y-4">
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent class="p-4 text-center">
+                      <div class="text-2xl font-bold">{{ attendanceData.session_stats?.total || 0 }}</div>
+                      <div class="text-sm text-muted-foreground">Total</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent class="p-4 text-center">
+                      <div class="text-2xl font-bold text-green-600">{{ attendanceData.session_stats?.present || 0 }}</div>
+                      <div class="text-sm text-muted-foreground">Present</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent class="p-4 text-center">
+                      <div class="text-2xl font-bold text-red-600">{{ attendanceData.session_stats?.absent || 0 }}</div>
+                      <div class="text-sm text-muted-foreground">Absent</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent class="p-4 text-center">
+                      <div class="text-2xl font-bold text-blue-600">{{ attendanceData.session_stats?.attendance_rate || 0 }}%</div>
+                      <div class="text-sm text-muted-foreground">Rate</div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <!-- Quick Actions -->
+                <Card>
+                  <CardContent class="p-4">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <h3 class="font-medium">Quick Actions</h3>
+                        <p class="text-sm text-muted-foreground">Mark all students at once</p>
+                      </div>
+                      <div class="flex gap-2">
+                        <Button @click="markAllPresent" variant="default" size="sm">
+                          <CheckIcon class="w-4 h-4 mr-2" />
+                          All Present
+                        </Button>
+                        <Button @click="markAllAbsent" variant="outline" size="sm">
+                          <XMarkIcon class="w-4 h-4 mr-2" />
+                          All Absent
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <!-- Simple Attendance Table -->
+                <Card>
+                  <CardContent class="p-0">
+                    <div class="overflow-x-auto">
+                      <table class="w-full">
+                        <thead>
+                          <tr class="border-b">
+                            <th class="text-left p-4 font-medium">Student</th>
+                            <th class="text-center p-4 font-medium">Status</th>
+                            <th class="text-center p-4 font-medium">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="student in attendanceData.roster"
+                            :key="student.student_id"
+                            class="border-b hover:bg-muted/25"
+                          >
+                            <!-- Student Info -->
+                            <td class="p-4">
+                              <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                  <img
+                                    v-if="student.student.photo"
+                                    :src="student.student.photo"
+                                    :alt="student.student.name"
+                                    class="w-10 h-10 rounded-full object-cover"
+                                  />
+                                  <div
+                                    v-else
+                                    class="w-10 h-10 rounded-full bg-muted flex items-center justify-center"
+                                  >
+                                    <UserIcon class="w-5 h-5 text-muted-foreground" />
+                                  </div>
+                                </div>
+                                <div>
+                                  <div class="font-medium">{{ student.student.name }}</div>
+                                  <div class="text-sm text-muted-foreground">{{ student.student_id }}</div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <!-- Current Status -->
+                            <td class="p-4 text-center">
+                              <Badge
+                                :variant="getStatusVariant(student.attendance.status)"
+                                class="capitalize"
+                              >
+                                {{ student.attendance.status }}
+                              </Badge>
+                            </td>
+
+                            <!-- Action Buttons -->
+                            <td class="p-4">
+                              <div class="flex justify-center space-x-2">
+                                <Button
+                                  @click="updateStudentStatus(student.student_id, 'present')"
+                                  :variant="student.attendance.status === 'present' ? 'default' : 'outline'"
+                                  size="sm"
+                                  class="min-w-[80px]"
+                                >
+                                  <CheckIcon class="w-4 h-4 mr-1" />
+                                  Present
+                                </Button>
+                                <Button
+                                  @click="updateStudentStatus(student.student_id, 'absent')"
+                                  :variant="student.attendance.status === 'absent' ? 'destructive' : 'outline'"
+                                  size="sm"
+                                  class="min-w-[80px]"
+                                >
+                                  <XMarkIcon class="w-4 h-4 mr-1" />
+                                  Absent
+                                </Button>
+                                <Button
+                                  @click="updateStudentStatus(student.student_id, 'late')"
+                                  :variant="student.attendance.status === 'late' ? 'secondary' : 'outline'"
+                                  size="sm"
+                                  class="min-w-[70px]"
+                                >
+                                  Late
+                                </Button>
+                                <Button
+                                  @click="updateStudentStatus(student.student_id, 'excused')"
+                                  :variant="student.attendance.status === 'excused' ? 'secondary' : 'outline'"
+                                  size="sm"
+                                  class="min-w-[80px]"
+                                >
+                                  Excused
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <!-- Save Button -->
+                <div class="flex justify-center">
+                  <Button @click="saveAllAttendance" size="lg" class="px-8">
+                    <CloudArrowUpIcon class="w-5 h-5 mr-2" />
+                    Save Attendance
+                  </Button>
+                </div>
+              </div>
+
+              <!-- No Data State -->
+              <Card v-else>
+                <CardContent class="p-8 text-center">
+                  <ClipboardDocumentListIcon class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p class="text-muted-foreground mb-4">No attendance data for the selected date.</p>
+                  <Button @click="initializeAttendance" :disabled="attendanceLoading">
+                    Initialize Attendance Session
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <!-- Attendance Settings Modal -->
+            <AttendanceSettingsModal
+              v-if="showAttendanceSettings"
+              :class-data="classData"
+              :current-settings="attendance.settings"
+              :methods="attendance.methods"
+              :policies="attendance.policies"
+              @close="showAttendanceSettings = false"
+              @settings-updated="handleSettingsUpdate"
+            />
           </div>
         </div>
       </div>
@@ -416,6 +656,9 @@ import FacultyLayout from '@/Layouts/FacultyLayout.vue'
 import { Card, CardContent } from '@/Components/ui/card.js'
 import { Button } from '@/Components/ui/button.js'
 import { Badge } from '@/Components/ui/badge.js'
+import AttendanceSetupForm from '@/Components/Faculty/AttendanceSetupForm.vue'
+import AttendanceSettingsModal from '@/Components/Faculty/AttendanceSettingsModal.vue'
+import AttendanceMethodDisplay from '@/Components/Faculty/AttendanceMethodDisplay.vue'
 import {
   MapPinIcon,
   UsersIcon,
@@ -433,8 +676,15 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  CheckIcon,
+  XMarkIcon,
+  UserIcon,
+  CloudArrowUpIcon
 } from '@heroicons/vue/24/outline'
+import axios from 'axios'
+import { toast } from 'vue-sonner'
+import { route } from 'ziggy-js'
 
 // Props from the controller
 const props = defineProps({
@@ -442,6 +692,7 @@ const props = defineProps({
   schedules: Array,
   stats: Object,
   performance: Object,
+  attendance: Object,
   faculty: Object,
   currentSemester: String,
   schoolYear: String,
@@ -452,6 +703,10 @@ const props = defineProps({
 
 // Reactive data
 const activeTab = ref('students')
+const selectedDate = ref(new Date().toISOString().split('T')[0])
+const attendanceData = ref(props.attendance?.data || null)
+const attendanceLoading = ref(false)
+const showAttendanceSettings = ref(false)
 
 // Computed properties
 const classData = computed(() => props.classData || {})
@@ -471,6 +726,246 @@ const tabs = [
 // Methods
 const goBack = () => {
   router.visit(route('faculty.dashboard'))
+}
+
+// Attendance Management Methods
+const handleAttendanceSetup = async (settings) => {
+  try {
+    const response = await axios.post(route('faculty.classes.attendance.setup', props.classData.id), settings)
+
+    if (response.data.success) {
+      // Update attendance data
+      props.attendance.is_setup = true
+      props.attendance.settings = response.data.settings
+
+      // Show success message
+      toast.success('Attendance tracking has been set up successfully!')
+
+      // Initialize first session
+      await initializeAttendance()
+    }
+  } catch (error) {
+    console.error('Failed to setup attendance:', error)
+    toast.error('Failed to setup attendance tracking. Please try again.')
+  }
+}
+
+const loadAttendanceData = async () => {
+  if (!props.attendance?.is_setup) return
+
+  attendanceLoading.value = true
+
+  try {
+    const response = await axios.get(route('faculty.classes.attendance.data', props.classData.id), {
+      params: { date: selectedDate.value }
+    })
+
+    if (response.data.success) {
+      attendanceData.value = response.data.data
+    }
+  } catch (error) {
+    console.error('Failed to load attendance data:', error)
+    toast.error('Failed to load attendance data.')
+  } finally {
+    attendanceLoading.value = false
+  }
+}
+
+const initializeAttendance = async () => {
+  attendanceLoading.value = true
+
+  try {
+    const response = await axios.post(route('faculty.classes.attendance.initialize', props.classData.id), {
+      date: selectedDate.value
+    })
+
+    if (response.data.success) {
+      attendanceData.value = response.data.data
+      toast.success('Attendance session initialized successfully!')
+    }
+  } catch (error) {
+    console.error('Failed to initialize attendance:', error)
+    toast.error(error.response?.data?.message || 'Failed to initialize attendance session.')
+  } finally {
+    attendanceLoading.value = false
+  }
+}
+
+const updateStudentAttendance = async (studentId, status, remarks = null) => {
+  try {
+    const response = await axios.post(route('faculty.classes.attendance.update', props.classData.id), {
+      student_id: studentId,
+      status: status,
+      date: selectedDate.value,
+      remarks: remarks
+    })
+
+    if (response.data.success) {
+      // Update local data
+      const studentIndex = attendanceData.value.roster.findIndex(s => s.student_id === studentId)
+      if (studentIndex !== -1) {
+        attendanceData.value.roster[studentIndex].attendance = response.data.data.attendance
+        attendanceData.value.session_stats = response.data.data.session_stats
+      }
+
+      toast.success('Attendance updated successfully!')
+    }
+  } catch (error) {
+    console.error('Failed to update attendance:', error)
+    toast.error('Failed to update attendance.')
+  }
+}
+
+const bulkUpdateAttendance = async (attendanceUpdates) => {
+  try {
+    const response = await axios.post(route('faculty.classes.attendance.bulk-update', props.classData.id), {
+      attendance_data: attendanceUpdates,
+      date: selectedDate.value
+    })
+
+    if (response.data.success) {
+      // Reload attendance data
+      await loadAttendanceData()
+      toast.success(response.data.message)
+    }
+  } catch (error) {
+    console.error('Failed to bulk update attendance:', error)
+    toast.error('Failed to update attendance.')
+  }
+}
+
+const exportAttendance = () => {
+  // TODO: Implement attendance export
+  toast.info('Export functionality coming soon!')
+}
+
+const handleSettingsUpdate = (newSettings) => {
+  props.attendance.settings = newSettings
+  showAttendanceSettings.value = false
+  toast.success('Attendance settings updated successfully!')
+}
+
+const refreshAttendanceMethod = async () => {
+  try {
+    // Re-initialize the attendance session to refresh codes/QR
+    await initializeAttendance()
+    toast.success('Attendance method refreshed successfully!')
+  } catch (error) {
+    console.error('Failed to refresh attendance method:', error)
+    toast.error('Failed to refresh attendance method.')
+  }
+}
+
+// New User-Friendly Attendance Methods
+const updateStudentStatus = async (studentId, status) => {
+  try {
+    // Find the student in the roster and update locally first for immediate feedback
+    const student = attendanceData.value.roster.find(s => s.student_id === studentId)
+    if (student) {
+      student.attendance.status = status
+    }
+
+    // Update on server
+    const response = await axios.post(route('faculty.classes.attendance.update', props.classData.id), {
+      student_id: studentId,
+      status: status,
+      date: selectedDate.value
+    })
+
+    if (response.data.success) {
+      // Refresh attendance data to get updated stats
+      await loadAttendanceData()
+      toast.success(`Student marked as ${status}`)
+    }
+  } catch (error) {
+    console.error('Failed to update attendance:', error)
+    toast.error('Failed to update attendance')
+    // Revert local change on error
+    await loadAttendanceData()
+  }
+}
+
+const markAllPresent = async () => {
+  try {
+    const updates = attendanceData.value.roster.map(student => ({
+      student_id: student.student_id,
+      status: 'present'
+    }))
+
+    const response = await axios.post(route('faculty.classes.attendance.bulk-update', props.classData.id), {
+      attendance_data: updates,
+      date: selectedDate.value
+    })
+
+    if (response.data.success) {
+      await loadAttendanceData()
+      toast.success('All students marked as present')
+    }
+  } catch (error) {
+    console.error('Failed to mark all present:', error)
+    toast.error('Failed to mark all students as present')
+  }
+}
+
+const markAllAbsent = async () => {
+  try {
+    const updates = attendanceData.value.roster.map(student => ({
+      student_id: student.student_id,
+      status: 'absent'
+    }))
+
+    const response = await axios.post(route('faculty.classes.attendance.bulk-update', props.classData.id), {
+      attendance_data: updates,
+      date: selectedDate.value
+    })
+
+    if (response.data.success) {
+      await loadAttendanceData()
+      toast.success('All students marked as absent')
+    }
+  } catch (error) {
+    console.error('Failed to mark all absent:', error)
+    toast.error('Failed to mark all students as absent')
+  }
+}
+
+const saveAllAttendance = async () => {
+  try {
+    const updates = attendanceData.value.roster.map(student => ({
+      student_id: student.student_id,
+      status: student.attendance.status,
+      remarks: student.attendance.remarks || null
+    }))
+
+    const response = await axios.post(route('faculty.classes.attendance.bulk-update', props.classData.id), {
+      attendance_data: updates,
+      date: selectedDate.value
+    })
+
+    if (response.data.success) {
+      await loadAttendanceData()
+      toast.success('Attendance saved successfully!')
+    }
+  } catch (error) {
+    console.error('Failed to save attendance:', error)
+    toast.error('Failed to save attendance')
+  }
+}
+
+// Helper function for badge variants
+const getStatusVariant = (status) => {
+  switch (status) {
+    case 'present':
+      return 'default'
+    case 'absent':
+      return 'destructive'
+    case 'late':
+      return 'secondary'
+    case 'excused':
+      return 'outline'
+    default:
+      return 'secondary'
+  }
 }
 
 const getLetterGrade = (average) => {

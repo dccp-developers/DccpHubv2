@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Faculty;
 use App\Services\Faculty\FacultyDashboardService;
+use App\Services\Faculty\FacultyAttendanceService;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,8 @@ use Illuminate\Http\RedirectResponse;
 final class FacultyDashboardController extends Controller
 {
     public function __construct(
-        private readonly FacultyDashboardService $dashboardService
+        private readonly FacultyDashboardService $dashboardService,
+        private readonly FacultyAttendanceService $attendanceService
     ) {}
 
     /**
@@ -46,6 +48,10 @@ final class FacultyDashboardController extends Controller
             // Get comprehensive dashboard data using the service
             $dashboardData = $this->dashboardService->getDashboardData($faculty);
 
+            // Get attendance data for the widget
+            $attendanceData = $this->getAttendanceData($faculty);
+            $dashboardData['attendanceData'] = $attendanceData;
+
             return Inertia::render('Faculty/Dashboard', $dashboardData);
         } catch (\Exception $e) {
             // Log the error and return a fallback response
@@ -71,6 +77,35 @@ final class FacultyDashboardController extends Controller
                 'currentSemester' => '1st',
                 'schoolYear' => now()->year . '-' . (now()->year + 1),
             ]);
+        }
+    }
+
+    /**
+     * Get attendance data for faculty dashboard widget
+     */
+    private function getAttendanceData(Faculty $faculty): array
+    {
+        try {
+            $summary = $this->attendanceService->getFacultyDashboardSummary($faculty->id);
+
+            return [
+                'overallStats' => $summary['overall_stats'],
+                'recentSessions' => collect($summary['recent_sessions'])->take(5)->toArray(),
+                'attendanceTrend' => $summary['attendance_trend'],
+                'studentsAtRisk' => $summary['classes_needing_attention']
+            ];
+        } catch (\Exception $e) {
+            logger()->error('Failed to get faculty attendance data', [
+                'faculty_id' => $faculty->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'overallStats' => ['attendance_rate' => 0, 'total' => 0, 'present_count' => 0],
+                'recentSessions' => [],
+                'attendanceTrend' => [],
+                'studentsAtRisk' => 0
+            ];
         }
     }
 }

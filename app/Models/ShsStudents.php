@@ -34,6 +34,14 @@ final class ShsStudents extends Model
         return $this->hasMany(class_enrollments::class, 'student_id', 'student_lrn');
     }
 
+    /**
+     * Get the attendance records for this SHS student
+     */
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class, 'student_id', 'student_lrn');
+    }
+
     public function getCodeAttribute()
     {
         $Strand = TracksStrands::query()->where('id', $this->strand_id)->first();

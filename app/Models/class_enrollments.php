@@ -130,9 +130,50 @@ final class class_enrollments extends Model
     /**
      * Get the attendance records for this enrollment
      */
-    public function Attendances(): HasMany
+    public function attendances(): HasMany
     {
-        return $this->hasMany(attendances::class, 'class_enrollment_id', 'id');
+        return $this->hasMany(Attendance::class, 'class_enrollment_id', 'id');
+    }
+
+    /**
+     * Get attendance statistics for this enrollment
+     */
+    public function getAttendanceStatsAttribute(): array
+    {
+        $attendances = $this->attendances;
+        $total = $attendances->count();
+
+        if ($total === 0) {
+            return [
+                'total' => 0,
+                'present' => 0,
+                'absent' => 0,
+                'late' => 0,
+                'excused' => 0,
+                'partial' => 0,
+                'attendance_rate' => 0,
+            ];
+        }
+
+        $present = $attendances->where('status', 'present')->count();
+        $absent = $attendances->where('status', 'absent')->count();
+        $late = $attendances->where('status', 'late')->count();
+        $excused = $attendances->where('status', 'excused')->count();
+        $partial = $attendances->where('status', 'partial')->count();
+
+        $presentCount = $present + $late + $partial; // All these count as present
+        $attendanceRate = $total > 0 ? round(($presentCount / $total) * 100, 2) : 0;
+
+        return [
+            'total' => $total,
+            'present' => $present,
+            'absent' => $absent,
+            'late' => $late,
+            'excused' => $excused,
+            'partial' => $partial,
+            'present_count' => $presentCount,
+            'attendance_rate' => $attendanceRate,
+        ];
     }
 
     /**
