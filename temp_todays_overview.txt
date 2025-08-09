@@ -1,0 +1,130 @@
+      <!-- Today's Overview & Quick Actions -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Today's Overview -->
+        <Card class="lg:col-span-2">
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2">
+              <CalendarIcon class="w-5 h-5" />
+              Today's Overview
+            </CardTitle>
+            <CardDescription>
+              {{ getCurrentDateFormatted() }}
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <!-- Today's Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-primary">{{ todaysStats.scheduledSessions }}</div>
+                <div class="text-sm text-muted-foreground">Sessions Today</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">{{ todaysStats.completedSessions }}</div>
+                <div class="text-sm text-muted-foreground">Completed</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ todaysStats.attendanceRate }}%</div>
+                <div class="text-sm text-muted-foreground">Attendance</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-orange-600">{{ todaysStats.pendingTasks }}</div>
+                <div class="text-sm text-muted-foreground">Pending</div>
+              </div>
+            </div>
+
+            <!-- Today's Schedule -->
+            <div class="space-y-3">
+              <h4 class="font-medium text-foreground">Today's Schedule</h4>
+              <div v-if="todaysSchedule.length === 0" class="text-center py-4">
+                <CalendarIcon class="mx-auto h-8 w-8 text-muted-foreground" />
+                <p class="mt-2 text-sm text-muted-foreground">No classes scheduled for today</p>
+              </div>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="schedule in todaysSchedule"
+                  :key="schedule.id"
+                  class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-colors"
+                >
+                  <div class="flex items-center space-x-3">
+                    <div :class="`w-3 h-3 rounded-full ${getScheduleStatusColor(schedule)}`"></div>
+                    <div>
+                      <p class="font-medium text-foreground">{{ schedule.time_range }}</p>
+                      <p class="text-sm text-muted-foreground">{{ schedule.room_name }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <Badge :variant="getScheduleStatusVariant(schedule)" class="text-xs">
+                      {{ schedule.status }}
+                    </Badge>
+                    <Button
+                      v-if="schedule.status === 'upcoming' || schedule.status === 'ongoing'"
+                      variant="outline"
+                      size="sm"
+                      @click="startAttendance(schedule)"
+                    >
+                      <ClipboardDocumentListIcon class="w-4 h-4 mr-1" />
+                      Attendance
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="space-y-3">
+              <h4 class="font-medium text-foreground">Recent Activities</h4>
+              <div v-if="recentActivities.length === 0" class="text-center py-4">
+                <ClockIcon class="mx-auto h-8 w-8 text-muted-foreground" />
+                <p class="mt-2 text-sm text-muted-foreground">No recent activities</p>
+              </div>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="activity in recentActivities.slice(0, 3)"
+                  :key="activity.id"
+                  class="flex items-start space-x-3 p-2 rounded-lg hover:bg-accent transition-colors"
+                >
+                  <div :class="`p-1 rounded-full ${getActivityIconColor(activity.type)}`">
+                    <component :is="getActivityIcon(activity.type)" class="w-3 h-3 text-white" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-foreground">{{ activity.title }}</p>
+                    <p class="text-xs text-muted-foreground">{{ activity.description }}</p>
+                    <p class="text-xs text-muted-foreground">{{ formatRelativeTime(activity.timestamp) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <!-- Quick Actions -->
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2">
+              <BoltIcon class="w-5 h-5" />
+              Quick Actions
+            </CardTitle>
+            <CardDescription>
+              Common tasks for this class
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <Button
+              v-for="action in quickActions"
+              :key="action.id"
+              :variant="action.variant || 'outline'"
+              :size="action.size || 'default'"
+              :disabled="action.disabled"
+              @click="executeQuickAction(action)"
+              class="w-full justify-start"
+            >
+              <component :is="action.icon" class="w-4 h-4 mr-3" />
+              <div class="text-left">
+                <div class="font-medium">{{ action.title }}</div>
+                <div class="text-xs text-muted-foreground">{{ action.description }}</div>
+              </div>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+

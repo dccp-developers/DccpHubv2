@@ -37,26 +37,91 @@
               Today's Overview
             </CardTitle>
             <CardDescription>
-              {{ new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}
+              {{ getCurrentDateFormatted() }}
             </CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
+            <!-- Today's Stats -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div class="text-center">
-                <div class="text-2xl font-bold text-primary">{{ todaysClasses }}</div>
+                <div class="text-2xl font-bold text-primary">{{ todaysStats.scheduledClasses }}</div>
                 <div class="text-sm text-muted-foreground">Classes Today</div>
               </div>
               <div class="text-center">
-                <div class="text-2xl font-bold text-green-600">{{ attendanceRate }}%</div>
+                <div class="text-2xl font-bold text-green-600">{{ todaysStats.averageAttendance }}%</div>
                 <div class="text-sm text-muted-foreground">Avg Attendance</div>
               </div>
               <div class="text-center">
-                <div class="text-2xl font-bold text-blue-600">{{ pendingGrades }}</div>
+                <div class="text-2xl font-bold text-blue-600">{{ todaysStats.pendingGrades }}</div>
                 <div class="text-sm text-muted-foreground">Pending Grades</div>
               </div>
               <div class="text-center">
-                <div class="text-2xl font-bold text-orange-600">{{ upcomingExams }}</div>
-                <div class="text-sm text-muted-foreground">Upcoming Exams</div>
+                <div class="text-2xl font-bold text-orange-600">{{ todaysStats.upcomingTasks }}</div>
+                <div class="text-sm text-muted-foreground">Upcoming Tasks</div>
+              </div>
+            </div>
+
+            <!-- Today's Schedule -->
+            <div class="space-y-3">
+              <h4 class="font-medium text-foreground">Today's Schedule</h4>
+              <div v-if="todaysSchedule.length === 0" class="text-center py-4">
+                <CalendarDaysIcon class="mx-auto h-8 w-8 text-muted-foreground" />
+                <p class="mt-2 text-sm text-muted-foreground">No classes scheduled for today</p>
+              </div>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="schedule in todaysSchedule"
+                  :key="schedule.id"
+                  class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-colors cursor-pointer"
+                  @click="goToClass(schedule.class)"
+                >
+                  <div class="flex items-center space-x-3">
+                    <div :class="`w-3 h-3 rounded-full ${getScheduleStatusColor(schedule)}`"></div>
+                    <div>
+                      <p class="font-medium text-foreground">{{ schedule.subject_code }} - {{ schedule.section }}</p>
+                      <p class="text-sm text-muted-foreground">{{ schedule.time_range }} • {{ schedule.room }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <Badge :variant="getScheduleStatusVariant(schedule)" class="text-xs">
+                      {{ schedule.status }}
+                    </Badge>
+                    <Button
+                      v-if="schedule.status === 'upcoming' || schedule.status === 'ongoing'"
+                      variant="outline"
+                      size="sm"
+                      @click.stop="takeAttendance(schedule.class)"
+                    >
+                      <UsersIcon class="w-4 h-4 mr-1" />
+                      Attendance
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="space-y-3">
+              <h4 class="font-medium text-foreground">Recent Activities</h4>
+              <div v-if="recentActivities.length === 0" class="text-center py-4">
+                <ClockIcon class="mx-auto h-8 w-8 text-muted-foreground" />
+                <p class="mt-2 text-sm text-muted-foreground">No recent activities</p>
+              </div>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="activity in recentActivities.slice(0, 3)"
+                  :key="activity.id"
+                  class="flex items-start space-x-3 p-2 rounded-lg hover:bg-accent transition-colors"
+                >
+                  <div :class="`p-1 rounded-full ${getActivityIconColor(activity.type)}`">
+                    <component :is="getActivityIcon(activity.type)" class="w-3 h-3 text-white" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-foreground">{{ activity.title }}</p>
+                    <p class="text-xs text-muted-foreground">{{ activity.description }}</p>
+                    <p class="text-xs text-muted-foreground">{{ formatRelativeTime(activity.timestamp) }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -70,30 +135,36 @@
               Quick Actions
             </CardTitle>
             <CardDescription>
-              Common tasks for today
+              Common tasks and shortcuts
             </CardDescription>
           </CardHeader>
           <CardContent class="space-y-3">
-            <Button @click="goToAttendance" class="w-full justify-start" variant="outline">
-              <UsersIcon class="w-4 h-4 mr-2" />
-              Take Attendance
+            <Button
+              v-for="action in quickActions"
+              :key="action.id"
+              :variant="action.variant || 'outline'"
+              :disabled="action.disabled"
+              @click="executeQuickAction(action)"
+              class="w-full justify-start"
+            >
+              <component :is="action.icon" class="w-4 h-4 mr-3" />
+              <div class="text-left">
+                <div class="font-medium">{{ action.title }}</div>
+                <div class="text-xs text-muted-foreground">{{ action.description }}</div>
+              </div>
             </Button>
-            <Button @click="goToGrades" class="w-full justify-start" variant="outline">
-              <PencilIcon class="w-4 h-4 mr-2" />
-              Enter Grades
-            </Button>
-            <Button @click="viewSchedule" class="w-full justify-start" variant="outline">
-              <CalendarIcon class="w-4 h-4 mr-2" />
-              View Schedule
-            </Button>
-            <Button @click="sendAnnouncement" class="w-full justify-start" variant="outline">
-              <SpeakerWaveIcon class="w-4 h-4 mr-2" />
-              Send Announcement
-            </Button>
-            <div class="border-t my-2"></div>
+
+            <!-- Separator -->
+            <div class="border-t my-3"></div>
+
+            <!-- Secondary Actions -->
             <Button @click="viewReports" class="w-full justify-start" variant="ghost" size="sm">
               <ChartBarIcon class="w-4 h-4 mr-2" />
               View Reports
+            </Button>
+            <Button @click="contactAdmin" class="w-full justify-start" variant="ghost" size="sm">
+              <ExclamationTriangleIcon class="w-4 h-4 mr-2" />
+              Contact Support
             </Button>
           </CardContent>
         </Card>
@@ -365,6 +436,7 @@ const props = defineProps({
   classes: Array,
   stats: Array,
   subjects: Array,
+  todaysData: Object,
   faculty: Object,
   currentSemester: String,
   schoolYear: String,
@@ -380,53 +452,216 @@ const totalStudents = computed(() => {
   return classes.value.reduce((total, classItem) => total + (classItem.student_count || 0), 0)
 })
 
-// Today's overview computed properties
-const todaysClasses = computed(() => {
-  // This would typically come from backend, using mock data for now
-  return Math.min(classes.value.length, 3)
+// Today's overview computed properties based on real data from backend
+const todaysStats = computed(() => {
+  if (!props.todaysData) {
+    return {
+      scheduledClasses: 0,
+      averageAttendance: 0,
+      pendingGrades: 0,
+      upcomingTasks: 0
+    }
+  }
+
+  // Calculate average attendance from stats
+  const totalAttendance = props.stats?.reduce((sum, stat) => sum + (stat.attendance_rate || 0), 0) || 0
+  const averageAttendance = props.stats?.length > 0 ? Math.round(totalAttendance / props.stats.length) : 0
+
+  // Calculate pending grades (students without complete grades)
+  const pendingGrades = props.stats?.reduce((sum, stat) => {
+    const studentsWithoutGrades = (stat.total_students || 0) - (stat.graded_students || 0)
+    return sum + studentsWithoutGrades
+  }, 0) || 0
+
+  return {
+    scheduledClasses: props.todaysData.scheduled_classes || 0,
+    averageAttendance: averageAttendance,
+    pendingGrades: pendingGrades,
+    upcomingTasks: props.todaysData.total_classes || 0
+  }
 })
 
-const attendanceRate = computed(() => {
-  // Mock calculation - would come from backend
-  return 85
+const todaysSchedule = computed(() => {
+  if (!props.todaysData || !props.todaysData.schedules) {
+    return []
+  }
+
+  return props.todaysData.schedules.map(schedule => ({
+    id: schedule.id,
+    class: schedule.class,
+    subject_code: schedule.subject_code,
+    section: schedule.section,
+    time_range: schedule.time_range,
+    room: schedule.room,
+    status: schedule.status
+  }))
 })
 
-const pendingGrades = computed(() => {
-  // Mock calculation - would come from backend
-  return 12
+const recentActivities = computed(() => {
+  if (!props.todaysData || !props.todaysData.activities) {
+    return []
+  }
+
+  return props.todaysData.activities.map(activity => ({
+    id: activity.id,
+    type: activity.type,
+    title: activity.title,
+    description: activity.description,
+    timestamp: new Date(activity.timestamp)
+  }))
 })
 
-const upcomingExams = computed(() => {
-  // Mock calculation - would come from backend
-  return 2
+const quickActions = computed(() => {
+  const hasClasses = classes.value.length > 0
+  const hasScheduledToday = todaysSchedule.value.length > 0
+
+  return [
+    {
+      id: 'take-attendance',
+      title: 'Take Attendance',
+      description: hasScheduledToday ? 'Record attendance for today\'s classes' : 'No classes scheduled today',
+      icon: UsersIcon,
+      variant: hasScheduledToday ? 'default' : 'outline',
+      disabled: !hasScheduledToday
+    },
+    {
+      id: 'enter-grades',
+      title: 'Enter Grades',
+      description: hasClasses ? 'Update student grades' : 'No classes available',
+      icon: PencilIcon,
+      variant: 'outline',
+      disabled: !hasClasses
+    },
+    {
+      id: 'view-schedule',
+      title: 'View Schedule',
+      description: 'Check your class schedule',
+      icon: CalendarIcon,
+      variant: 'outline',
+      disabled: false
+    },
+    {
+      id: 'send-announcement',
+      title: 'Send Announcement',
+      description: hasClasses ? 'Notify your students' : 'No classes to notify',
+      icon: SpeakerWaveIcon,
+      variant: 'outline',
+      disabled: !hasClasses
+    }
+  ]
 })
 
 // Helper methods
+const getCurrentDateFormatted = () => {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+const getScheduleStatusColor = (schedule) => {
+  switch (schedule.status) {
+    case 'ongoing':
+      return 'bg-green-500'
+    case 'completed':
+      return 'bg-gray-400'
+    case 'upcoming':
+    default:
+      return 'bg-blue-500'
+  }
+}
+
+const getScheduleStatusVariant = (schedule) => {
+  switch (schedule.status) {
+    case 'ongoing':
+      return 'default'
+    case 'completed':
+      return 'secondary'
+    case 'upcoming':
+    default:
+      return 'outline'
+  }
+}
+
+const getActivityIcon = (type) => {
+  switch (type) {
+    case 'enrollment':
+      return UsersIcon
+    case 'attendance':
+      return UsersIcon
+    case 'grades':
+      return PencilIcon
+    default:
+      return ClockIcon
+  }
+}
+
+const getActivityIconColor = (type) => {
+  switch (type) {
+    case 'enrollment':
+      return 'bg-blue-500'
+    case 'attendance':
+      return 'bg-green-500'
+    case 'grades':
+      return 'bg-yellow-500'
+    default:
+      return 'bg-gray-500'
+  }
+}
+
+const formatRelativeTime = (timestamp) => {
+  const now = new Date()
+  const diff = now - timestamp
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(hours / 24)
+
+  if (days > 0) {
+    return `${days} day${days > 1 ? 's' : ''} ago`
+  } else if (hours > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`
+  } else {
+    return 'Just now'
+  }
+}
+
 const getClassSchedule = (classItem) => {
-  // Mock schedule - would come from backend
-  return 'MWF 9:00 AM'
+  return classItem.schedule || 'TBA'
 }
 
 const getClassStatus = (classItem) => {
-  // Mock status - would come from backend
-  return 'Active'
+  return classItem.status || 'Active'
 }
 
-// Action Methods for Teachers
-const goToAttendance = () => {
-  router.visit('/faculty/attendance')
-}
-
-const goToGrades = () => {
-  router.visit('/faculty/grades')
-}
-
-const viewSchedule = () => {
-  router.visit('/faculty/schedule')
-}
-
-const sendAnnouncement = () => {
-  router.visit('/faculty/announcements/create')
+// Quick Action execution
+const executeQuickAction = (action) => {
+  switch (action.id) {
+    case 'take-attendance':
+      if (todaysSchedule.value.length > 0) {
+        // Go to the first scheduled class for today
+        takeAttendance(todaysSchedule.value[0].class)
+      } else {
+        router.visit('/faculty/attendance')
+      }
+      break
+    case 'enter-grades':
+      if (classes.value.length > 0) {
+        // Go to the first class for grades
+        enterGrades(classes.value[0])
+      } else {
+        router.visit('/faculty/grades')
+      }
+      break
+    case 'view-schedule':
+      router.visit('/faculty/schedule')
+      break
+    case 'send-announcement':
+      router.visit('/faculty/announcements/create')
+      break
+    default:
+      console.log(`Action ${action.id} not implemented`)
+  }
 }
 
 const viewReports = () => {
@@ -459,24 +694,10 @@ const viewClassDetails = (classItem) => {
 
 // Modal state
 const showStudentModal = ref(false)
-const showEditModal = ref(false)
 const selectedClass = ref(null)
 
 // Student list (replace with real fetch)
 const students = ref([])
-
-// Edit form state
-const editForm = ref({
-  subject_code: '',
-  subject_title: '',
-  section: '',
-  room: '',
-  units: 3,
-  schedule: '',
-  description: ''
-})
-
-const isLoading = ref(false)
 
 function openStudentModal(classItem) {
   selectedClass.value = classItem
@@ -574,33 +795,6 @@ function exportToPDF() {
   win.print()
 }
 
-function openEditSheet(classItem) {
-  selectedClass.value = classItem
-  editForm.value = {
-    subject_code: classItem.subject_code || '',
-    subject_title: classItem.subject_title || '',
-    section: classItem.section || '',
-    room: classItem.room || '',
-    units: classItem.units || 3,
-    schedule: getClassSchedule(classItem),
-    description: classItem.description || ''
-  }
-  showEditModal.value = true
-}
-
-function saveClassChanges() {
-  if (!selectedClass.value) return
-  isLoading.value = true
-  router.put(`/faculty/classes/${selectedClass.value.id}`,
-    editForm.value,
-    {
-      onSuccess: () => {
-        showEditModal.value = false
-      },
-      onFinish: () => {
-        isLoading.value = false
-      }
-    }
-  )
-}
+// Removed unused functions - openEditSheet and saveClassChanges
+// These were not being used in the current implementation
 </script>
