@@ -92,7 +92,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve --host=192.168.100.29 --port=80\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"bun run dev --host\" --names=server,queue,logs,vite"
+            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve --host\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"bun run dev --host\" --names=server,queue,logs,vite"
         ],
         "setup": [
             "@php artisan key:generate",

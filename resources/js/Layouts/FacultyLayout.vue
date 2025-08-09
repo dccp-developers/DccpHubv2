@@ -10,7 +10,7 @@
 
     <SidebarProvider>
       <!-- Mobile Top Bar -->
-      <div class="fixed inset-x-0 top-0 z-40 h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 md:hidden flex items-center justify-between">
+      <div class="fixed inset-x-0 top-0 z-40 h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 md:hidden flex items-center justify-between pt-[env(safe-area-inset-top)]">
         <Link :href="route('faculty.dashboard')" class="flex items-center gap-2">
           <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
             <Command class="size-4" />
@@ -81,8 +81,8 @@
           </div>
         </header>
 
-        <div class="flex flex-1 flex-col gap-4 p-4 relative mt-14 md:mt-0 pb-16 md:pb-0">
-          <div class="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min relative">
+        <div class="flex flex-1 flex-col gap-4 p-4 relative mt-[calc(56px+env(safe-area-inset-top))] md:mt-0 pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
+          <div class="flex-1 rounded-xl bg-muted/50 relative">
             <!-- Loading Screen for Content Area Only -->
             <LoadingScreen
               :show="isLoading"
@@ -93,14 +93,14 @@
               :content-only="true"
             />
 
-            <main class="p-6">
+            <main class="p-4 sm:p-6">
               <slot />
             </main>
           </div>
         </div>
 
         <!-- Mobile Bottom Navigation -->
-        <nav class="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+        <nav class="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden pb-[env(safe-area-inset-bottom)]">
           <div class="grid grid-cols-4">
             <Link :href="route('faculty.dashboard')" class="flex flex-col items-center justify-center py-2 text-xs" :class="route().current('faculty.dashboard') ? 'text-primary' : 'text-muted-foreground'">
               <LayoutDashboard class="h-5 w-5" />

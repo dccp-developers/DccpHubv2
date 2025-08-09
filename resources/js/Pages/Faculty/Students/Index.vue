@@ -1,12 +1,12 @@
 <template>
   <FacultyLayout>
-    <div class="container mx-auto py-4 sm:py-6 px-4 sm:px-6">
+    <div class="w-full max-w-none px-4 sm:container sm:mx-auto py-3 sm:py-6 sm:px-6 overflow-x-hidden">
       <!-- Header -->
-      <div class="mb-8">
-        <div class="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">My Students</h1>
-            <p class="text-muted-foreground mt-2 text-sm sm:text-base">
+      <div class="mb-4 sm:mb-8">
+        <div class="flex flex-col space-y-2 sm:space-y-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0 flex-1">
+            <h1 class="text-xl sm:text-3xl font-bold tracking-tight truncate">My Students</h1>
+            <p class="text-muted-foreground mt-1 sm:mt-2 text-xs sm:text-base truncate">
               Manage and view students in your classes for {{ schoolYear }} - Semester {{ currentSemester }}
             </p>
           </div>
@@ -19,46 +19,46 @@
       </div>
 
       <!-- Error Alert -->
-      <Alert v-if="error" variant="destructive" class="mb-6">
+      <Alert v-if="error" variant="destructive" class="mb-3 sm:mb-6">
         <AlertTriangle class="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>{{ error }}</AlertDescription>
       </Alert>
 
       <!-- Filters Card -->
-      <Card class="mb-6">
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2">
-            <Filter class="h-5 w-5" />
+      <Card class="mb-3 sm:mb-6">
+        <CardHeader class="pb-3 sm:pb-6">
+          <CardTitle class="flex items-center gap-2 text-base sm:text-lg">
+            <Filter class="h-4 w-4 sm:h-5 sm:w-5" />
             Filter Students
           </CardTitle>
-          <CardDescription>
+          <CardDescription class="text-xs sm:text-sm">
             Use the filters below to find specific students
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <CardContent class="overflow-hidden">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <!-- Search -->
-            <div class="space-y-2">
-              <Label for="search">Search Students</Label>
+            <div class="space-y-1 sm:space-y-2">
+              <Label for="search" class="text-xs sm:text-sm">Search Students</Label>
               <div class="relative">
-                <Search class="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
                   v-model="searchForm.search"
                   type="text"
                   placeholder="Name, Student ID, or Email"
-                  class="pl-10"
+                  class="pl-10 h-9 sm:h-10 text-sm"
                   @input="debouncedSearch"
                 />
               </div>
             </div>
 
             <!-- Course Filter -->
-            <div class="space-y-2">
-              <Label for="course">Course</Label>
+            <div class="space-y-1 sm:space-y-2">
+              <Label for="course" class="text-xs sm:text-sm">Course</Label>
               <Select v-model="searchForm.course_id" @update:model-value="applyFilters">
-                <SelectTrigger>
+                <SelectTrigger class="h-9 sm:h-10">
                   <SelectValue placeholder="All Courses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -67,18 +67,19 @@
                     v-for="course in filterOptions.courses"
                     :key="course.id"
                     :value="course.id.toString()"
+                    class="truncate"
                   >
-                    {{ course.code }} - {{ course.title }}
+                    <span class="truncate">{{ course.code }} - {{ course.title }}</span>
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <!-- Academic Year Filter -->
-            <div class="space-y-2">
-              <Label for="academic-year">Academic Year</Label>
+            <div class="space-y-1 sm:space-y-2">
+              <Label for="academic-year" class="text-xs sm:text-sm">Academic Year</Label>
               <Select v-model="searchForm.academic_year" @update:model-value="applyFilters">
-                <SelectTrigger>
+                <SelectTrigger class="h-9 sm:h-10">
                   <SelectValue placeholder="All Years" />
                 </SelectTrigger>
                 <SelectContent>
@@ -95,10 +96,10 @@
             </div>
 
             <!-- Class Filter -->
-            <div class="space-y-2">
-              <Label for="class">Class</Label>
+            <div class="space-y-1 sm:space-y-2">
+              <Label for="class" class="text-xs sm:text-sm">Class</Label>
               <Select v-model="searchForm.class_id" @update:model-value="applyFilters">
-                <SelectTrigger>
+                <SelectTrigger class="h-9 sm:h-10">
                   <SelectValue placeholder="All Classes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -107,8 +108,9 @@
                     v-for="classItem in filterOptions.classes"
                     :key="classItem.id"
                     :value="classItem.id.toString()"
+                    class="truncate"
                   >
-                    {{ classItem.subject_code }} - {{ classItem.section }}
+                    <span class="truncate">{{ classItem.subject_code }} - {{ classItem.section }}</span>
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -116,7 +118,7 @@
           </div>
 
           <!-- Clear Filters -->
-          <div class="mt-6 flex justify-center sm:justify-end">
+          <div class="mt-4 sm:mt-6 flex justify-center sm:justify-end">
             <Button variant="outline" @click="clearFilters" class="gap-2 w-full sm:w-auto">
               <X class="h-4 w-4" />
               Clear Filters
@@ -143,13 +145,13 @@
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent class="overflow-hidden">
           <!-- Mobile Card Layout -->
-          <div class="block lg:hidden space-y-4">
-            <div v-for="student in students.data" :key="student.id" class="border rounded-lg p-4 space-y-3">
+          <div class="block lg:hidden space-y-3">
+            <div v-for="student in students.data" :key="student.id" class="border rounded-lg p-3 space-y-2 overflow-hidden">
               <!-- Student Info -->
               <div class="flex items-center space-x-3">
-                <Avatar class="h-12 w-12">
+                <Avatar class="h-10 w-10">
                   <AvatarImage
                     :src="student.picture_1x1 || '/default-avatar.png'"
                     :alt="student.full_name"
@@ -159,8 +161,8 @@
                   </AvatarFallback>
                 </Avatar>
                 <div class="flex-1 min-w-0">
-                  <div class="font-medium text-sm">{{ student.full_name }}</div>
-                  <div class="text-xs text-muted-foreground">
+                  <div class="font-medium text-sm truncate">{{ student.full_name }}</div>
+                  <div class="text-xs text-muted-foreground truncate">
                     ID: {{ student.student_id || 'N/A' }}
                   </div>
                   <div class="text-xs text-muted-foreground truncate">
@@ -175,24 +177,24 @@
               </div>
 
               <!-- Student Details Grid -->
-              <div class="grid grid-cols-2 gap-3 text-sm">
-                <div>
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div class="min-w-0">
                   <div class="text-xs text-muted-foreground">Course</div>
-                  <div class="font-medium">{{ student.course?.code }}</div>
-                  <div class="text-xs text-muted-foreground">{{ student.course?.title }}</div>
+                  <div class="font-medium truncate">{{ student.course?.code }}</div>
+                  <div class="text-xs text-muted-foreground truncate">{{ student.course?.title }}</div>
                 </div>
-                <div>
+                <div class="min-w-0">
                   <div class="text-xs text-muted-foreground">Year</div>
                   <Badge variant="secondary" class="text-xs">
                     Year {{ student.academic_year }}
                   </Badge>
                 </div>
-                <div>
+                <div class="min-w-0">
                   <div class="text-xs text-muted-foreground">Classes</div>
-                  <div class="font-medium">
+                  <div class="font-medium truncate">
                     {{ student.class_enrollments.length }} {{ student.class_enrollments.length === 1 ? 'class' : 'classes' }}
                   </div>
-                  <div class="text-xs text-muted-foreground">
+                  <div class="text-xs text-muted-foreground truncate">
                     <span v-for="(enrollment, index) in student.class_enrollments.slice(0, 2)" :key="enrollment.id">
                       {{ enrollment.subject_code }}{{ index < Math.min(student.class_enrollments.length, 2) - 1 ? ', ' : '' }}
                     </span>
@@ -201,12 +203,12 @@
                     </span>
                   </div>
                 </div>
-                <div>
+                <div class="min-w-0">
                   <div class="text-xs text-muted-foreground">Performance</div>
-                  <div class="font-medium">
+                  <div class="font-medium truncate">
                     {{ getAverageGrade(student.class_enrollments) }}%
                   </div>
-                  <div class="text-xs text-muted-foreground">
+                  <div class="text-xs text-muted-foreground truncate">
                     {{ getPassingCount(student.class_enrollments) }}/{{ student.class_enrollments.length }} passing
                   </div>
                 </div>
@@ -323,9 +325,9 @@
           </div>
 
           <!-- Pagination -->
-          <div v-if="students.last_page > 1" class="mt-6 pt-6 border-t">
+          <div v-if="students.last_page > 1" class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t">
             <!-- Mobile Pagination -->
-            <div class="flex flex-col space-y-3 sm:hidden">
+            <div class="flex flex-col space-y-2 sm:hidden">
               <div class="text-center">
                 <p class="text-xs text-muted-foreground">
                   Page {{ students.current_page }} of {{ students.last_page }}
@@ -422,14 +424,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 // Icons
 import {
-    AlertTriangle,
-    ChevronLeft,
-    ChevronRight,
-    Eye,
-    Filter,
-    Search,
-    Users,
-    X
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Filter,
+  Search,
+  Users,
+  X
 } from 'lucide-vue-next'
 
 // Props from the controller

@@ -20,7 +20,7 @@
     </template>
 
     <!-- Main Dashboard Content -->
-    <div class="space-y-4 md:space-y-6">
+    <div class="space-y-3 md:space-y-6">
       <!-- Semester Info Card (Mobile) -->
       <Card class="sm:hidden">
         <CardContent class="p-4">
@@ -39,11 +39,11 @@
 
       <!-- Welcome Banner -->
       <Card class="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
-        <CardContent class="p-4 md:p-6">
-          <div class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+        <CardContent class="p-3 md:p-6">
+          <div class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 class="text-lg font-semibold">Welcome to your Faculty Dashboard</h3>
-              <p class="text-primary-foreground/80 mt-1 text-sm">Manage your classes, students, and academic activities</p>
+              <h3 class="text-base md:text-lg font-semibold">Welcome to your Faculty Dashboard</h3>
+              <p class="text-primary-foreground/80 mt-1 text-xs md:text-sm">Manage your classes, students, and academic activities</p>
             </div>
             <div class="flex space-x-2">
               <Button variant="secondary" size="sm" class="text-xs" @click="showTeachingGuide = true">
@@ -84,7 +84,7 @@
       </div>
 
       <!-- Main Content Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6">
         <!-- Today's Schedule -->
         <div class="lg:col-span-1">
           <Card>
@@ -101,8 +101,8 @@
               </div>
             </CardHeader>
             <CardContent class="pt-0">
-              <div v-if="todaysSchedule.length === 0" class="text-center py-6 md:py-8">
-                <CalendarIcon class="mx-auto h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
+              <div v-if="todaysSchedule.length === 0" class="text-center py-4 md:py-8">
+                <CalendarIcon class="mx-auto h-6 w-6 md:h-12 md:w-12 text-muted-foreground" />
                 <h3 class="mt-2 text-sm font-medium text-foreground">No classes today</h3>
                 <p class="mt-1 text-xs md:text-sm text-muted-foreground">Enjoy your free day!</p>
               </div>
@@ -159,8 +159,8 @@
               </div>
             </CardHeader>
             <CardContent class="pt-0">
-              <div v-if="classes.length === 0" class="text-center py-6 md:py-8">
-                <BookOpenIcon class="mx-auto h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
+              <div v-if="classes.length === 0" class="text-center py-4 md:py-8">
+                <BookOpenIcon class="mx-auto h-6 w-6 md:h-12 md:w-12 text-muted-foreground" />
                 <h3 class="mt-2 text-sm font-medium text-foreground">No classes assigned</h3>
                 <p class="mt-1 text-xs md:text-sm text-muted-foreground">Contact administration for class assignments.</p>
               </div>
@@ -238,9 +238,9 @@
         </div>
       </div>
 
-      <!-- Weekly Schedule Overview -->
-      <Card>
-        <CardContent class="p-6">
+      <!-- Weekly Schedule Overview - Hidden on Mobile -->
+      <Card class="hidden md:block">
+        <CardContent class="p-3 md:p-6">
           <WeeklySchedule
             :weekly-schedule="weeklySchedule"
             :schedule-overview="scheduleOverview"
@@ -253,7 +253,7 @@
       </Card>
 
       <!-- Additional Faculty Features -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6">
         <!-- Attendance Widget -->
         <div>
           <AttendanceWidget
@@ -328,19 +328,19 @@
           </Card>
 
           <!-- Upcoming Deadlines -->
-          <Card class="mt-6">
-            <CardHeader>
-              <CardTitle class="text-lg">Upcoming Deadlines</CardTitle>
+          <Card class="mt-3 md:mt-6">
+            <CardHeader class="pb-2 md:pb-6">
+              <CardTitle class="text-base md:text-lg">Upcoming Deadlines</CardTitle>
             </CardHeader>
             <CardContent>
-              <div class="space-y-3">
+              <div class="space-y-2 md:space-y-3">
                 <div
                   v-for="deadline in upcomingDeadlines"
                   :key="deadline.id"
-                  class="flex items-center justify-between p-3 rounded-lg border border-gray-200"
+                  class="flex items-center justify-between p-2 md:p-3 rounded-lg border border-gray-200"
                 >
                   <div>
-                    <p class="text-sm font-medium text-gray-900">{{ deadline.title }}</p>
+                    <p class="text-xs md:text-sm font-medium text-gray-900">{{ deadline.title }}</p>
                     <p class="text-xs text-gray-500">{{ deadline.class }}</p>
                   </div>
                   <Badge :variant="deadline.urgent ? 'destructive' : 'secondary'" class="text-xs">
@@ -353,8 +353,8 @@
         </div>
       </div>
 
-      <!-- Performance Analytics -->
-      <Card>
+      <!-- Performance Analytics - Hidden on Mobile -->
+      <Card class="hidden md:block">
         <CardHeader>
           <div class="flex items-center justify-between">
             <div>
@@ -404,36 +404,33 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { router } from '@inertiajs/vue3'
-import FacultyLayout from '@/Layouts/FacultyLayout.vue'
-import WeeklySchedule from '@/Components/Faculty/WeeklySchedule.vue'
-import TeachingGuide from '@/Components/Faculty/TeachingGuide.vue'
 import AttendanceWidget from '@/Components/Faculty/AttendanceWidget.vue'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
-import { Button } from '@/Components/shadcn/ui/button'
+import TeachingGuide from '@/Components/Faculty/TeachingGuide.vue'
+import WeeklySchedule from '@/Components/Faculty/WeeklySchedule.vue'
 import { Badge } from '@/Components/shadcn/ui/badge'
+import { Button } from '@/Components/shadcn/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
+import FacultyLayout from '@/Layouts/FacultyLayout.vue'
 import {
-  CalendarIcon,
-  BookOpenIcon,
-  CheckIcon,
   AcademicCapIcon,
-  UsersIcon,
-  ClockIcon,
-  ChartBarIcon,
-  DocumentTextIcon,
-  UserGroupIcon,
-  ClipboardDocumentListIcon,
-  ChevronRightIcon,
-  EllipsisVerticalIcon,
-  MapPinIcon,
-  FunnelIcon,
-  ArrowTrendingUpIcon,
   ArrowDownTrayIcon,
-  ExclamationTriangleIcon,
-  BellIcon,
-  CogIcon
+  ArrowTrendingUpIcon,
+  BookOpenIcon,
+  CalendarIcon,
+  ChartBarIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  ClipboardDocumentListIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  EllipsisVerticalIcon,
+  FunnelIcon,
+  MapPinIcon,
+  UserGroupIcon,
+  UsersIcon
 } from '@heroicons/vue/24/outline'
+import { router } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
 
 // Props from the controller
 const props = defineProps({
