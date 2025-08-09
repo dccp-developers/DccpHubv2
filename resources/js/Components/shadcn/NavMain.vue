@@ -1,5 +1,4 @@
 <script setup>
-import { ChevronRight } from "lucide-vue-next";
 import {
   Collapsible,
   CollapsibleContent,
@@ -16,6 +15,8 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@/Components/shadcn/ui/sidebar';
+import { Link } from '@inertiajs/vue3';
+import { ChevronRight } from "lucide-vue-next";
 
 defineProps({
   items: { type: Array, required: true },
@@ -34,15 +35,25 @@ defineProps({
       >
         <SidebarMenuItem>
           <SidebarMenuButton as-child :tooltip="item.title">
-            <a
-              :href="item.disabled ? undefined : item.url"
-              :aria-disabled="item.disabled || undefined"
-              :tabindex="item.disabled ? -1 : 0"
-              @click="item.disabled && $event.preventDefault()"
+            <Link
+              v-if="!item.disabled"
+              :href="item.url"
+              :class="{ 'pointer-events-none opacity-50': item.disabled }"
+              preserve-scroll
+              preserve-state
             >
               <component :is="item.icon" />
               <span>{{ item.title }}</span>
-            </a>
+            </Link>
+            <div
+              v-else
+              class="flex items-center gap-2 pointer-events-none opacity-50"
+              :aria-disabled="true"
+              :tabindex="-1"
+            >
+              <component :is="item.icon" />
+              <span>{{ item.title }}</span>
+            </div>
           </SidebarMenuButton>
           <template v-if="item.items?.length">
             <CollapsibleTrigger as-child>
@@ -58,14 +69,23 @@ defineProps({
                   :key="subItem.title"
                 >
                   <SidebarMenuSubButton as-child>
-                    <a
-                      :href="subItem.disabled ? undefined : subItem.url"
-                      :aria-disabled="subItem.disabled || undefined"
-                      :tabindex="subItem.disabled ? -1 : 0"
-                      @click="subItem.disabled && $event.preventDefault()"
+                    <Link
+                      v-if="!subItem.disabled"
+                      :href="subItem.url"
+                      :class="{ 'pointer-events-none opacity-50': subItem.disabled }"
+                      preserve-scroll
+                      preserve-state
                     >
                       <span>{{ subItem.title }}</span>
-                    </a>
+                    </Link>
+                    <div
+                      v-else
+                      class="flex items-center pointer-events-none opacity-50"
+                      :aria-disabled="true"
+                      :tabindex="-1"
+                    >
+                      <span>{{ subItem.title }}</span>
+                    </div>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               </SidebarMenuSub>

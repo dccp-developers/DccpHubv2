@@ -13,7 +13,6 @@ import {
 } from "lucide-vue-next";
 
 import NavMain from '@/Components/shadcn/NavMain.vue';
-import NavProjects from '@/Components/shadcn/NavProjects.vue';
 import NavSecondary from '@/Components/shadcn/NavSecondary.vue';
 import NavUser from '@/Components/shadcn/NavUser.vue';
 import {
@@ -181,7 +180,7 @@ const data = {
     </SidebarHeader>
     <SidebarContent>
       <NavMain :items="data.navMain" />
-      <NavProjects :projects="data.projects" />
+
       <NavSecondary :items="data.navSecondary" class="mt-auto" />
     </SidebarContent>
     <SidebarFooter>
