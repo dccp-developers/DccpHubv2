@@ -21,6 +21,83 @@
 
     <!-- Main Dashboard Content -->
     <div class="space-y-3 md:space-y-6">
+      <!-- Activities Sheet -->
+      <Sheet :open="showActivitiesSheet" @update:open="showActivitiesSheet = $event">
+        <SheetContent side="right" class="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>All Recent Activities</SheetTitle>
+            <SheetDescription>Overview of your latest activities. Click an activity to open the associated class.</SheetDescription>
+          </SheetHeader>
+          <div class="mt-4">
+            <!-- Filters -->
+            <div class="flex items-end gap-2 mb-3">
+              <div class="w-1/2">
+                <label class="text-xs text-muted-foreground mb-1 block">Type</label>
+                <Select v-model="activitiesFilter.type">
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="grade_submitted">Grade submitted</SelectItem>
+                    <SelectItem value="class_updated">Class updated</SelectItem>
+                    <SelectItem value="student_enrolled">Student enrolled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="w-1/2">
+                <label class="text-xs text-muted-foreground mb-1 block">Class</label>
+                <Select v-model="activitiesFilter.classId">
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="All classes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All</SelectItem>
+                    <SelectItem v-for="c in classes" :key="c.id" :value="String(c.id)">
+                      {{ c.subject_code }} - Sec {{ c.section }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div v-if="recentActivities.length === 0" class="text-sm text-muted-foreground">No recent activity.</div>
+            <ScrollArea v-else class="h-[70vh] pr-2" @scroll.passive="onActivitiesScroll">
+              <div class="divide-y divide-border">
+                <div
+                  v-for="activity in activities.items"
+                  :key="activity.id + '-' + activity.raw_timestamp"
+                  class="flex items-start gap-3 py-3 cursor-pointer hover:bg-accent rounded-md px-2 -mx-2"
+                  @click="openActivityClass(activity)"
+                >
+                  <div class="flex-shrink-0">
+                    <div :class="`w-8 h-8 rounded-full flex items-center justify-center ${getActivityColor(activity.type)}`">
+                      <component :is="getActivityIcon(activity.type)" class="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                      <p class="text-sm font-medium text-foreground truncate">{{ activity.description }}</p>
+                      <span :class="['text-xs whitespace-nowrap', getTimestampColor(activity.raw_timestamp)]">{{ formatRelativeTime(activity.raw_timestamp) }}</span>
+                    </div>
+                    <div class="mt-1 flex items-center gap-2">
+                      <Badge variant="secondary" class="text-xs capitalize">
+                        {{ (activity.type || '').replace('_', ' ') }}
+                      </Badge>
+                      <Badge v-if="activity.metadata?.subject_code" variant="outline" class="text-xs">Class {{ activity.metadata.subject_code }}</Badge>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="activities.loading" class="py-3 text-center text-xs text-muted-foreground">Loading…</div>
+                <div v-else-if="activities.nextOffset === null" class="py-3 text-center text-xs text-muted-foreground">No more activities</div>
+              </div>
+            </ScrollArea>
+            <div class="mt-2">
+              <Button v-if="activities.nextOffset !== null && !activities.loading" class="w-full" variant="outline" @click="fetchActivities">Load more</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
       <!-- Semester Info Card (Mobile) -->
       <Card class="sm:hidden">
         <CardContent class="p-4">
@@ -256,13 +333,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6">
         <!-- Attendance Widget -->
         <div>
-          <AttendanceWidget
-            :overallStats="attendanceOverallStats"
-            :classesData="classes"
-            :recentSessions="recentAttendanceSessions"
-            :attendanceTrend="attendanceTrend"
-            :studentsAtRisk="studentsAtRisk"
-          />
+
         </div>
 
         <!-- Recent Activities -->
@@ -270,31 +341,43 @@
           <Card>
             <CardHeader>
               <div class="flex items-center justify-between">
-                <CardTitle class="text-lg">Recent Activities</CardTitle>
-                <Button size="sm" variant="outline">
+                <div>
+                  <CardTitle class="text-base md:text-lg">Recent Activities</CardTitle>
+                  <CardDescription class="text-xs md:text-sm">Latest actions across your classes</CardDescription>
+                </div>
+                <Button size="sm" variant="outline" @click="showActivitiesSheet = true">
                   View All
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              <div class="space-y-4">
+            <CardContent class="pt-0">
+              <div v-if="recentActivities.length === 0" class="text-center py-6 text-sm text-muted-foreground">
+                No recent activity.
+              </div>
+              <div v-else class="divide-y divide-border">
                 <div
-                  v-for="activity in recentActivities"
+                  v-for="activity in recentActivities.slice(0, 5)"
                   :key="activity.id"
-                  class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                  class="flex items-start gap-3 py-3"
                 >
                   <div class="flex-shrink-0">
                     <div :class="`w-8 h-8 rounded-full flex items-center justify-center ${getActivityColor(activity.type)}`">
                       <component :is="getActivityIcon(activity.type)" class="w-4 h-4" />
                     </div>
                   </div>
-                  <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-900">{{ activity.description }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ activity.timestamp }}</p>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                      <p class="text-sm font-medium text-foreground truncate">{{ activity.description }}</p>
+                      <span class="text-xs text-muted-foreground whitespace-nowrap">{{ activity.timestamp }}</span>
+                    </div>
+                    <div class="mt-1 flex items-center gap-2">
+                      <Badge variant="secondary" class="text-xs capitalize">
+                        {{ (activity.type || '').replace('_', ' ') }}
+                      </Badge>
+                      <Badge v-if="activity.metadata?.subject_code || activity.class_code" variant="outline" class="text-xs">Class {{ activity.metadata?.subject_code || activity.class_code }}</Badge>
+                    </div>
                   </div>
-                  <Badge variant="secondary" class="text-xs">
-                    {{ activity.type.replace('_', ' ') }}
-                  </Badge>
+                  <Button size="sm" variant="ghost" class="shrink-0" :disabled="!resolveActivityClassId(activity)" @click="openActivityClass(activity)">Open</Button>
                 </div>
               </div>
             </CardContent>
@@ -339,13 +422,17 @@
                   :key="deadline.id"
                   class="flex items-center justify-between p-2 md:p-3 rounded-lg border border-gray-200"
                 >
-                  <div>
-                    <p class="text-xs md:text-sm font-medium text-gray-900">{{ deadline.title }}</p>
-                    <p class="text-xs text-gray-500">{{ deadline.class }}</p>
+                  <div class="min-w-0">
+                    <p class="text-xs md:text-sm font-medium text-foreground truncate">{{ deadline.title }}</p>
+                    <div class="flex items-center gap-2 mt-1">
+                      <Badge :variant="getDeadlinePriorityVariant(deadline.priority)" class="text-[10px] capitalize">{{ deadline.priority }}</Badge>
+                      <Badge v-if="deadline.class_code" variant="outline" class="text-[10px]">{{ deadline.class_code }}</Badge>
+                      <span :class="['text-[10px] whitespace-nowrap', getTimestampColor(deadline.due_date)]">Due {{ formatRelativeTime(deadline.due_date) }}</span>
+                    </div>
                   </div>
-                  <Badge :variant="deadline.urgent ? 'destructive' : 'secondary'" class="text-xs">
-                    {{ deadline.daysLeft }} days
-                  </Badge>
+                  <div class="flex items-center gap-2">
+                    <Button size="sm" variant="ghost" :disabled="!deadline.class_id" @click="openDeadlineClass(deadline)">Open</Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -353,42 +440,51 @@
         </div>
       </div>
 
-      <!-- Performance Analytics - Hidden on Mobile -->
+      <!-- Performance Analytics (Data-Driven) - Hidden on Mobile -->
       <Card class="hidden md:block">
         <CardHeader>
           <div class="flex items-center justify-between">
             <div>
               <CardTitle class="text-lg">Performance Analytics</CardTitle>
-              <CardDescription>Overview of your teaching metrics</CardDescription>
-            </div>
-            <div class="flex space-x-2">
-              <Button size="sm" variant="outline">
-                <ArrowDownTrayIcon class="w-4 h-4 mr-2" />
-                Export
-              </Button>
-              <Button size="sm" variant="outline">
-                <ChartBarIcon class="w-4 h-4 mr-2" />
-                Detailed Report
-              </Button>
+              <CardDescription>Key metrics based on your recent classes and attendance</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-blue-600">94%</div>
-              <div class="text-sm text-gray-600">Average Attendance</div>
-              <div class="text-xs text-green-600 mt-1">+2% from last month</div>
+            <!-- Attendance -->
+            <div>
+              <div class="text-2xl font-bold text-blue-600">{{ performanceMetrics.attendance?.rate ?? 0 }}%</div>
+              <div class="text-sm text-muted-foreground">Attendance Rate ({{ performanceMetrics.attendance?.period || 'last 30 days' }})</div>
+              <div class="text-xs text-muted-foreground mt-2">
+                Present: <span class="text-green-600 font-medium">{{ performanceMetrics.attendance?.present ?? 0 }}</span>
+                · Absent: <span class="text-red-600 font-medium">{{ performanceMetrics.attendance?.absent ?? 0 }}</span>
+                · Total marks: {{ performanceMetrics.attendance?.total ?? 0 }}
+              </div>
             </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-green-600">87%</div>
-              <div class="text-sm text-gray-600">Assignment Completion</div>
-              <div class="text-xs text-green-600 mt-1">+5% from last month</div>
+
+            <!-- Grades & Completion -->
+            <div>
+              <div class="text-2xl font-bold text-green-600">{{ performanceMetrics.grades?.completion_rate ?? 0 }}%</div>
+              <div class="text-sm text-muted-foreground">Grade Completion</div>
+              <div class="text-xs text-muted-foreground mt-2">
+                Finalized: <span class="text-green-600 font-medium">{{ performanceMetrics.grades?.finalized_count ?? 0 }}</span>
+                · Enrollments: {{ performanceMetrics.grades?.total_enrollments ?? 0 }}
+              </div>
+              <div class="text-xs mt-1">
+                Passing Rate: <span class="font-medium">{{ performanceMetrics.grades?.passing_rate ?? 0 }}%</span>
+                · Avg Grade: <span class="font-medium">{{ performanceMetrics.grades?.average_grade ?? 0 }}</span>
+              </div>
             </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-purple-600">4.8</div>
-              <div class="text-sm text-gray-600">Student Rating</div>
-              <div class="text-xs text-green-600 mt-1">+0.2 from last semester</div>
+
+            <!-- Teaching Overview -->
+            <div>
+              <div class="text-2xl font-bold text-purple-600">{{ performanceMetrics.teaching?.total_classes ?? 0 }}</div>
+              <div class="text-sm text-muted-foreground">Active Classes</div>
+              <div class="text-xs text-muted-foreground mt-2">
+                Students: <span class="font-medium">{{ performanceMetrics.teaching?.total_students ?? 0 }}</span>
+                · At risk: <span class="text-amber-600 font-medium">{{ performanceMetrics.teaching?.students_at_risk ?? 0 }}</span>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -404,16 +500,16 @@
 </template>
 
 <script setup>
-import AttendanceWidget from '@/Components/Faculty/AttendanceWidget.vue'
 import TeachingGuide from '@/Components/Faculty/TeachingGuide.vue'
 import WeeklySchedule from '@/Components/Faculty/WeeklySchedule.vue'
 import { Badge } from '@/Components/shadcn/ui/badge'
 import { Button } from '@/Components/shadcn/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/shadcn/ui/card'
+import { ScrollArea } from '@/Components/shadcn/ui/scroll-area'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/Components/shadcn/ui/sheet'
 import FacultyLayout from '@/Layouts/FacultyLayout.vue'
 import {
   AcademicCapIcon,
-  ArrowDownTrayIcon,
   ArrowTrendingUpIcon,
   BookOpenIcon,
   CalendarIcon,
@@ -430,7 +526,8 @@ import {
   UsersIcon
 } from '@heroicons/vue/24/outline'
 import { router } from '@inertiajs/vue3'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { route } from 'ziggy-js'
 
 // Props from the controller
 const props = defineProps({
@@ -464,22 +561,21 @@ const classes = computed(() => props.classes || [])
 const todaysSchedule = computed(() => props.todaysSchedule || [])
 const weeklySchedule = computed(() => props.weeklySchedule || {})
 const classEnrollments = computed(() => props.classEnrollments || [])
-const recentActivities = computed(() => props.recentActivities || [])
+const recentActivities = computed(() => props.recentActivities || []) // initial batch for card
 const upcomingDeadlines = computed(() => props.upcomingDeadlines || [])
 const performanceMetrics = computed(() => props.performanceMetrics || {})
 const scheduleOverview = computed(() => props.scheduleOverview || {})
-
-// Attendance data
-const attendanceOverallStats = computed(() => props.attendanceData?.overallStats || { attendance_rate: 0, total: 0, present_count: 0 })
-const recentAttendanceSessions = computed(() => props.attendanceData?.recentSessions || [])
-const attendanceTrend = computed(() => props.attendanceData?.attendanceTrend || [])
-const studentsAtRisk = computed(() => props.attendanceData?.studentsAtRisk || 0)
 
 // Error handling
 const hasError = computed(() => !!props.error)
 
 // Reactive state
 const showTeachingGuide = ref(false)
+const showActivitiesSheet = ref(false)
+
+// Activities lazy load state
+const activities = reactive({ items: [], offset: 0, limit: 20, nextOffset: 0, loading: false, initialized: false })
+const activitiesFilter = reactive({ type: 'all', classId: '' })
 
 // Days of the week for schedule display
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -520,6 +616,72 @@ const quickActions = ref([
     action: () => router.visit(route('faculty.students.index'))
   }
 ])
+
+// Activities helpers and lazy loading
+const formatRelativeTime = (date) => {
+  const d = new Date(date)
+  const diff = (Date.now() - d.getTime()) / 1000
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago'
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago'
+  return Math.floor(diff / 86400) + 'd ago'
+}
+
+const getTimestampColor = (date) => {
+  const d = new Date(date)
+  const diffH = (Date.now() - d.getTime()) / 3600000
+  if (diffH < 1) return 'text-green-600'
+  if (diffH < 24) return 'text-amber-600'
+  return 'text-muted-foreground'
+}
+
+const fetchActivities = async () => {
+  if (activities.loading || activities.nextOffset === null) return
+  activities.loading = true
+  try {
+    const params = {
+      offset: activities.offset,
+      limit: activities.limit,
+    }
+    if (activitiesFilter.type && activitiesFilter.type !== 'all') params.type = activitiesFilter.type
+    if (activitiesFilter.classId) params.class_id = activitiesFilter.classId
+
+    const res = await axios.get(route('faculty.activities', params))
+    if (res.data?.success) {
+      const newItems = res.data.data || []
+      activities.items.push(...newItems)
+      activities.nextOffset = res.data.nextOffset
+      activities.offset = activities.nextOffset ?? activities.offset
+    }
+  } catch (e) {
+    console.error('Failed to load activities', e)
+  } finally {
+    activities.loading = false
+    activities.initialized = true
+  }
+}
+
+const onActivitiesScroll = (e) => {
+  const el = e.target
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
+    fetchActivities()
+  }
+}
+
+// Initialize activities when sheet opens
+watch(showActivitiesSheet, async (open) => {
+  if (open) {
+    if (!activities.initialized) {
+      // seed with initial recentActivities for instant UI, then fetch more
+      if (activities.items.length === 0 && recentActivities.value.length > 0) {
+        activities.items.push(...recentActivities.value)
+        activities.offset = recentActivities.value.length
+        activities.nextOffset = activities.offset
+      }
+      await fetchActivities()
+    }
+  }
+})
 
 // Methods
 const getStatIcon = (label) => {
@@ -597,9 +759,20 @@ const viewClassDetails = (classItem) => {
   router.visit(route('faculty.classes.show', { class: classItem.id }))
 }
 
+const openActivityClass = (activity) => {
+  const classId = resolveActivityClassId(activity)
+  if (classId) {
+    router.visit(route('faculty.classes.show', { class: classId }))
+  }
+}
+
+const resolveActivityClassId = (activity) => {
+  // Centralized mapping for different activity payload shapes
+  return activity.class_id || activity.classId || activity.class?.id || null
+}
+
 const viewScheduleDetails = (schedule) => {
   console.log('View schedule details:', schedule)
-  // TODO: Navigate to schedule details page
 }
 
 const viewFullCalendar = () => {

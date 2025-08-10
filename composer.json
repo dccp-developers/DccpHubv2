@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "barryvdh/laravel-dompdf": "^3.1",
         "chrome-php/chrome": "^1.14",
         "cweagans/composer-patches": "*",
         "echolabsdev/prism": "^0.26.0",
@@ -26,6 +27,7 @@
         "laravel/socialite": "^5.16",
         "laravel/tinker": "^2.9",
         "league/flysystem-aws-s3-v3": "^3.29",
+        "maatwebsite/excel": "^3.1",
         "mydnic/volet": "^2.1",
         "mydnic/volet-feature-board": "^1.0",
         "mydnic/volet-feedback-messages-filament-plugin": "^1.0",

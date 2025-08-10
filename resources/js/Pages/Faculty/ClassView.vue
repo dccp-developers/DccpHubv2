@@ -1,138 +1,131 @@
 <template>
   <FacultyLayout>
-    <div class="space-y-6">
-      <!-- Breadcrumb -->
-      <nav class="flex" aria-label="Breadcrumb">
-        <ol class="flex items-center space-x-4">
-          <li>
-            <div>
-              <button @click="goBack" class="text-muted-foreground hover:text-foreground">
-                Dashboard
-              </button>
-            </div>
-          </li>
-          <li>
-            <div class="flex items-center">
-              <svg class="flex-shrink-0 h-5 w-5 text-muted-foreground" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-              </svg>
-              <span class="ml-4 text-sm font-medium text-foreground">{{ classData.subject_code }}</span>
-            </div>
-          </li>
-        </ol>
+    <div class="w-full max-w-full space-y-3 sm:space-y-6 overflow-x-hidden" style="width: 100%; max-width: 100vw;">
+      <!-- Mobile Breadcrumb -->
+      <nav class="flex items-center space-x-2 sm:space-x-4" aria-label="Breadcrumb">
+        <button @click="goBack" class="text-muted-foreground hover:text-foreground text-sm">
+          Dashboard
+        </button>
+        <svg class="flex-shrink-0 h-4 w-4 text-muted-foreground" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+        </svg>
+        <span class="text-sm font-medium text-foreground truncate">{{ classData.subject_code }}</span>
       </nav>
 
       <!-- Error Message -->
-      <div v-if="props.error" class="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+      <div v-if="props.error" class="bg-destructive/10 border border-destructive/20 rounded-lg p-3 sm:p-4">
         <div class="flex items-center space-x-2">
-          <svg class="w-5 h-5 text-destructive" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-destructive" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
           </svg>
-          <p class="text-destructive font-medium">{{ props.error }}</p>
+          <p class="text-destructive font-medium text-sm">{{ props.error }}</p>
         </div>
       </div>
 
       <!-- Class Header -->
-      <div class="bg-card rounded-lg border border-border p-4 md:p-6">
-        <div class="flex flex-col md:flex-row md:items-start justify-between space-y-4 md:space-y-0">
-          <div class="flex-1">
-            <div class="flex flex-wrap items-center gap-2 mb-2">
-              <h1 class="text-xl md:text-2xl font-bold text-foreground">{{ classData.subject_code || 'Unknown Class' }}</h1>
-              <Badge variant="secondary" class="text-sm">
-                Sec {{ classData.section || 'N/A' }}
-              </Badge>
-              <Badge
-                :variant="classData.classification === 'college' ? 'default' : 'outline'"
-                class="text-sm"
-              >
-                {{ classData.classification === 'college' ? 'College' : 'SHS' }}
-              </Badge>
+      <div class="bg-card rounded-lg border border-border p-3 sm:p-6 overflow-hidden w-full">
+        <div class="flex flex-col space-y-3 sm:space-y-4 w-full">
+          <div class="flex flex-col sm:flex-row sm:items-start justify-between space-y-3 sm:space-y-0 w-full">
+            <div class="flex-1 min-w-0 w-full sm:w-auto">
+              <div class="flex flex-wrap items-center gap-1 sm:gap-2 mb-2">
+                <h1 class="text-lg sm:text-2xl font-bold text-foreground truncate max-w-full">{{ classData.subject_code || 'Unknown Class' }}</h1>
+                <Badge variant="secondary" class="text-xs sm:text-sm flex-shrink-0">
+                  Sec {{ classData.section || 'N/A' }}
+                </Badge>
+                <Badge
+                  :variant="classData.classification === 'college' ? 'default' : 'outline'"
+                  class="text-xs sm:text-sm flex-shrink-0"
+                >
+                  {{ classData.classification === 'college' ? 'College' : 'SHS' }}
+                </Badge>
+              </div>
+              <h2 class="text-sm sm:text-lg text-muted-foreground mb-3 sm:mb-4 truncate max-w-full">{{ classData.subject_title || 'No title available' }}</h2>
             </div>
-            <h2 class="text-base md:text-lg text-muted-foreground mb-4">{{ classData.subject_title || 'No title available' }}</h2>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div class="flex items-center space-x-2">
-                <MapPinIcon class="w-4 h-4 text-muted-foreground" />
-                <span>{{ classData.room || 'TBA' }}</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <UsersIcon class="w-4 h-4 text-muted-foreground" />
-                <span>{{ classData.student_count || 0 }} students</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <ClockIcon class="w-4 h-4 text-muted-foreground" />
-                <span>{{ classData.units || 3 }} units</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <CalendarIcon class="w-4 h-4 text-muted-foreground" />
-                <span>{{ currentSemester }} {{ schoolYear }}</span>
-              </div>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
+              <Button variant="outline" size="sm" @click="goBack" class="w-full sm:w-auto">
+                <ArrowLeftIcon class="w-4 h-4 mr-2" />
+                <span class="hidden sm:inline">Back to Dashboard</span>
+                <span class="sm:hidden">Back</span>
+              </Button>
             </div>
           </div>
 
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <Button variant="outline" size="sm" @click="goBack" class="w-full sm:w-auto">
-              <ArrowLeftIcon class="w-4 h-4 mr-2" />
-              <span class="hidden sm:inline">Back to Dashboard</span>
-              <span class="sm:hidden">Back</span>
-            </Button>
+          <!-- Class Info Grid -->
+          <div class="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+            <div class="flex items-center space-x-2 min-w-0">
+              <MapPinIcon class="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
+              <span class="truncate">{{ classData.room || 'TBA' }}</span>
+            </div>
+            <div class="flex items-center space-x-2 min-w-0">
+              <UsersIcon class="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
+              <span class="truncate">{{ classData.student_count || 0 }} students</span>
+            </div>
+            <div class="flex items-center space-x-2 min-w-0">
+              <ClockIcon class="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
+              <span class="truncate">{{ classData.units || 3 }} units</span>
+            </div>
+            <div class="flex items-center space-x-2 min-w-0">
+              <CalendarIcon class="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
+              <span class="truncate">{{ currentSemester }} {{ schoolYear }}</span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Quick Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent class="p-4">
+          <CardContent class="p-3 sm:p-4">
             <div class="flex items-center space-x-2">
-              <div class="p-2 bg-blue-100 rounded-lg">
-                <UsersIcon class="w-5 h-5 text-blue-600" />
+              <div class="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                <UsersIcon class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               </div>
-              <div>
-                <p class="text-2xl font-bold text-foreground">{{ stats.total_students }}</p>
-                <p class="text-sm text-muted-foreground">Total Students</p>
+              <div class="min-w-0">
+                <p class="text-lg sm:text-2xl font-bold text-foreground">{{ stats.total_students }}</p>
+                <p class="text-xs sm:text-sm text-muted-foreground">Total Students</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent class="p-4">
+          <CardContent class="p-3 sm:p-4">
             <div class="flex items-center space-x-2">
-              <div class="p-2 bg-green-100 rounded-lg">
-                <CheckCircleIcon class="w-5 h-5 text-green-600" />
+              <div class="p-1.5 sm:p-2 bg-green-100 rounded-lg">
+                <CheckCircleIcon class="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
               </div>
-              <div>
-                <p class="text-2xl font-bold text-foreground">{{ stats.attendance_rate }}%</p>
-                <p class="text-sm text-muted-foreground">Attendance Rate</p>
+              <div class="min-w-0">
+                <p class="text-lg sm:text-2xl font-bold text-foreground">{{ stats.attendance_rate }}%</p>
+                <p class="text-xs sm:text-sm text-muted-foreground">Attendance Rate</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent class="p-4">
+          <CardContent class="p-3 sm:p-4">
             <div class="flex items-center space-x-2">
-              <div class="p-2 bg-yellow-100 rounded-lg">
-                <AcademicCapIcon class="w-5 h-5 text-yellow-600" />
+              <div class="p-1.5 sm:p-2 bg-yellow-100 rounded-lg">
+                <AcademicCapIcon class="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
               </div>
-              <div>
-                <p class="text-2xl font-bold text-foreground">{{ stats.average_grade }}</p>
-                <p class="text-sm text-muted-foreground">Average Grade</p>
+              <div class="min-w-0">
+                <p class="text-lg sm:text-2xl font-bold text-foreground">{{ stats.average_grade }}</p>
+                <p class="text-xs sm:text-sm text-muted-foreground">Average Grade</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent class="p-4">
+          <CardContent class="p-3 sm:p-4">
             <div class="flex items-center space-x-2">
-              <div class="p-2 bg-purple-100 rounded-lg">
-                <ChartBarIcon class="w-5 h-5 text-purple-600" />
+              <div class="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
+                <ChartBarIcon class="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               </div>
-              <div>
-                <p class="text-2xl font-bold text-foreground">{{ stats.passing_rate }}%</p>
-                <p class="text-sm text-muted-foreground">Passing Rate</p>
+              <div class="min-w-0">
+                <p class="text-lg sm:text-2xl font-bold text-foreground">{{ stats.passing_rate }}%</p>
+                <p class="text-xs sm:text-sm text-muted-foreground">Passing Rate</p>
               </div>
             </div>
           </CardContent>
@@ -140,9 +133,10 @@
       </div>
 
       <!-- Main Content Tabs -->
-      <div class="bg-card rounded-lg border border-border">
-        <div class="border-b border-border">
-          <nav class="flex space-x-8 px-6" aria-label="Tabs">
+      <div class="bg-card rounded-lg border border-border overflow-hidden w-full">
+        <!-- Mobile Tab Navigation -->
+        <div class="border-b border-border overflow-x-auto">
+          <nav class="flex space-x-2 sm:space-x-8 px-3 sm:px-6 min-w-max" aria-label="Tabs">
             <button
               v-for="tab in tabs"
               :key="tab.id"
@@ -151,33 +145,82 @@
                 activeTab === tab.id
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border',
-                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
+                'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center'
               ]"
             >
-              <component :is="tab.icon" class="w-4 h-4 mr-2 inline" />
-              {{ tab.name }}
+              <component :is="tab.icon" class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span class="hidden sm:inline">{{ tab.name }}</span>
+              <span class="sm:hidden">{{ tab.name.split(' ')[0] }}</span>
             </button>
           </nav>
         </div>
 
-        <div class="p-6">
+        <div class="p-3 sm:p-6 overflow-hidden">
           <!-- Students Tab -->
-          <div v-if="activeTab === 'students'" class="space-y-4">
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-foreground">Enrolled Students</h3>
-              <div class="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
+          <div v-if="activeTab === 'students'" class="space-y-3 sm:space-y-4">
+            <div class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+              <h3 class="text-base sm:text-lg font-semibold text-foreground">Enrolled Students</h3>
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <Button variant="outline" size="sm" class="w-full sm:w-auto" @click="showAddStudentModal = true">
                   <UserPlusIcon class="w-4 h-4 mr-2" />
-                  Add Student
+                  Report Missing Student
                 </Button>
-                <Button variant="outline" size="sm">
-                  <DocumentArrowDownIcon class="w-4 h-4 mr-2" />
-                  Export List
-                </Button>
+                <div class="flex gap-2 w-full sm:w-auto">
+                  <Button variant="outline" size="sm" class="w-full sm:w-auto" @click="exportStudents('excel')">
+                    <DocumentArrowDownIcon class="w-4 h-4 mr-2" />
+                    Export Excel
+                  </Button>
+                  <Button variant="outline" size="sm" class="w-full sm:w-auto" @click="exportStudents('pdf')">
+                    <DocumentArrowDownIcon class="w-4 h-4 mr-2" />
+                    Export PDF
+                  </Button>
+                </div>
               </div>
             </div>
 
-            <div class="border border-border rounded-lg overflow-hidden">
+            <!-- Mobile Card Layout -->
+            <div class="block lg:hidden space-y-3">
+              <div v-if="!classData.students || classData.students.length === 0" class="text-center py-8 text-muted-foreground">
+                No students enrolled in this class yet.
+              </div>
+              <div v-for="student in classData.students" :key="student.id" class="border border-border rounded-lg p-3 space-y-2">
+                <div class="flex items-center space-x-3">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span class="text-sm font-medium text-primary">
+                        {{ student.name.charAt(0) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-foreground truncate">{{ student.name }}</div>
+                    <div class="text-xs text-muted-foreground truncate">{{ student.email }}</div>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    <EyeIcon class="w-4 h-4" />
+                  </Button>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <div class="text-muted-foreground">Student #</div>
+                    <div class="font-medium truncate">{{ student.student_number }}</div>
+                  </div>
+                  <div>
+                    <div class="text-muted-foreground">Status</div>
+                    <Badge :variant="student.status === 'active' ? 'default' : 'secondary'" class="text-xs">
+                      {{ student.status }}
+                    </Badge>
+                  </div>
+                  <div>
+                    <div class="text-muted-foreground">Grade</div>
+                    <div class="font-medium">{{ student.grade || 'N/A' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Desktop Table Layout -->
+            <div class="hidden lg:block border border-border rounded-lg overflow-hidden">
               <table class="min-w-full divide-y divide-border">
                 <thead class="bg-muted/50">
                   <tr>
@@ -242,48 +285,219 @@
             </div>
           </div>
 
+          <!-- Add Missing Student Modal -->
+          <Dialog :open="showAddStudentModal" @update:open="showAddStudentModal = $event">
+            <DialogContent class="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle class="flex items-center gap-2">
+                  <UserPlusIcon class="w-5 h-5 text-primary" />
+                  Report Missing Student
+                </DialogTitle>
+                <DialogDescription>
+                  If you have a student in your class who is not listed above, please provide their information below.
+                  This will create a request for administrators to add them to the class roster.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form @submit.prevent="submitMissingStudentRequest" class="space-y-4">
+                <div class="space-y-2">
+                  <Label for="student-name">Student Full Name *</Label>
+                  <Input
+                    id="student-name"
+                    v-model="missingStudentForm.fullName"
+                    type="text"
+                    placeholder="Enter student's full name"
+                    required
+                    class="w-full"
+                  />
+                </div>
+
+                <div class="space-y-2">
+                  <Label for="student-id">Student ID (if known)</Label>
+                  <Input
+                    id="student-id"
+                    v-model="missingStudentForm.studentId"
+                    type="text"
+                    placeholder="Enter student ID (optional)"
+                    class="w-full"
+                  />
+                </div>
+
+                <div class="space-y-2">
+                  <Label for="student-email">Email (if known)</Label>
+                  <Input
+                    id="student-email"
+                    v-model="missingStudentForm.email"
+                    type="email"
+                    placeholder="Enter student email (optional)"
+                    class="w-full"
+                  />
+                </div>
+
+                <div class="space-y-2">
+                  <Label for="additional-notes">Additional Notes</Label>
+                  <textarea
+                    id="additional-notes"
+                    v-model="missingStudentForm.notes"
+                    rows="3"
+                    placeholder="Any additional information that might help identify the student..."
+                    class="w-full px-3 py-2 border border-border rounded-md text-sm bg-background resize-none"
+                  ></textarea>
+                </div>
+              </form>
+
+              <!-- Previous Requests Section -->
+              <div v-if="previousRequests.length > 0" class="border-t pt-4 mt-4">
+                <h4 class="text-sm font-medium text-foreground mb-3">Your Previous Requests for This Class</h4>
+                <div class="space-y-2 max-h-40 overflow-y-auto">
+                  <div
+                    v-for="request in previousRequests"
+                    :key="request.id"
+                    class="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm"
+                  >
+                    <div class="flex-1 min-w-0">
+                      <div class="font-medium truncate">{{ request.full_name }}</div>
+                      <div class="text-xs text-muted-foreground">
+                        Submitted {{ formatDate(request.submitted_at) }}
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                      <Badge
+                        :variant="getRequestStatusVariant(request.status)"
+                        class="text-xs"
+                      >
+                        {{ request.status }}
+                      </Badge>
+                      <button
+                        v-if="request.admin_notes"
+                        @click="showRequestDetails(request)"
+                        class="text-muted-foreground hover:text-foreground"
+                        title="View admin notes"
+                      >
+                        <Icon icon="heroicons:information-circle" class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-xs text-muted-foreground mt-2">
+                  <Icon icon="heroicons:information-circle" class="w-3 h-3 mr-1 inline" />
+                  Requests are reviewed by administrators. You'll receive a notification when processed.
+                </div>
+              </div>
+
+              <DialogFooter class="gap-2">
+                <Button variant="outline" @click="closeAddStudentModal">
+                  Cancel
+                </Button>
+                <Button
+                  @click="submitMissingStudentRequest"
+                  :disabled="!missingStudentForm.fullName.trim() || isSubmittingRequest"
+                  class="min-w-[120px]"
+                >
+                  <Icon v-if="isSubmittingRequest" icon="heroicons:arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+                  <UserPlusIcon v-else class="w-4 h-4 mr-2" />
+                  {{ isSubmittingRequest ? 'Submitting...' : 'Submit Request' }}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <!-- Request Details Modal -->
+          <Dialog :open="showRequestDetailsModal" @update:open="showRequestDetailsModal = $event">
+            <DialogContent class="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle class="flex items-center gap-2">
+                  <Icon icon="heroicons:document-text" class="w-5 h-5 text-primary" />
+                  Request Details
+                </DialogTitle>
+              </DialogHeader>
+
+              <div v-if="selectedRequest" class="space-y-4">
+                <div>
+                  <Label class="text-sm font-medium">Student Name</Label>
+                  <div class="text-sm text-muted-foreground">{{ selectedRequest.full_name }}</div>
+                </div>
+
+                <div v-if="selectedRequest.student_id">
+                  <Label class="text-sm font-medium">Student ID</Label>
+                  <div class="text-sm text-muted-foreground">{{ selectedRequest.student_id }}</div>
+                </div>
+
+                <div v-if="selectedRequest.email">
+                  <Label class="text-sm font-medium">Email</Label>
+                  <div class="text-sm text-muted-foreground">{{ selectedRequest.email }}</div>
+                </div>
+
+                <div>
+                  <Label class="text-sm font-medium">Status</Label>
+                  <div class="mt-1">
+                    <Badge :variant="getRequestStatusVariant(selectedRequest.status)">
+                      {{ selectedRequest.status }}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div>
+                  <Label class="text-sm font-medium">Submitted</Label>
+                  <div class="text-sm text-muted-foreground">{{ formatDate(selectedRequest.submitted_at) }}</div>
+                </div>
+
+                <div v-if="selectedRequest.processed_at">
+                  <Label class="text-sm font-medium">Processed</Label>
+                  <div class="text-sm text-muted-foreground">{{ formatDate(selectedRequest.processed_at) }}</div>
+                </div>
+
+                <div v-if="selectedRequest.admin_notes">
+                  <Label class="text-sm font-medium">Admin Notes</Label>
+                  <div class="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                    {{ selectedRequest.admin_notes }}
+                  </div>
+                </div>
+
+                <div v-if="selectedRequest.notes">
+                  <Label class="text-sm font-medium">Your Notes</Label>
+                  <div class="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                    {{ selectedRequest.notes }}
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" @click="showRequestDetailsModal = false">
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <!-- Schedule Tab -->
-          <div v-if="activeTab === 'schedule'" class="space-y-4">
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-foreground">Class Schedule</h3>
-              <Button variant="outline" size="sm">
-                <PlusIcon class="w-4 h-4 mr-2" />
-                Add Schedule
-              </Button>
+          <div v-if="activeTab === 'schedule'" class="space-y-3 sm:space-y-4">
+            <div class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+              <h3 class="text-base sm:text-lg font-semibold text-foreground">Class Schedule</h3>
             </div>
 
-            <div class="grid gap-4">
+            <div class="grid gap-3 sm:gap-4">
               <Card v-if="!schedules || schedules.length === 0">
-                <CardContent class="p-8 text-center">
-                  <CalendarIcon class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p class="text-muted-foreground">No schedule set for this class yet.</p>
+                <CardContent class="p-6 sm:p-8 text-center">
+                  <CalendarIcon class="w-8 h-8 sm:w-12 sm:h-12 text-muted-foreground mx-auto mb-4" />
+                  <p class="text-muted-foreground text-sm sm:text-base">No schedule set for this class yet.</p>
                 </CardContent>
               </Card>
 
               <Card v-for="schedule in schedules" :key="schedule.id">
-                <CardContent class="p-4">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                      <div class="p-2 bg-blue-100 rounded-lg">
-                        <CalendarIcon class="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p class="font-medium text-foreground">{{ schedule.day_of_week }}</p>
-                        <p class="text-sm text-muted-foreground">
-                          {{ schedule.start_time }} - {{ schedule.end_time }}
-                        </p>
-                        <p class="text-sm text-muted-foreground">
-                          {{ schedule.room }} • {{ schedule.duration }}
-                        </p>
-                      </div>
+                <CardContent class="p-3 sm:p-4">
+                  <div class="flex items-center space-x-3 sm:space-x-4">
+                    <div class="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                      <CalendarIcon class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                     </div>
-                    <div class="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
-                        <PencilIcon class="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <TrashIcon class="w-4 h-4" />
-                      </Button>
+                    <div class="min-w-0">
+                      <p class="font-medium text-foreground text-sm sm:text-base">{{ schedule.day_of_week }}</p>
+                      <p class="text-xs sm:text-sm text-muted-foreground">
+                        {{ schedule.start_time }} - {{ schedule.end_time }}
+                      </p>
+                      <p class="text-xs sm:text-sm text-muted-foreground truncate">
+                        {{ schedule.room }} • {{ schedule.duration }}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -292,15 +506,15 @@
           </div>
 
           <!-- Grades Tab -->
-          <div v-if="activeTab === 'grades'" class="space-y-4">
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-foreground">Grade Management</h3>
-              <div class="flex items-center space-x-2">
-                <Button variant="outline" size="sm" @click="showImportDialog = true">
+          <div v-if="activeTab === 'grades'" class="space-y-3 sm:space-y-4">
+            <div class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+              <h3 class="text-base sm:text-lg font-semibold text-foreground">Grade Management</h3>
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <Button variant="outline" size="sm" @click="showImportDialog = true" class="w-full sm:w-auto">
                   <DocumentArrowUpIcon class="w-4 h-4 mr-2" />
                   Import Grades
                 </Button>
-                <Button variant="outline" size="sm" @click="exportGrades">
+                <Button variant="outline" size="sm" @click="exportGrades" class="w-full sm:w-auto">
                   <DocumentArrowDownIcon class="w-4 h-4 mr-2" />
                   Export Grades
                 </Button>
@@ -328,19 +542,81 @@
 
             <!-- Grade Distribution Chart -->
             <Card>
-              <CardContent class="p-6">
-                <h4 class="text-lg font-semibold text-foreground mb-4">Grade Distribution</h4>
-                <div class="grid grid-cols-4 gap-4">
+              <CardContent class="p-4 sm:p-6">
+                <h4 class="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Grade Distribution</h4>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                   <div v-for="(count, range) in stats.grade_distribution" :key="range" class="text-center">
-                    <div class="text-2xl font-bold text-foreground">{{ count }}</div>
-                    <div class="text-sm text-muted-foreground">Range {{ range }}</div>
+                    <div class="text-lg sm:text-2xl font-bold text-foreground">{{ count }}</div>
+                    <div class="text-xs sm:text-sm text-muted-foreground">Range {{ range }}</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <!-- Grades Table -->
-            <div class="border border-border rounded-lg overflow-hidden">
+            <!-- Mobile Grades Cards -->
+            <div class="block lg:hidden space-y-3">
+              <div v-if="!classData.students || classData.students.length === 0" class="text-center py-8 text-muted-foreground">
+                No students enrolled in this class yet.
+              </div>
+              <Card v-for="student in classData.students" :key="student.id">
+                <CardContent class="p-4">
+                  <div class="space-y-3">
+                    <div class="font-medium text-foreground">{{ student.name }}</div>
+                    <div class="grid grid-cols-1 gap-3">
+                      <div class="flex items-center justify-between">
+                        <label class="text-sm text-muted-foreground">Prelim (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          class="w-16 sm:w-20 border border-border rounded px-2 py-1 bg-background text-sm"
+                          :value="gradeEdits[student.student_id]?.prelim_grade ?? ''"
+                          @input="updateGradeEdit(student.student_id, 'prelim_grade', $event.target.value)"
+                          @change="saveSingleGrade(student.student_id)"
+                          :placeholder="student.prelim_grade ?? '—'"
+                        />
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <label class="text-sm text-muted-foreground">Midterm (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          class="w-16 sm:w-20 border border-border rounded px-2 py-1 bg-background text-sm"
+                          :value="gradeEdits[student.student_id]?.midterm_grade ?? ''"
+                          @input="updateGradeEdit(student.student_id, 'midterm_grade', $event.target.value)"
+                          @change="saveSingleGrade(student.student_id)"
+                          :placeholder="student.midterm_grade ?? '—'"
+                        />
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <label class="text-sm text-muted-foreground">Finals (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          class="w-16 sm:w-20 border border-border rounded px-2 py-1 bg-background text-sm"
+                          :value="gradeEdits[student.student_id]?.finals_grade ?? ''"
+                          @input="updateGradeEdit(student.student_id, 'finals_grade', $event.target.value)"
+                          @change="saveSingleGrade(student.student_id)"
+                          :placeholder="student.finals_grade ?? '—'"
+                        />
+                      </div>
+                      <div class="flex items-center justify-between border-t pt-2">
+                        <label class="text-sm font-medium text-foreground">Total Average</label>
+                        <span class="text-sm font-bold">{{ computeAverage(gradeEdits[student.student_id], student) }}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <!-- Desktop Grades Table -->
+            <div class="hidden lg:block border border-border rounded-lg overflow-hidden">
               <table class="min-w-full divide-y divide-border">
                 <thead class="bg-muted/50">
                   <tr>
@@ -402,19 +678,19 @@
           </div>
 
           <!-- Attendance Tab -->
-          <div v-if="activeTab === 'attendance'" class="space-y-6">
+          <div v-if="activeTab === 'attendance'" class="space-y-4 sm:space-y-6">
             <!-- Attendance Setup Section -->
-            <div v-if="!attendance.is_setup" class="space-y-4">
+            <div v-if="!attendance.is_setup" class="space-y-3 sm:space-y-4">
               <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-foreground">Setup Attendance Tracking</h3>
+                <h3 class="text-base sm:text-lg font-semibold text-foreground">Setup Attendance Tracking</h3>
               </div>
 
               <Card>
-                <CardContent class="p-6">
-                  <div class="text-center mb-6">
-                    <ClipboardDocumentListIcon class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h4 class="text-lg font-semibold mb-2">Configure Attendance for This Class</h4>
-                    <p class="text-muted-foreground">Set up attendance tracking to start recording student attendance for each class session.</p>
+                <CardContent class="p-4 sm:p-6">
+                  <div class="text-center mb-4 sm:mb-6">
+                    <ClipboardDocumentListIcon class="w-8 h-8 sm:w-12 sm:h-12 text-muted-foreground mx-auto mb-4" />
+                    <h4 class="text-base sm:text-lg font-semibold mb-2">Configure Attendance for This Class</h4>
+                    <p class="text-muted-foreground text-sm sm:text-base">Set up attendance tracking to start recording student attendance for each class session.</p>
                   </div>
 
                   <AttendanceSetupForm
@@ -428,53 +704,57 @@
             </div>
 
             <!-- Attendance Management Section -->
-            <div v-else class="space-y-4">
-              <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-foreground">Attendance Management</h3>
-                <div class="flex items-center space-x-2">
+            <div v-else class="space-y-3 sm:space-y-4">
+              <div class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+                <h3 class="text-base sm:text-lg font-semibold text-foreground">Attendance Management</h3>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <Button
                     size="sm"
                     @click="initializeAttendance"
                     :disabled="attendanceLoading"
+                    class="w-full sm:w-auto"
                   >
                     <ClipboardDocumentListIcon class="w-4 h-4 mr-2" />
-                    {{ attendanceData?.session_stats ? 'Manage Attendance' : 'Start Attendance' }}
+                    <span class="hidden sm:inline">{{ attendanceData?.session_stats ? 'Manage Attendance' : 'Start Attendance' }}</span>
+                    <span class="sm:hidden">{{ attendanceData?.session_stats ? 'Manage' : 'Start' }}</span>
                   </Button>
-                  <Button variant="outline" size="sm" @click="exportAttendance">
+                  <Button variant="outline" size="sm" @click="exportAttendance" class="w-full sm:w-auto">
                     <DocumentArrowDownIcon class="w-4 h-4 mr-2" />
-                    Export Report
+                    <span class="hidden sm:inline">Export Report</span>
+                    <span class="sm:hidden">Export</span>
                   </Button>
-                  <Button variant="outline" size="sm" @click="showAttendanceSettings = true">
+                  <Button variant="outline" size="sm" @click="showAttendanceSettings = true" class="w-full sm:w-auto">
                     <CogIcon class="w-4 h-4 mr-2" />
                     Settings
                   </Button>
-                  <Button variant="destructive" size="sm" @click="showResetConfirmation = true">
+                  <Button variant="destructive" size="sm" @click="showResetConfirmation = true" class="w-full sm:w-auto">
                     <Icon icon="heroicons:arrow-path" class="w-4 h-4 mr-2" />
-                    Reset Attendance
+                    <span class="hidden sm:inline">Reset Attendance</span>
+                    <span class="sm:hidden">Reset</span>
                   </Button>
                 </div>
               </div>
 
               <!-- Attendance Date Selector -->
               <Card>
-                <CardContent class="p-4">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                      <div>
+                <CardContent class="p-3 sm:p-4">
+                  <div class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                      <div class="flex items-center space-x-2">
                         <label class="text-sm font-medium text-foreground">Date:</label>
                         <input
                           type="date"
                           v-model="selectedDate"
                           @change="loadAttendanceData"
-                          class="ml-2 px-3 py-1 border border-border rounded-md text-sm"
+                          class="px-2 py-1 border border-border rounded-md text-sm w-auto max-w-full"
                         />
                       </div>
-                      <div v-if="attendanceData?.session_stats" class="text-sm text-muted-foreground">
+                      <div v-if="attendanceData?.session_stats" class="text-xs sm:text-sm text-muted-foreground">
                         {{ attendanceData.session_stats.present + attendanceData.session_stats.late }}/{{ attendanceData.session_stats.total }} Present
                         ({{ attendanceData.session_stats.attendance_rate }}%)
                       </div>
                     </div>
-                    <div v-if="attendanceData?.settings?.method" class="text-sm text-muted-foreground">
+                    <div v-if="attendanceData?.settings?.method" class="text-xs sm:text-sm text-muted-foreground">
                       Method: {{ attendanceData.settings.method.label }}
                     </div>
                   </div>
@@ -490,49 +770,49 @@
               />
 
               <!-- Simple Attendance Table -->
-              <div v-if="attendanceData?.roster?.length" class="space-y-4">
+              <div v-if="attendanceData?.roster?.length" class="space-y-3 sm:space-y-4">
                 <!-- Quick Stats -->
-                <div class="grid grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                   <Card>
-                    <CardContent class="p-4 text-center">
-                      <div class="text-2xl font-bold">{{ attendanceData.session_stats?.total || 0 }}</div>
-                      <div class="text-sm text-muted-foreground">Total</div>
+                    <CardContent class="p-3 sm:p-4 text-center">
+                      <div class="text-lg sm:text-2xl font-bold">{{ attendanceData.session_stats?.total || 0 }}</div>
+                      <div class="text-xs sm:text-sm text-muted-foreground">Total</div>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardContent class="p-4 text-center">
-                      <div class="text-2xl font-bold text-green-600">{{ attendanceData.session_stats?.present || 0 }}</div>
-                      <div class="text-sm text-muted-foreground">Present</div>
+                    <CardContent class="p-3 sm:p-4 text-center">
+                      <div class="text-lg sm:text-2xl font-bold text-green-600">{{ attendanceData.session_stats?.present || 0 }}</div>
+                      <div class="text-xs sm:text-sm text-muted-foreground">Present</div>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardContent class="p-4 text-center">
-                      <div class="text-2xl font-bold text-red-600">{{ attendanceData.session_stats?.absent || 0 }}</div>
-                      <div class="text-sm text-muted-foreground">Absent</div>
+                    <CardContent class="p-3 sm:p-4 text-center">
+                      <div class="text-lg sm:text-2xl font-bold text-red-600">{{ attendanceData.session_stats?.absent || 0 }}</div>
+                      <div class="text-xs sm:text-sm text-muted-foreground">Absent</div>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardContent class="p-4 text-center">
-                      <div class="text-2xl font-bold text-blue-600">{{ attendanceData.session_stats?.attendance_rate || 0 }}%</div>
-                      <div class="text-sm text-muted-foreground">Rate</div>
+                    <CardContent class="p-3 sm:p-4 text-center">
+                      <div class="text-lg sm:text-2xl font-bold text-blue-600">{{ attendanceData.session_stats?.attendance_rate || 0 }}%</div>
+                      <div class="text-xs sm:text-sm text-muted-foreground">Rate</div>
                     </CardContent>
                   </Card>
                 </div>
 
                 <!-- Quick Actions -->
                 <Card>
-                  <CardContent class="p-4">
-                    <div class="flex items-center justify-between">
+                  <CardContent class="p-3 sm:p-4">
+                    <div class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h3 class="font-medium">Quick Actions</h3>
-                        <p class="text-sm text-muted-foreground">Mark all students at once</p>
+                        <h3 class="font-medium text-sm sm:text-base">Quick Actions</h3>
+                        <p class="text-xs sm:text-sm text-muted-foreground">Mark all students at once</p>
                       </div>
-                      <div class="flex gap-2">
-                        <Button @click="markAllPresent" variant="default" size="sm">
+                      <div class="flex flex-col sm:flex-row gap-2">
+                        <Button @click="markAllPresent" variant="default" size="sm" class="w-full sm:w-auto">
                           <CheckIcon class="w-4 h-4 mr-2" />
                           All Present
                         </Button>
-                        <Button @click="markAllAbsent" variant="outline" size="sm">
+                        <Button @click="markAllAbsent" variant="outline" size="sm" class="w-full sm:w-auto">
                           <XMarkIcon class="w-4 h-4 mr-2" />
                           All Absent
                         </Button>
@@ -541,8 +821,83 @@
                   </CardContent>
                 </Card>
 
-                <!-- Simple Attendance Table -->
-                <Card>
+                <!-- Mobile Attendance Cards -->
+                <div class="block lg:hidden space-y-3">
+                  <Card v-for="student in attendanceData.roster" :key="student.student_id">
+                    <CardContent class="p-4">
+                      <div class="space-y-3">
+                        <!-- Student Info -->
+                        <div class="flex items-center space-x-3">
+                          <div class="flex-shrink-0">
+                            <img
+                              v-if="student.student.photo"
+                              :src="student.student.photo"
+                              :alt="student.student.name"
+                              class="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div
+                              v-else
+                              class="w-10 h-10 rounded-full bg-muted flex items-center justify-center"
+                            >
+                              <UserIcon class="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <div class="font-medium truncate">{{ student.student.name }}</div>
+                            <div class="text-sm text-muted-foreground">{{ student.student_id }}</div>
+                          </div>
+                          <Badge
+                            :variant="getStatusVariant(student.attendance.status)"
+                            class="capitalize"
+                          >
+                            {{ student.attendance.status }}
+                          </Badge>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-2 gap-2">
+                          <Button
+                            @click="updateStudentStatus(student.student_id, 'present')"
+                            :variant="student.attendance.status === 'present' ? 'default' : 'outline'"
+                            size="sm"
+                            class="w-full"
+                          >
+                            <CheckIcon class="w-4 h-4 mr-1" />
+                            Present
+                          </Button>
+                          <Button
+                            @click="updateStudentStatus(student.student_id, 'absent')"
+                            :variant="student.attendance.status === 'absent' ? 'destructive' : 'outline'"
+                            size="sm"
+                            class="w-full"
+                          >
+                            <XMarkIcon class="w-4 h-4 mr-1" />
+                            Absent
+                          </Button>
+                          <Button
+                            @click="updateStudentStatus(student.student_id, 'late')"
+                            :variant="student.attendance.status === 'late' ? 'secondary' : 'outline'"
+                            size="sm"
+                            class="w-full"
+                          >
+                            Late
+                          </Button>
+                          <Button
+                            @click="updateStudentStatus(student.student_id, 'excused')"
+                            :variant="student.attendance.status === 'excused' ? 'secondary' : 'outline'"
+                            size="sm"
+                            class="w-full"
+                          >
+                            Excused
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <!-- Desktop Attendance Table -->
+                <Card class="hidden lg:block">
                   <CardContent class="p-0">
                     <div class="overflow-x-auto">
                       <table class="w-full">
@@ -641,7 +996,7 @@
 
                 <!-- Save Button -->
                 <div class="flex justify-center">
-                  <Button @click="saveAllAttendance" size="lg" class="px-8">
+                  <Button @click="saveAllAttendance" size="lg" class="px-6 sm:px-8 w-full sm:w-auto">
                     <CloudArrowUpIcon class="w-5 h-5 mr-2" />
                     Save Attendance
                   </Button>
@@ -650,10 +1005,10 @@
 
               <!-- No Data State -->
               <Card v-else>
-                <CardContent class="p-8 text-center">
-                  <ClipboardDocumentListIcon class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p class="text-muted-foreground mb-4">No attendance data for the selected date.</p>
-                  <Button @click="initializeAttendance" :disabled="attendanceLoading">
+                <CardContent class="p-6 sm:p-8 text-center">
+                  <ClipboardDocumentListIcon class="w-8 h-8 sm:w-12 sm:h-12 text-muted-foreground mx-auto mb-4" />
+                  <p class="text-muted-foreground mb-4 text-sm sm:text-base">No attendance data for the selected date.</p>
+                  <Button @click="initializeAttendance" :disabled="attendanceLoading" class="w-full sm:w-auto">
                     Initialize Attendance Session
                   </Button>
                 </CardContent>
@@ -730,44 +1085,73 @@
   </FacultyLayout>
 </template>
 
+<style scoped>
+/* Ensure no element can cause horizontal overflow */
+* {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure all containers respect viewport width */
+.w-full {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Force text truncation on all text elements */
+h1, h2, h3, h4, h5, h6, p, span, div {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Ensure input fields don't overflow */
+input[type="number"], input[type="date"], input[type="text"] {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Ensure buttons don't cause overflow */
+button {
+  max-width: 100%;
+  min-width: 0;
+}
+</style>
+
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { router } from '@inertiajs/vue3'
-import FacultyLayout from '@/Layouts/FacultyLayout.vue'
-import { Card, CardContent } from '@/Components/ui/card.js'
-import { Button } from '@/Components/ui/button.js'
-import { Badge } from '@/Components/ui/badge.js'
+import AttendanceMethodDisplay from '@/Components/Faculty/AttendanceMethodDisplay.vue'
+import AttendanceSettingsModal from '@/Components/Faculty/AttendanceSettingsModal.vue'
+import AttendanceSetupForm from '@/Components/Faculty/AttendanceSetupForm.vue'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/shadcn/ui/dialog'
 import { Input } from '@/Components/shadcn/ui/input'
 import { Label } from '@/Components/shadcn/ui/label'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/shadcn/ui/dialog'
-import { Icon } from '@iconify/vue'
-import AttendanceSetupForm from '@/Components/Faculty/AttendanceSetupForm.vue'
-import AttendanceSettingsModal from '@/Components/Faculty/AttendanceSettingsModal.vue'
-import AttendanceMethodDisplay from '@/Components/Faculty/AttendanceMethodDisplay.vue'
+import { Badge } from '@/Components/ui/badge.js'
+import { Button } from '@/Components/ui/button.js'
+import { Card, CardContent } from '@/Components/ui/card.js'
+import FacultyLayout from '@/Layouts/FacultyLayout.vue'
 import {
-  MapPinIcon,
-  UsersIcon,
-  ClockIcon,
-  CalendarIcon,
-  ArrowLeftIcon,
-  CogIcon,
-  CheckCircleIcon,
   AcademicCapIcon,
+  ArrowLeftIcon,
+  CalendarIcon,
   ChartBarIcon,
-  UserPlusIcon,
+  CheckCircleIcon,
+  CheckIcon,
+  ClipboardDocumentListIcon,
+  ClockIcon,
+  CloudArrowUpIcon,
+  CogIcon,
   DocumentArrowDownIcon,
   DocumentArrowUpIcon,
   EyeIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  ClipboardDocumentListIcon,
-  CheckIcon,
-  XMarkIcon,
+  MapPinIcon,
   UserIcon,
-  CloudArrowUpIcon
+  UserPlusIcon,
+  UsersIcon,
+  XMarkIcon
 } from '@heroicons/vue/24/outline'
+import { Icon } from '@iconify/vue'
+import { router } from '@inertiajs/vue3'
 import axios from 'axios'
+import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { route } from 'ziggy-js'
 
@@ -795,6 +1179,21 @@ const showAttendanceSettings = ref(false)
 const showResetConfirmation = ref(false)
 const resetConfirmationText = ref('')
 const isResetting = ref(false)
+
+// Missing Student Modal State
+const showAddStudentModal = ref(false)
+const isSubmittingRequest = ref(false)
+const missingStudentForm = ref({
+  fullName: '',
+  studentId: '',
+  email: '',
+  notes: ''
+})
+
+// Previous Requests State
+const previousRequests = ref([])
+const showRequestDetailsModal = ref(false)
+const selectedRequest = ref(null)
 
 // Computed properties
 const classData = computed(() => props.classData || {})
@@ -829,6 +1228,13 @@ watch(() => props.classData?.students, () => {
   initializeGradeEdits()
 }, { deep: true })
 
+// Watch for modal opening to load previous requests
+watch(showAddStudentModal, (isOpen) => {
+  if (isOpen) {
+    loadPreviousRequests()
+  }
+})
+
 // Tab configuration
 const tabs = [
   { id: 'students', name: 'Students', icon: UsersIcon },
@@ -840,6 +1246,110 @@ const tabs = [
 // Methods
 const goBack = () => {
   router.visit(route('faculty.dashboard'))
+}
+
+// Missing Student Methods
+const closeAddStudentModal = () => {
+  showAddStudentModal.value = false
+  // Reset form
+  missingStudentForm.value = {
+    fullName: '',
+    studentId: '',
+    email: '',
+    notes: ''
+  }
+}
+
+// Export Students
+const exportStudents = (format) => {
+  const url = route('faculty.classes.students.export', props.classData.id) + `?format=${format}`
+  window.open(url, '_blank')
+}
+
+const loadPreviousRequests = async () => {
+  try {
+    const response = await axios.get(route('faculty.classes.missing-student.requests', props.classData.id))
+    if (response.data.success) {
+      previousRequests.value = response.data.data
+    }
+  } catch (error) {
+    console.error('Failed to load previous requests:', error)
+  }
+}
+
+const showRequestDetails = (request) => {
+  selectedRequest.value = request
+  showRequestDetailsModal.value = true
+}
+
+const getRequestStatusVariant = (status) => {
+  switch (status) {
+    case 'pending':
+      return 'secondary'
+    case 'approved':
+      return 'default'
+    case 'rejected':
+      return 'destructive'
+    default:
+      return 'secondary'
+  }
+}
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const submitMissingStudentRequest = async () => {
+  if (!missingStudentForm.value.fullName.trim()) {
+    toast.error('Please enter the student\'s full name')
+    return
+  }
+
+  isSubmittingRequest.value = true
+
+  try {
+    const response = await axios.post(route('faculty.classes.missing-student.request', props.classData.id), {
+      full_name: missingStudentForm.value.fullName.trim(),
+      student_id: missingStudentForm.value.studentId.trim() || null,
+      email: missingStudentForm.value.email.trim() || null,
+      notes: missingStudentForm.value.notes.trim() || null,
+      class_id: props.classData.id,
+      faculty_id: props.faculty.id
+    })
+
+    if (response.data.success) {
+      toast.success('Missing student request submitted successfully! Administrators will review and add the student to your class.')
+      closeAddStudentModal()
+      // Reload previous requests to show the new one
+      await loadPreviousRequests()
+    } else {
+      toast.error(response.data.message || 'Failed to submit request')
+    }
+  } catch (error) {
+    console.error('Failed to submit missing student request:', error)
+    if (error.response?.status === 422) {
+      // Validation errors
+      const errors = error.response.data.errors
+      if (errors) {
+        const firstError = Object.values(errors)[0][0]
+        toast.error(firstError)
+      } else {
+        toast.error('Please check your input and try again')
+      }
+    } else if (error.response?.data?.message) {
+      toast.error(error.response.data.message)
+    } else {
+      toast.error('Failed to submit request. Please try again.')
+    }
+  } finally {
+    isSubmittingRequest.value = false
+  }
 }
 
 // Attendance Management Methods

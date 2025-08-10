@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Faculty;
 use App\Services\Faculty\FacultyDashboardService;
 use App\Services\Faculty\FacultyAttendanceService;
+use App\Services\Faculty\FacultyActivityService;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,8 @@ final class FacultyDashboardController extends Controller
 {
     public function __construct(
         private readonly FacultyDashboardService $dashboardService,
-        private readonly FacultyAttendanceService $attendanceService
+        private readonly FacultyAttendanceService $attendanceService,
+        private readonly FacultyActivityService $activityService,
     ) {}
 
     /**
@@ -47,10 +49,6 @@ final class FacultyDashboardController extends Controller
         try {
             // Get comprehensive dashboard data using the service
             $dashboardData = $this->dashboardService->getDashboardData($faculty);
-
-            // Get attendance data for the widget
-            $attendanceData = $this->getAttendanceData($faculty);
-            $dashboardData['attendanceData'] = $attendanceData;
 
             return Inertia::render('Faculty/Dashboard', $dashboardData);
         } catch (\Exception $e) {
@@ -81,31 +79,29 @@ final class FacultyDashboardController extends Controller
     }
 
     /**
-     * Get attendance data for faculty dashboard widget
+     * Lazy-load recent activities for the Sheet
      */
-    private function getAttendanceData(Faculty $faculty): array
+    public function activities(): \Illuminate\Http\JsonResponse
     {
-        try {
-            $summary = $this->attendanceService->getFacultyDashboardSummary($faculty->id);
-
-            return [
-                'overallStats' => $summary['overall_stats'],
-                'recentSessions' => collect($summary['recent_sessions'])->take(5)->toArray(),
-                'attendanceTrend' => $summary['attendance_trend'],
-                'studentsAtRisk' => $summary['classes_needing_attention']
-            ];
-        } catch (\Exception $e) {
-            logger()->error('Failed to get faculty attendance data', [
-                'faculty_id' => $faculty->id,
-                'error' => $e->getMessage()
-            ]);
-
-            return [
-                'overallStats' => ['attendance_rate' => 0, 'total' => 0, 'present_count' => 0],
-                'recentSessions' => [],
-                'attendanceTrend' => [],
-                'studentsAtRisk' => 0
-            ];
+        /** @var User $user */
+        $user = Auth::user();
+        if (!$user->isFaculty()) {
+            abort(403);
         }
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+
+        $offset = (int) request()->query('offset', 0);
+        $limit = (int) request()->query('limit', 20);
+        $type = request()->query('type');
+        $classId = request()->query('class_id');
+
+        $items = $this->activityService->getRecentActivitiesPaginated($faculty, $offset, $limit, $type, $classId ? (int)$classId : null);
+
+        return response()->json([
+            'success' => true,
+            'data' => $items,
+            'nextOffset' => $items->count() < $limit ? null : $offset + $limit,
+        ]);
     }
 }

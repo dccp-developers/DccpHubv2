@@ -86,7 +86,7 @@ final class FacultyClassService
     public function getClassStudents(Faculty $faculty, int $classId): Collection
     {
         $class = $faculty->classes()->where('id', $classId)->first();
-        
+
         if (!$class) {
             return collect();
         }
@@ -347,5 +347,15 @@ final class FacultyClassService
     private function getCurrentSchoolYear(): string
     {
         return $this->settingsService->getCurrentSchoolYearString();
+    }
+
+    /**
+     * Check if a faculty member teaches a specific class
+     */
+    public function facultyTeachesClass(Faculty $faculty, Classes $class): bool
+    {
+        return $faculty->classes()
+            ->where('id', $class->id)
+            ->exists();
     }
 }

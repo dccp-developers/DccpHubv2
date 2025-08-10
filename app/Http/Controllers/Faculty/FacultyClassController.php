@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Faculty;
 use App\Http\Controllers\Controller;
 use App\Models\Classes;
 use App\Models\Faculty;
+use App\Models\MissingStudentRequest;
 use App\Services\Faculty\FacultyClassService;
 use App\Services\Faculty\FacultyScheduleService;
 use App\Services\Faculty\ClassAttendanceManagementService;
@@ -15,9 +16,11 @@ use App\Services\AttendanceService;
 use App\Enums\AttendanceMethod;
 use App\Enums\AttendancePolicy;
 use App\Services\GeneralSettingsService;
+use App\Services\Faculty\ClassExportService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,7 +33,8 @@ final class FacultyClassController extends Controller
         private readonly FacultyStatsService $statsService,
         private readonly ClassAttendanceManagementService $attendanceManagementService,
         private readonly GeneralSettingsService $settingsService,
-        private readonly AttendanceService $attendanceService
+        private readonly AttendanceService $attendanceService,
+        private readonly ClassExportService $exportService,
     ) {}
 
     /**
@@ -132,7 +136,7 @@ final class FacultyClassController extends Controller
             // Get comprehensive class data
             $classData = $this->getClassData($faculty, $class);
 
-            return Inertia::render('Faculty/ClassViewFixed', $classData);
+            return Inertia::render('Faculty/ClassView', $classData);
         } catch (\Exception $e) {
             // Log the error and return a fallback response
             logger()->error('Faculty class view error', [
@@ -1070,6 +1074,195 @@ final class FacultyClassController extends Controller
 
         return response()->streamDownload($callback, $filename, [
             'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    /**
+     * Submit a missing student request
+     */
+    public function submitMissingStudentRequest(Request $request, Classes $class): JsonResponse
+    {
+        $user = $request->user();
+
+        // Ensure the user is a faculty member
+        if (!$user->isFaculty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only faculty members can submit missing student requests.'
+            ], 403);
+        }
+
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+
+        // Verify faculty teaches this class
+        if (!$this->classService->facultyTeachesClass($faculty, $class)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not authorized to submit requests for this class.'
+            ], 403);
+        }
+
+        // Validate the request
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'student_id' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            // Create the missing student request
+            $missingStudentRequest = MissingStudentRequest::create([
+                'class_id' => $class->id,
+                'faculty_id' => $faculty->id,
+                'full_name' => $validated['full_name'],
+                'student_id' => $validated['student_id'] ?? null,
+                'email' => $validated['email'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'status' => 'pending',
+                'submitted_at' => now(),
+            ]);
+
+            // Log the request for admin review
+            Log::info('Missing student request submitted', [
+                'request_id' => $missingStudentRequest->id,
+                'class_id' => $class->id,
+                'faculty_id' => $faculty->id,
+                'student_name' => $validated['full_name'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Missing student request submitted successfully. Administrators will review and process your request.',
+                'data' => [
+                    'request_id' => $missingStudentRequest->id,
+                    'status' => 'pending'
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to submit missing student request', [
+                'class_id' => $class->id,
+                'faculty_id' => $faculty->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to submit request. Please try again later.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get missing student requests for a specific class
+     */
+    public function getMissingStudentRequests(Request $request, Classes $class): JsonResponse
+    {
+        $user = $request->user();
+
+        // Ensure the user is a faculty member
+        if (!$user->isFaculty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only faculty members can view missing student requests.'
+            ], 403);
+        }
+
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+
+        // Verify faculty teaches this class
+        if (!$this->classService->facultyTeachesClass($faculty, $class)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not authorized to view requests for this class.'
+            ], 403);
+        }
+
+        try {
+            // Get all missing student requests for this class and faculty
+            $requests = MissingStudentRequest::where('class_id', $class->id)
+                ->where('faculty_id', $faculty->id)
+                ->orderBy('submitted_at', 'desc')
+                ->get()
+                ->map(function ($request) {
+                    return [
+                        'id' => $request->id,
+                        'full_name' => $request->full_name,
+                        'student_id' => $request->student_id,
+                        'email' => $request->email,
+                        'notes' => $request->notes,
+                        'status' => $request->status,
+                        'submitted_at' => $request->submitted_at->toISOString(),
+                        'processed_at' => $request->processed_at?->toISOString(),
+                        'admin_notes' => $request->admin_notes,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $requests
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch missing student requests', [
+                'class_id' => $class->id,
+                'faculty_id' => $faculty->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch requests. Please try again later.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Export the student list for a class in CSV (Excel) or printable HTML (PDF via browser)
+     */
+    public function exportStudents(Request $request, Classes $class)
+    {
+        $user = $request->user();
+        if (!$user->isFaculty()) {
+            abort(403, 'Only faculty can export student lists.');
+        }
+
+        /** @var Faculty $faculty */
+        $faculty = $user->faculty;
+
+        // Centralized export data
+        ['rows' => $rows] = $this->exportService->getExportData($faculty, $class);
+
+        $format = strtolower((string) $request->query('format', 'excel'));
+
+        if (in_array($format, ['excel', 'csv', 'xlsx'], true)) {
+            // Real Excel export using maatwebsite/excel
+            $filename = sprintf('class-%s-%s-students-%s.xlsx', $class->id, $class->subject_code, now()->format('Ymd_His'));
+            return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ClassStudentsExport($rows), $filename);
+        }
+
+        if ($format === 'pdf') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.class_students_print', [
+                'class' => $class,
+                'rows' => $rows,
+                'faculty' => $faculty,
+                'generatedAt' => now(),
+            ])->setPaper('a4', 'portrait');
+
+            $filename = sprintf('class-%s-%s-students-%s.pdf', $class->id, $class->subject_code, now()->format('Ymd_His'));
+            return $pdf->download($filename);
+        }
+
+        // Fallback to printable HTML
+        return response()->view('exports.class_students_print', [
+            'class' => $class,
+            'rows' => $rows,
+            'faculty' => $faculty,
+            'generatedAt' => now(),
         ]);
     }
 

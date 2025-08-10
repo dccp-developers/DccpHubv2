@@ -16,28 +16,65 @@ final class FacultyActivityService
      */
     public function getRecentActivities(Faculty $faculty, int $limit = 10): Collection
     {
-        $activities = collect();
+        $activities = $this->buildActivityCollection($faculty);
 
-        // Get recent grade submissions
-        $recentGrades = $this->getRecentGradeSubmissions($faculty, $limit);
-        $activities = $activities->merge($recentGrades);
-
-        // Get recent class activities
-        $recentClasses = $this->getRecentClassActivities($faculty, $limit);
-        $activities = $activities->merge($recentClasses);
-
-        // Get recent enrollments
-        $recentEnrollments = $this->getRecentEnrollments($faculty, $limit);
-        $activities = $activities->merge($recentEnrollments);
-
-        // Sort by timestamp and limit
         return $activities
             ->sortByDesc('timestamp')
             ->take($limit)
             ->values()
-            ->map(function ($activity) {
-                return $this->formatActivity($activity);
+            ->map(fn ($activity) => $this->formatActivity($activity));
+    }
+
+    /**
+     * Get activities with simple offset pagination for lazy loading in UI
+     */
+    public function getRecentActivitiesPaginated(
+        Faculty $faculty,
+        int $offset = 0,
+        int $limit = 20,
+        ?string $type = null,
+        ?int $classId = null,
+    ): Collection {
+        $activities = $this->buildActivityCollection($faculty)
+            ->sortByDesc('timestamp')
+            ->values();
+
+        if ($type) {
+            $activities = $activities->filter(fn ($a) => ($a['type'] ?? null) === $type);
+        }
+        if ($classId) {
+            $activities = $activities->filter(function ($a) use ($classId) {
+                $meta = $a['metadata'] ?? [];
+                return ($meta['class_id'] ?? null) == $classId
+                    || ($a['class_id'] ?? null) == $classId
+                    || (($a['class'] ?? null)['id'] ?? null) == $classId;
             });
+        }
+
+        return $activities
+            ->slice($offset, $limit)
+            ->values()
+            ->map(fn ($activity) => $this->formatActivity($activity));
+    }
+
+    /**
+     * Build the unified activity collection (unformatted)
+     */
+    private function buildActivityCollection(Faculty $faculty): Collection
+    {
+        $limit = 100; // cap per source before merge to keep it efficient
+
+        $activities = collect();
+        $activities = $activities->merge($this->getRecentGradeSubmissions($faculty, $limit));
+        $activities = $activities->merge($this->getRecentClassActivities($faculty, $limit));
+        $activities = $activities->merge($this->getRecentEnrollments($faculty, $limit));
+
+        // Include cached/logged activities (optional)
+        $cacheKey = "faculty_activities_{$faculty->id}";
+        $cached = collect(cache()->get($cacheKey, []));
+        $activities = $activities->merge($cached);
+
+        return $activities;
     }
 
     /**
@@ -89,10 +126,10 @@ final class FacultyActivityService
         ];
 
         array_unshift($activities, $activity);
-        
+
         // Keep only the last 50 activities
         $activities = array_slice($activities, 0, 50);
-        
+
         cache()->put($cacheKey, $activities, 86400); // Cache for 24 hours
     }
 
@@ -117,7 +154,7 @@ final class FacultyActivityService
         ->map(function ($enrollment) {
             $class = $enrollment->class;
             $subject = $class->subject;
-            
+
             $subjectCode = $subject ? $subject->code : $class->subject_code;
             $studentName = $enrollment->student->first_name . ' ' . $enrollment->student->last_name;
             $grade = $enrollment->total_average ?: ($enrollment->finals_grade ?: $enrollment->midterm_grade);
@@ -209,7 +246,7 @@ final class FacultyActivityService
     {
         $timestamp = $activity['raw_timestamp'] ?? $activity['timestamp'];
         $carbonTimestamp = $timestamp instanceof Carbon ? $timestamp : Carbon::parse($timestamp);
-        
+
         return [
             'id' => $activity['id'],
             'type' => $activity['type'],
@@ -308,7 +345,7 @@ final class FacultyActivityService
     private function getCurrentSemester(): string
     {
         $month = now()->month;
-        
+
         if ($month >= 6 && $month <= 10) {
             return '1st';
         } elseif ($month >= 11 || $month <= 3) {
@@ -325,7 +362,7 @@ final class FacultyActivityService
     {
         $year = now()->year;
         $month = now()->month;
-        
+
         if ($month >= 6) {
             return $year . '-' . ($year + 1);
         } else {

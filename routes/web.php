@@ -208,6 +208,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         Route::get('/classes', [FacultyClassController::class, 'index'])->name('classes.index');
         Route::get('/classes/{class}', [FacultyClassController::class, 'show'])->name('classes.show');
         Route::get('/classes/{class}/students', [FacultyClassController::class, 'students'])->name('classes.students');
+
+        // Faculty Activities (lazy load)
+        Route::get('/activities', [\App\Http\Controllers\Faculty\FacultyDashboardController::class, 'activities'])
+            ->name('activities');
         Route::put('/classes/{class}', [FacultyClassController::class, 'update'])->name('classes.update');
 
         // Faculty Class Attendance Management
@@ -223,6 +227,13 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         Route::post('/classes/{class}/grades/bulk-update', [FacultyClassController::class, 'bulkUpdateGrades'])->name('classes.grades.bulk-update');
         Route::post('/classes/{class}/grades/import', [FacultyClassController::class, 'importGrades'])->name('classes.grades.import');
         Route::get('/classes/{class}/grades/export', [FacultyClassController::class, 'exportGrades'])->name('classes.grades.export');
+
+        // Faculty Missing Student Requests
+        Route::post('/classes/{class}/missing-student/request', [FacultyClassController::class, 'submitMissingStudentRequest'])->name('classes.missing-student.request');
+        Route::get('/classes/{class}/missing-student/requests', [FacultyClassController::class, 'getMissingStudentRequests'])->name('classes.missing-student.requests');
+
+        // Export Students List
+        Route::get('/classes/{class}/students/export', [FacultyClassController::class, 'exportStudents'])->name('classes.students.export');
 
         // Faculty Students Management
         Route::get('/students', [FacultyStudentController::class, 'index'])->name('students.index');

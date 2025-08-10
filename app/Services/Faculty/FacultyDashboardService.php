@@ -10,6 +10,9 @@ use App\Models\Schedule;
 use App\Models\class_enrollments;
 use App\Services\GeneralSettingsService;
 use Carbon\Carbon;
+use App\Models\FacultyDeadline;
+use App\Models\Attendance;
+use App\Enums\AttendanceStatus;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -71,28 +74,25 @@ final class FacultyDashboardService
      */
     private function getUpcomingDeadlines(Faculty $faculty): Collection
     {
-        // This would typically come from a deadlines/tasks table
-        // For now, we'll return sample data that could be extended
-        return collect([
-            [
-                'id' => 1,
-                'title' => 'Midterm Grades Submission',
-                'description' => 'Submit midterm grades for all classes',
-                'due_date' => now()->addDays(3),
-                'priority' => 'high',
-                'type' => 'grades',
-                'classes_affected' => $faculty->classes()->count(),
-            ],
-            [
-                'id' => 2,
-                'title' => 'Faculty Meeting',
-                'description' => 'Monthly department faculty meeting',
-                'due_date' => now()->addDays(7),
-                'priority' => 'medium',
-                'type' => 'meeting',
-                'classes_affected' => 0,
-            ],
-        ]);
+        return FacultyDeadline::query()
+            ->where('is_active', true)
+            ->where('faculty_id', $faculty->id)
+            ->where('due_date', '>=', now()->subDay())
+            ->orderBy('due_date')
+            ->limit(10)
+            ->get()
+            ->map(function (FacultyDeadline $d) {
+                return [
+                    'id' => $d->id,
+                    'title' => $d->title,
+                    'description' => $d->description,
+                    'due_date' => $d->due_date,
+                    'priority' => $d->priority,
+                    'type' => $d->type,
+                    'class_id' => $d->class_id,
+                    'class_code' => optional($d->class)->subject_code,
+                ];
+            });
     }
 
     /**
@@ -100,35 +100,82 @@ final class FacultyDashboardService
      */
     private function getPerformanceMetrics(Faculty $faculty): array
     {
-        $totalStudents = $this->statsService->getTotalStudents($faculty);
-        $totalClasses = $this->statsService->getTotalClasses($faculty);
-        
-        // Calculate average attendance (this would come from attendance records)
-        $averageAttendance = $this->calculateAverageAttendance($faculty);
-        
-        // Calculate assignment completion rate
-        $assignmentCompletion = $this->calculateAssignmentCompletion($faculty);
-        
+        $classIds = $faculty->classes()->pluck('id');
+
+        // Attendance (last 30 days)
+        $attendanceQuery = Attendance::query()
+            ->whereIn('class_id', $classIds)
+            ->recent(30);
+
+        $totalAttendance = (clone $attendanceQuery)->count();
+        $presentAttendance = (clone $attendanceQuery)->present()->count();
+        $absentAttendance = (clone $attendanceQuery)->absent()->count();
+        $attendanceRate = $totalAttendance > 0 ? round(($presentAttendance / $totalAttendance) * 100, 1) : 0.0;
+
+        // Attendance trend (last 6 weeks)
+        $trend = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $start = now()->copy()->startOfWeek()->subWeeks($i);
+            $end = $start->copy()->endOfWeek();
+            $weekTotal = (clone $attendanceQuery)->whereBetween('date', [$start->toDateString(), $end->toDateString()])->count();
+            $weekPresent = (clone $attendanceQuery)->whereBetween('date', [$start->toDateString(), $end->toDateString()])->present()->count();
+            $weekRate = $weekTotal > 0 ? round(($weekPresent / $weekTotal) * 100, 1) : 0.0;
+            $trend[] = [
+                'label' => $start->format('M j'),
+                'rate' => $weekRate,
+            ];
+        }
+
+        // Grades/Completion
+        $enrollmentsQuery = class_enrollments::whereIn('class_id', $classIds);
+        $totalEnrollments = (clone $enrollmentsQuery)->count();
+        $finalizedCount = (clone $enrollmentsQuery)
+            ->where(function ($q) {
+                $q->whereNotNull('total_average')
+                  ->orWhereNotNull('finals_grade');
+            })
+            ->count();
+        $completionRate = $totalEnrollments > 0 ? round(($finalizedCount / $totalEnrollments) * 100, 1) : 0.0;
+
+        $passingRate = $this->calculatePassingRate($faculty);
+        $averageGrade = $this->calculateAverageGrade($faculty);
+
+        // Students at risk (>= 3 absences in last 30 days)
+        $atRisk = Attendance::query()
+            ->whereIn('class_id', $classIds)
+            ->recent(30)
+            ->where('status', AttendanceStatus::ABSENT)
+            ->select('class_enrollment_id')
+            ->groupBy('class_enrollment_id')
+            ->havingRaw('COUNT(*) >= 3')
+            ->get()
+            ->count();
+
+        // Teaching counts
+        $totalClasses = $faculty->classes()->count();
+        $totalStudents = class_enrollments::whereIn('class_id', $classIds)->distinct('student_id')->count('student_id');
+
         return [
-            'average_attendance' => [
-                'value' => $averageAttendance,
-                'trend' => '+2%',
-                'period' => 'from last month'
+            'attendance' => [
+                'rate' => $attendanceRate,
+                'present' => $presentAttendance,
+                'absent' => $absentAttendance,
+                'total' => $totalAttendance,
+                'trend' => $trend,
+                'period' => 'last 30 days',
             ],
-            'assignment_completion' => [
-                'value' => $assignmentCompletion,
-                'trend' => '+5%',
-                'period' => 'from last month'
+            'grades' => [
+                'completion_rate' => $completionRate,
+                'finalized_count' => $finalizedCount,
+                'total_enrollments' => $totalEnrollments,
+                'passing_rate' => $passingRate,
+                'average_grade' => $averageGrade,
             ],
-            'student_satisfaction' => [
-                'value' => 4.8,
-                'trend' => '+0.2',
-                'period' => 'from last semester'
+            'teaching' => [
+                'total_classes' => $totalClasses,
+                'total_students' => $totalStudents,
+                'students_at_risk' => $atRisk,
             ],
-            'class_performance' => [
-                'passing_rate' => $this->calculatePassingRate($faculty),
-                'average_grade' => $this->calculateAverageGrade($faculty),
-            ]
         ];
     }
 
@@ -140,7 +187,7 @@ final class FacultyDashboardService
         // This would query actual attendance records
         // For now, return a calculated value based on class enrollments
         $classes = $faculty->classes()->with('ClassStudents')->get();
-        
+
         if ($classes->isEmpty()) {
             return 0.0;
         }
