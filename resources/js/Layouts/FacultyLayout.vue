@@ -22,7 +22,18 @@
         </Link>
         <div class="flex items-center gap-2">
           <NotificationDropdown ref="notificationDropdown" />
-          <SidebarTrigger class="size-8" />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle theme"
+            class="size-8"
+            @click="toggleTheme"
+          >
+            <Sun v-if="isDark" class="h-4 w-4" />
+            <Moon v-else class="h-4 w-4" />
+            <span class="sr-only">Toggle theme</span>
+          </Button>
+          <SidebarTrigger class="size-8" aria-label="Open menu" />
         </div>
       </div>
 
@@ -48,11 +59,156 @@
         </SidebarHeader>
 
         <SidebarContent>
-          <NavMain :items="sidebarData.navMain" />
-          <NavSecondary :items="sidebarData.navSecondary" class="mt-auto" />
+          <!-- Mobile-friendly sidebar content -->
+          <div class="md:hidden">
+            <!-- Profile summary -->
+            <div class="flex items-center gap-3 px-3 py-4 border-b">
+              <div class="flex aspect-square size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <Command class="size-5" />
+              </div>
+              <div class="min-w-0">
+                <div class="font-semibold truncate">{{ facultyUser.name }}</div>
+                <div class="text-xs text-muted-foreground truncate">{{ facultyUser.email }}</div>
+              </div>
+            </div>
+
+            <!-- Quick Access -->
+            <SidebarGroup>
+              <SidebarGroupLabel>Quick Access</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child size="lg">
+                    <Link :href="route('faculty.dashboard')" preserve-scroll preserve-state :class="route().current('faculty.dashboard') ? 'text-primary' : ''">
+                      <LayoutDashboard />
+                      <span>Home</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child size="lg">
+                    <Link :href="route('faculty.classes.index')" preserve-scroll preserve-state :class="route().current('faculty.classes.*') ? 'text-primary' : ''">
+                      <GraduationCap />
+                      <span>My Classes</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child size="lg">
+                    <Link :href="route('faculty.students.index')" preserve-scroll preserve-state :class="route().current('faculty.students.*') ? 'text-primary' : ''">
+                      <Users />
+                      <span>Students</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child size="lg">
+                    <Link :href="route('faculty.schedule.index')" preserve-scroll preserve-state :class="route().current('faculty.schedule.*') ? 'text-primary' : ''">
+                      <Calendar />
+                      <span>Schedule</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child size="lg">
+                    <Link :href="route('faculty.attendance.index')" preserve-scroll preserve-state :class="route().current('faculty.attendance.*') ? 'text-primary' : ''">
+                      <BookOpen />
+                      <span>Attendance</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child size="lg">
+                    <Link :href="route('faculty.attendance.reports')" preserve-scroll preserve-state :class="route().current('faculty.attendance.reports') ? 'text-primary' : ''">
+                      <FileText />
+                      <span>Reports</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child size="lg">
+                    <Link :href="route('profile.show')" preserve-scroll preserve-state :class="route().current('profile.*') ? 'text-primary' : ''">
+                      <Settings />
+                      <span>Settings</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+
+            <!-- Help -->
+            <SidebarGroup>
+              <SidebarGroupLabel>Help</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton as-child size="lg">
+                    <a href="https://github.com/yukazakiri/DccpHubv2/issues" target="_blank" rel="noopener noreferrer">
+                      <LifeBuoy />
+                      <span>Support</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+          </div>
+
+          <!-- Desktop sidebar content -->
+          <div class="hidden md:block">
+            <NavMain :items="sidebarData.navMain" />
+            <NavSecondary :items="sidebarData.navSecondary" class="mt-auto" />
+          </div>
         </SidebarContent>
 
         <SidebarFooter>
+          <!-- Footer Navigation Menu -->
+          <SidebarMenu class="mb-3">
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <Link
+                  :href="route('faculty.changelog')"
+                  :class="[
+                    'w-full justify-start text-sm',
+                    route().current('faculty.changelog') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''
+                  ]"
+                >
+                  <ScrollText class="h-4 w-4" />
+                  <span>Changelog</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <a
+                  href="https://github.com/yukazakiri/DccpHubv2/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="w-full justify-start text-sm"
+                >
+                  <LifeBuoy class="h-4 w-4" />
+                  <span>Support</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                disabled
+                class="w-full justify-start text-sm opacity-50 cursor-not-allowed"
+              >
+                <FileText class="h-4 w-4" />
+                <span>Documentation</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+
+          <!-- Separator -->
+          <Separator class="mb-3" />
+
+          <!-- Faculty User Profile -->
           <FacultyUserProfile :user="facultyUser" />
         </SidebarFooter>
       </Sidebar>
@@ -77,6 +233,17 @@
           </Breadcrumb>
           <div class="ml-auto flex items-center gap-2">
             <SemesterSchoolYearSelector />
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Toggle theme"
+              class="size-8"
+              @click="toggleTheme"
+            >
+              <Sun v-if="isDark" class="h-4 w-4" />
+              <Moon v-else class="h-4 w-4" />
+              <span class="sr-only">Toggle theme</span>
+            </Button>
             <NotificationDropdown ref="notificationDropdown" />
           </div>
         </header>
@@ -139,22 +306,26 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/Components/shadcn/ui/breadcrumb"
+import Button from "@/Components/shadcn/ui/button/Button.vue"
 import { Separator } from "@/Components/shadcn/ui/separator"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
+  SidebarTrigger
 } from "@/Components/shadcn/ui/sidebar"
 import Sonner from "@/Components/shadcn/ui/sonner/Sonner.vue"
 import DevelopmentModal from '@/Components/ui/DevelopmentModal.vue'
 import LoadingScreen from '@/Components/ui/LoadingScreen.vue'
+import { useTheme } from '@/composables/useTheme.js'
 import { Link, router, usePage } from '@inertiajs/vue3'
 import {
   BookOpen,
@@ -164,7 +335,9 @@ import {
   GraduationCap,
   LayoutDashboard,
   LifeBuoy,
+  Moon,
   Settings,
+  Sun,
   Users
 } from "lucide-vue-next"
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -195,6 +368,9 @@ const sidebarProps = {
   collapsible: "icon",
   class: null,
 };
+
+// Theme
+const { isDark, toggleTheme } = useTheme()
 
 // Faculty user data for the footer
 const facultyUser = computed(() => ({
@@ -273,17 +449,7 @@ const sidebarData = {
     },
   ],
   navSecondary: [
-    {
-      title: "Support",
-      url: "https://github.com/yukazakiri/DccpHubv2/issues",
-      icon: LifeBuoy,
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      disabled: true,
-      icon: FileText,
-    },
+    // Footer items moved to SidebarFooter
   ],
 };
 

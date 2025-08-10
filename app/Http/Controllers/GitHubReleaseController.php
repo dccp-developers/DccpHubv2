@@ -8,6 +8,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
+use Inertia\Response;
+use League\CommonMark\CommonMarkConverter;
+use League\CommonMark\Environment\Environment;
+use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
 
 class GitHubReleaseController extends Controller
 {
@@ -23,7 +28,7 @@ class GitHubReleaseController extends Controller
     {
         try {
             $cacheKey = 'github_latest_release';
-            
+
             $release = Cache::remember($cacheKey, self::CACHE_TTL, function () {
                 return $this->fetchLatestReleaseFromGitHub();
             });
@@ -41,10 +46,9 @@ class GitHubReleaseController extends Controller
                 'release' => $release,
                 'fallback_available' => $this->hasLocalAPK()
             ]);
-
         } catch (\Exception $e) {
             Log::error('Failed to fetch latest release: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch release information',
@@ -61,7 +65,7 @@ class GitHubReleaseController extends Controller
     {
         try {
             $cacheKey = 'github_all_releases';
-            
+
             $releases = Cache::remember($cacheKey, self::CACHE_TTL, function () {
                 return $this->fetchAllReleasesFromGitHub();
             });
@@ -72,10 +76,9 @@ class GitHubReleaseController extends Controller
                 'total' => count($releases),
                 'fallback_available' => $this->hasLocalAPK()
             ]);
-
         } catch (\Exception $e) {
             Log::error('Failed to fetch releases: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch releases',
@@ -107,10 +110,9 @@ class GitHubReleaseController extends Controller
             // Fallback to local APK if GitHub release not available
             Log::warning('GitHub release not available, falling back to local APK');
             return redirect()->route('apk.download', ['filename' => 'DCCPHub_latest.apk']);
-
         } catch (\Exception $e) {
             Log::error('Failed to download latest APK: ' . $e->getMessage());
-            
+
             // Fallback to local APK on error
             return redirect()->route('apk.download', ['filename' => 'DCCPHub_latest.apk']);
         }
@@ -123,7 +125,7 @@ class GitHubReleaseController extends Controller
     {
         try {
             $cacheKey = "github_release_{$version}";
-            
+
             $release = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($version) {
                 return $this->fetchSpecificReleaseFromGitHub($version);
             });
@@ -139,13 +141,45 @@ class GitHubReleaseController extends Controller
 
             return redirect()->route('apk.download', ['filename' => 'DCCPHub_latest.apk'])
                 ->with('warning', "Release {$version} not found, downloading latest local APK instead.");
-
         } catch (\Exception $e) {
             Log::error("Failed to download release {$version}: " . $e->getMessage());
-            
+
             return redirect()->route('apk.download', ['filename' => 'DCCPHub_latest.apk'])
                 ->with('error', 'Failed to download requested version, downloading latest local APK instead.');
         }
+    }
+
+    /**
+     * Render a changelog page built from GitHub releases and commit messages.
+     */
+    public function releasesPage(): Response
+    {
+        $releases = Cache::remember('github_all_releases_with_commits', self::CACHE_TTL, function () {
+            $releases = $this->fetchAllReleasesFromGitHub();
+            // Releases API returns latest first; compute commits between current and next
+            foreach ($releases as $index => &$release) {
+                $currentTag = $release['tag_name'] ?? null;
+                $previousTag = $releases[$index + 1]['tag_name'] ?? null;
+                $release['commits'] = [];
+                if ($currentTag && $previousTag) {
+                    $release['commits'] = $this->fetchCommitsBetweenTags($previousTag, $currentTag);
+                }
+                // Prepare HTML from body markdown if present
+                $release['body_html'] = $this->convertMarkdownToHtml($release['body'] ?? '');
+                // Group commits by conventional type
+                $release['commit_groups'] = $this->groupCommitsByType($release['commits']);
+            }
+            return $releases;
+        });
+
+        return Inertia::render('Changelog/Releases', [
+            'releases' => $releases,
+            'repo' => [
+                'owner' => self::REPO_OWNER,
+                'name' => self::REPO_NAME,
+                'url' => 'https://github.com/' . self::REPO_OWNER . '/' . self::REPO_NAME,
+            ],
+        ]);
     }
 
     /**
@@ -154,7 +188,7 @@ class GitHubReleaseController extends Controller
     private function fetchLatestReleaseFromGitHub(): ?array
     {
         $url = self::GITHUB_API_BASE . '/repos/' . self::REPO_OWNER . '/' . self::REPO_NAME . '/releases/latest';
-        
+
         $response = Http::timeout(10)->get($url);
 
         if (!$response->successful()) {
@@ -175,8 +209,8 @@ class GitHubReleaseController extends Controller
     private function fetchAllReleasesFromGitHub(): array
     {
         $url = self::GITHUB_API_BASE . '/repos/' . self::REPO_OWNER . '/' . self::REPO_NAME . '/releases';
-        
-        $response = Http::timeout(10)->get($url, [
+
+        $response = $this->httpClient()->get($url, [
             'per_page' => 10 // Limit to last 10 releases
         ]);
 
@@ -199,10 +233,10 @@ class GitHubReleaseController extends Controller
     {
         // Ensure version has 'v' prefix for GitHub API
         $tag = str_starts_with($version, 'v') ? $version : "v{$version}";
-        
+
         $url = self::GITHUB_API_BASE . '/repos/' . self::REPO_OWNER . '/' . self::REPO_NAME . '/releases/tags/' . $tag;
-        
-        $response = Http::timeout(10)->get($url);
+
+        $response = $this->httpClient()->get($url);
 
         if (!$response->successful()) {
             Log::warning("GitHub API request for release {$tag} failed", [
@@ -277,7 +311,8 @@ class GitHubReleaseController extends Controller
     {
         Cache::forget('github_latest_release');
         Cache::forget('github_all_releases');
-        
+        Cache::forget('github_all_releases_with_commits');
+
         // Clear specific release caches (this is a simple approach)
         for ($i = 1; $i <= 10; $i++) {
             Cache::forget("github_release_v{$i}.0.0");
@@ -288,5 +323,104 @@ class GitHubReleaseController extends Controller
             'success' => true,
             'message' => 'Release cache cleared successfully'
         ]);
+    }
+
+    /**
+     * Fetch commits between two tags using GitHub compare API
+     * @return array<int, array{sha:string,message:string,author:?string,author_avatar:?string,url:string,date:?string}>
+     */
+    private function fetchCommitsBetweenTags(string $baseTag, string $headTag): array
+    {
+        // Ensure both tags have 'v' prefix consistency
+        $base = str_starts_with($baseTag, 'v') ? $baseTag : "v{$baseTag}";
+        $head = str_starts_with($headTag, 'v') ? $headTag : "v{$headTag}";
+
+        $url = self::GITHUB_API_BASE . '/repos/' . self::REPO_OWNER . '/' . self::REPO_NAME . "/compare/{$base}...{$head}";
+        $response = $this->httpClient()->get($url);
+        if (!$response->successful()) {
+            Log::warning('GitHub compare API failed', [
+                'status' => $response->status(),
+                'url' => $url,
+                'base' => $base,
+                'head' => $head,
+            ]);
+            return [];
+        }
+        $data = $response->json();
+        $commits = $data['commits'] ?? [];
+        return array_map(function ($commit) {
+            $c = $commit['commit'] ?? [];
+            return [
+                'sha' => $commit['sha'] ?? '',
+                'message' => $c['message'] ?? '',
+                'author' => $commit['author']['login'] ?? ($c['author']['name'] ?? null),
+                'author_avatar' => $commit['author']['avatar_url'] ?? null,
+                'url' => $commit['html_url'] ?? '',
+                'date' => $c['author']['date'] ?? null,
+            ];
+        }, $commits);
+    }
+
+    /**
+     * Group commits by conventional commit type derived from the message prefix
+     */
+    private function groupCommitsByType(array $commits): array
+    {
+        $groups = [
+            'feat' => [],
+            'fix' => [],
+            'perf' => [],
+            'refactor' => [],
+            'docs' => [],
+            'chore' => [],
+            'test' => [],
+            'build' => [],
+            'ci' => [],
+            'others' => [],
+        ];
+
+        foreach ($commits as $commit) {
+            $message = $commit['message'] ?? '';
+            if (preg_match('/^(feat|fix|perf|refactor|docs|chore|test|build|ci)(\(.+\))?:/i', $message, $m)) {
+                $type = strtolower($m[1]);
+                $groups[$type][] = $commit;
+            } else {
+                $groups['others'][] = $commit;
+            }
+        }
+
+        // Remove empty groups
+        return array_filter($groups, fn($items) => !empty($items));
+    }
+
+    /**
+     * Minimal Markdown to HTML conversion for release body
+     */
+    private function convertMarkdownToHtml(string $markdown): string
+    {
+        if ($markdown === '') {
+            return '';
+        }
+        $environment = new Environment();
+        $environment->addExtension(new GithubFlavoredMarkdownExtension());
+        $converter = new CommonMarkConverter([], $environment);
+        return $converter->convert($markdown)->getContent();
+    }
+
+    /**
+     * GitHub Http client with optional token and headers
+     */
+    private function httpClient()
+    {
+        $token = config('services.github.token') ?? env('GITHUB_TOKEN');
+        $client = Http::timeout(15)
+            ->withHeaders([
+                'Accept' => 'application/vnd.github+json',
+                'X-GitHub-Api-Version' => '2022-11-28',
+            ]);
+        if (!empty($token)) {
+            $client = $client->withToken($token);
+        }
+        return $client;
     }
 }

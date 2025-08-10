@@ -40,6 +40,7 @@ use App\Http\Controllers\Faculty\FacultyStudentController;
 use App\Http\Controllers\Faculty\FacultySettingsController;
 use App\Http\Controllers\Faculty\FacultyScheduleController;
 use App\Http\Controllers\Faculty\FacultyAttendanceController;
+use App\Http\Controllers\Faculty\ChangelogController as FacultyChangelogController;
 
 // Mobile & APK Controllers
 use App\Http\Controllers\APKController;
@@ -106,7 +107,7 @@ Route::get('/download/apk/{version}', [GitHubReleaseController::class, 'download
 Route::prefix('auth')->group(function () {
     Route::post('/google/callback/mobile', [SocialAuthController::class, 'handleMobileCallback'])->name('auth.mobile.callback');
     Route::post('/google/exchange', [SocialAuthController::class, 'exchangeCodeForTokens'])->name('auth.mobile.exchange');
-    Route::get('/mobile/test', function() {
+    Route::get('/mobile/test', function () {
         return response()->json(['status' => 'Mobile OAuth routes working', 'timestamp' => now()]);
     })->name('auth.mobile.test');
 });
@@ -147,15 +148,15 @@ Route::prefix('enrollment/auth')->group(function () {
 // ============================================================================
 
 // Test Notifications
-Route::get('/test-toast-success', function() {
+Route::get('/test-toast-success', function () {
     return redirect()->route('dashboard')->with('success', 'Success notification test');
 })->middleware(['auth:sanctum', config('jetstream.auth_session')])->name('test.toast.success');
 
-Route::get('/test-toast-error', function() {
+Route::get('/test-toast-error', function () {
     return redirect()->route('dashboard')->with('error', 'Error notification test');
 })->middleware(['auth:sanctum', config('jetstream.auth_session')])->name('test.toast.error');
 
-Route::get('/test-toast-message', function() {
+Route::get('/test-toast-message', function () {
     return redirect()->route('dashboard')->with('message', 'Info notification test');
 })->middleware(['auth:sanctum', config('jetstream.auth_session')])->name('test.toast.message');
 
@@ -264,6 +265,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         Route::patch('/both', [FacultySettingsController::class, 'updateBoth'])->name('both');
     });
 
+    // Faculty Changelog Route
+    Route::get('/faculty/changelog', [FacultyChangelogController::class, 'index'])->name('faculty.changelog');
+
     // ========================================================================
     // STUDENT ROUTES
     // ========================================================================
@@ -299,6 +303,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
     Route::get('/tuition', [TuitionController::class, 'index'])->name('tuition.index');
     Route::get('/subjects', [SubjectsController::class, 'index'])->name('subjects.index');
     Route::get('/changelog', [ChangelogController::class, 'index'])->name('changelog.index');
+    Route::get('/changelog/releases', [GitHubReleaseController::class, 'releasesPage'])->name('changelog.releases');
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
 
     // ========================================================================
@@ -308,5 +313,3 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         ->names('subscriptions')
         ->only(['index', 'create', 'store', 'show']);
 });
-
-

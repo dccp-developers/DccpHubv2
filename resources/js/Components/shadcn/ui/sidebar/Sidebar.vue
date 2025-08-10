@@ -1,8 +1,9 @@
 <script setup>
+import MobileSidebar from '@/Components/Faculty/MobileSidebar.vue';
 import Sheet from '@/Components/shadcn/ui/sheet/Sheet.vue';
 import SheetContent from '@/Components/shadcn/ui/sheet/SheetContent.vue';
 import { cn } from "@/lib/utils";
-import { SIDEBAR_WIDTH_MOBILE, useSidebar } from "./utils";
+import { useSidebar } from "./utils";
 
 defineOptions({
   inheritAttrs: false,
@@ -42,13 +43,14 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
       data-sidebar="sidebar"
       data-mobile="true"
       :side="side"
-      class="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+      class="w-screen max-w-none bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
       :style="{
-        '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
+        '--sidebar-width': '100vw',
       }"
     >
       <div class="flex h-full w-full flex-col">
-        <slot />
+        <!-- Native-like full-screen mobile menu -->
+        <MobileSidebar />
       </div>
     </SheetContent>
   </Sheet>
