@@ -27,7 +27,7 @@ final class StudentAttendanceService
     /**
      * Get student's attendance dashboard data
      */
-    public function getStudentDashboardData(string $studentId): array
+    public function getStudentDashboardData(int|string $studentId): array
     {
         // Get all classes the student is enrolled in
         $enrollments = class_enrollments::with(['class.Subject', 'class.ShsSubject', 'class.Faculty'])
@@ -139,7 +139,7 @@ final class StudentAttendanceService
     /**
      * Get attendance statistics for a specific class
      */
-    public function getClassAttendanceDetails(string $studentId, int $classId): array
+    public function getClassAttendanceDetails(int $studentId, int $classId): array
     {
         $class = Classes::with(['Subject', 'ShsSubject', 'Faculty', 'Room'])->findOrFail($classId);
         $enrollment = class_enrollments::where('student_id', $studentId)
@@ -180,7 +180,7 @@ final class StudentAttendanceService
     /**
      * Get student's attendance trend (last 8 weeks)
      */
-    private function getStudentAttendanceTrend(string $studentId): array
+    private function getStudentAttendanceTrend(int $studentId): array
     {
         $weeks = [];
         
@@ -210,7 +210,7 @@ final class StudentAttendanceService
     /**
      * Get upcoming classes for the student
      */
-    private function getUpcomingClasses(string $studentId): Collection
+    private function getUpcomingClasses(int $studentId): Collection
     {
         $enrollments = class_enrollments::with(['class.Subject', 'class.ShsSubject', 'class.Schedule'])
             ->where('student_id', $studentId)
@@ -234,7 +234,7 @@ final class StudentAttendanceService
     /**
      * Get attendance alerts for the student
      */
-    private function getAttendanceAlerts(string $studentId): array
+    private function getAttendanceAlerts(int $studentId): array
     {
         $enrollments = class_enrollments::with(['class.Subject', 'class.ShsSubject'])
             ->where('student_id', $studentId)

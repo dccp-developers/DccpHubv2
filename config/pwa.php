@@ -13,6 +13,14 @@ return [
     'lang' => 'en',
     'dir' => 'ltr',
     'categories' => ['education', 'productivity'],
+    'manifest' => [
+        'name' => env('APP_NAME', 'DCCPHub'),
+        'short_name' => env('APP_NAME', 'DCCPHub'),
+        'start_url' => '/',
+        'background_color' => '#ffffff',
+        'theme_color' => '#000000',
+        'display' => 'standalone',
+    ],
     'icons' => [
         '48x48' => [
             'path' => '/images/android/android-launchericon-48-48.png',

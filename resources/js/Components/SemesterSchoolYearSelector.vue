@@ -125,6 +125,23 @@ const currentSchoolYearDisplay = computed(() => {
     return settings.value.current_school_year_string || `${settings.value.current_school_year} - ${settings.value.current_school_year + 1}`;
 });
 
+// Format compact display for mobile and dropdown
+const currentPeriodCompactDisplay = computed(() => {
+    const semester = settings.value.available_semesters[settings.value.current_semester] || '1st Semester';
+    const schoolYear = settings.value.current_school_year_string || `${settings.value.current_school_year} - ${settings.value.current_school_year + 1}`;
+    
+    // Extract semester number and format as "1st Sem", "2nd Sem"
+    const semesterMatch = semester.match(/^(\d+)(st|nd|rd|th)/);
+    if (semesterMatch) {
+        const semesterNum = semesterMatch[1];
+        const suffix = semesterMatch[2];
+        return `${semesterNum}${suffix} Sem, ${schoolYear}`;
+    }
+    
+    // Fallback if regex doesn't match
+    return `${semester}, ${schoolYear}`;
+});
+
 onMounted(() => {
     loadSettings();
 });
@@ -138,9 +155,7 @@ onMounted(() => {
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="sm" class="flex items-center gap-2 text-sm">
                         <Icon icon="lucide:calendar" class="w-4 h-4" />
-                        <span class="font-medium">{{ currentSemesterDisplay }}</span>
-                        <span class="text-muted-foreground">•</span>
-                        <span class="font-medium">{{ currentSchoolYearDisplay }}</span>
+                        <span class="font-medium">{{ currentPeriodCompactDisplay }}</span>
                         <Icon icon="lucide:chevron-down" class="w-4 h-4" />
                     </Button>
                 </DialogTrigger>
@@ -215,7 +230,7 @@ onMounted(() => {
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" class="flex items-center gap-1 text-xs px-2">
                         <Icon icon="lucide:calendar" class="w-3 h-3" />
-                        <span class="truncate max-w-20">{{ currentSemesterDisplay.split(' ')[0] }}</span>
+                        <span class="truncate max-w-24">{{ currentPeriodCompactDisplay }}</span>
                         <Icon icon="lucide:chevron-down" class="w-3 h-3" />
                     </Button>
                 </DropdownMenuTrigger>
@@ -223,8 +238,7 @@ onMounted(() => {
                     <DropdownMenuLabel class="text-xs">Current Period</DropdownMenuLabel>
                     <DropdownMenuItem disabled class="text-xs">
                         <div class="flex flex-col">
-                            <span>{{ currentSemesterDisplay }}</span>
-                            <span class="text-muted-foreground">{{ currentSchoolYearDisplay }}</span>
+                            <span>{{ currentPeriodCompactDisplay }}</span>
                         </div>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />

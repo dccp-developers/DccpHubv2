@@ -17,9 +17,6 @@ final class ChatController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        // Eager load team relationships to prevent lazy loading issues
-        $user->load(['currentTeam', 'ownedTeams', 'teams']);
-
         return Inertia::render('Chat/Index', [
             'subscriptionEnabled' => $user->subscribed('Larasonic Pro ✨'),
             'systemPrompt' => view('prompts.system')->render(),

@@ -28,7 +28,7 @@ final class AttendanceService
      */
     public function markAttendance(
         int $classId,
-        string $studentId,
+        int $studentId,
         AttendanceStatus $status,
         \DateTimeInterface $date,
         ?string $remarks = null,
@@ -122,7 +122,7 @@ final class AttendanceService
      * Get attendance records for a specific student
      */
     public function getStudentAttendance(
-        string $studentId,
+        int $studentId,
         ?int $classId = null,
         ?\DateTimeInterface $startDate = null,
         ?\DateTimeInterface $endDate = null
@@ -148,7 +148,7 @@ final class AttendanceService
     /**
      * Calculate attendance statistics for a student in a specific class
      */
-    public function calculateStudentClassStats(string $studentId, int $classId): array
+    public function calculateStudentClassStats(int $studentId, int $classId): array
     {
         $attendances = $this->getStudentAttendance($studentId, $classId);
         return $this->calculateAttendanceStats($attendances);
@@ -157,7 +157,7 @@ final class AttendanceService
     /**
      * Calculate overall attendance statistics for a student
      */
-    public function calculateStudentOverallStats(string $studentId): array
+    public function calculateStudentOverallStats(int $studentId): array
     {
         $attendances = $this->getStudentAttendance($studentId);
         return $this->calculateAttendanceStats($attendances);
@@ -241,7 +241,7 @@ final class AttendanceService
 
         foreach ($enrollments as $enrollment) {
             $studentAttendances = $this->getStudentAttendance(
-                $enrollment->student_id,
+                (int) $enrollment->student_id, // Cast to int
                 $classId,
                 $startDate,
                 $endDate

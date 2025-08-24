@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Models\Students;
 use Inertia\Testing\AssertableInertia;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Testing\Fluent\AssertableJson;
@@ -11,7 +12,15 @@ use Inertia\Testing\AssertableInertia as Assert;
 covers(DashboardController::class);
 
 beforeEach(function (): void {
-    $this->user = User::factory()->create();
+    // Create a student record first
+    $student = Students::factory()->create();
+
+    // Create a user linked to the student
+    $this->user = User::factory()->create([
+        'role' => 'student',
+        'person_id' => $student->id,
+        'person_type' => Students::class,
+    ]);
 });
 
 test('guests cannot access dashboard', function (): void {
@@ -23,6 +32,12 @@ test('guests cannot access dashboard', function (): void {
 test('authenticated users can access dashboard', function (): void {
     $response = $this->actingAs($this->user)
         ->get(route('dashboard'));
+
+    // Debug the response if it's not OK
+    if ($response->status() !== 200) {
+        dump('Response status: ' . $response->status());
+        dump('Response content: ' . $response->getContent());
+    }
 
     $response->assertInertia(
         fn (Assert $page): AssertableJson => $page

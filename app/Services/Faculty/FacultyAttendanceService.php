@@ -70,7 +70,7 @@ final class FacultyAttendanceService
 
             // Get student's overall stats for this class
             $studentStats = $this->attendanceService->calculateStudentClassStats(
-                $enrollment->student_id,
+                (int) $enrollment->student_id, // Cast to int
                 $classId
             );
 
@@ -113,7 +113,7 @@ final class FacultyAttendanceService
                     $status = AttendanceStatus::from($data['status']);
                     $attendance = $this->attendanceService->markAttendance(
                         $classId,
-                        $data['student_id'],
+                        (int) $data['student_id'], // Cast string to int
                         $status,
                         $date,
                         $data['remarks'] ?? null,
@@ -184,14 +184,14 @@ final class FacultyAttendanceService
 
         return $enrollments->filter(function ($enrollment) use ($classId, $threshold) {
             $stats = $this->attendanceService->calculateStudentClassStats(
-                $enrollment->student_id,
+                (int) $enrollment->student_id, // Cast to int
                 $classId
             );
             return $stats['attendance_rate'] < $threshold;
         })->map(function ($enrollment) use ($classId) {
             $student = $enrollment->EnrolledStudent();
             $stats = $this->attendanceService->calculateStudentClassStats(
-                $enrollment->student_id,
+                (int) $enrollment->student_id, // Cast to int
                 $classId
             );
 

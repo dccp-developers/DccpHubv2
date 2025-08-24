@@ -7,7 +7,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use App\Actions\Jetstream\DeleteUser;
 use App\Actions\Fortify\CreateNewUser;
@@ -28,14 +27,12 @@ final class ApiUserController extends Controller
      *
      * @authenticated
      */
-    public function index(): ?Collection
+    public function index(): Collection
     {
         Gate::authorize('viewAny', User::class);
 
-        $user = type(Auth::user())->as(User::class);
-        $user->load('currentTeam.users');
-
-        return $user->currentTeam?->users;
+        // Return all users - authorization is handled by the policy
+        return User::all();
     }
 
     /**
@@ -45,6 +42,11 @@ final class ApiUserController extends Controller
      */
     public function store(Request $request): User
     {
+        // Check token abilities first
+        if (!$request->user()->tokenCan('create')) {
+            abort(403, 'Token does not have the required ability');
+        }
+
         Gate::authorize('create', User::class);
 
         return app(CreateNewUser::class)->create([
@@ -52,6 +54,9 @@ final class ApiUserController extends Controller
             'email' => (string) $request->string('email'),
             'password' => (string) $request->string('password'),
             'password_confirmation' => (string) $request->string('password_confirmation'),
+            'role' => (string) $request->string('role'),
+            'id' => (string) $request->string('id'),
+            'phone' => (string) $request->string('phone', ''),
             'terms' => 'true',
         ]);
     }
@@ -78,6 +83,11 @@ final class ApiUserController extends Controller
         app(UpdateUserProfileInformation::class)->update($user, [
             'name' => $request->name,
             'email' => $request->email,
+            'is_active' => $request->boolean('is_active'),
+            'phone' => $request->phone,
+            'role' => $request->role,
+            'person_id' => $request->person_id,
+            'person_type' => $request->person_type,
         ]);
 
         return $user;

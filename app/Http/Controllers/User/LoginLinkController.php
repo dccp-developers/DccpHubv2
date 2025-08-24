@@ -20,7 +20,7 @@ final class LoginLinkController extends Controller
 {
     private const string RATE_LIMIT_PREFIX = 'login-link:';
 
-    private const int RATE_LIMIT_ATTEMPTS = 5;
+    private const int RATE_LIMIT_ATTEMPTS = 1;
 
     private const int EXPIRATION_TIME = 15;
 
@@ -33,7 +33,7 @@ final class LoginLinkController extends Controller
     {
         /** @var array<string, string> $validated */
         $validated = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'exists:accounts,email'],
         ]);
 
         $email = $validated['email'];
@@ -50,7 +50,7 @@ final class LoginLinkController extends Controller
                 ], 429);
             }
 
-            // session()->flash('error', __('Please wait :seconds seconds before requesting another magic link.', ['seconds' => $seconds]));
+            session()->flash('error', __('Please wait :seconds seconds before requesting another magic link.', ['seconds' => $seconds]));
             return redirect()->back();
         }
 

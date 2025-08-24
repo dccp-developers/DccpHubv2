@@ -48,7 +48,7 @@ final readonly class HandleOauthCallbackAction
 
             return match (true) {
                 $existingUser instanceof User => $this->handleExistingUser($existingUser, $provider, $socialiteUser),
-                default => $this->createNewUser($socialiteUser, $provider),
+                default => $this->createNewUserWithConnection($socialiteUser, $provider),
             };
         });
     }
@@ -83,6 +83,7 @@ final readonly class HandleOauthCallbackAction
 
     private function handleExistingUser(User $user, string $provider, SocialiteUser $socialiteUser): User
     {
+        // If user doesn't have OAuth connection for this provider, they should login with existing method first
         throw_unless(
             $user->oauthConnections()->where('provider', $provider)->exists(),
             OAuthAccountLinkingException::existingConnection()
@@ -98,6 +99,23 @@ final readonly class HandleOauthCallbackAction
         // Use the enhanced social auth service for proper role detection
         $socialAuthService = new SocialAuthService();
         return $socialAuthService->findOrCreateUser($socialiteUser, $provider);
+    }
+
+    private function createNewUserWithConnection(SocialiteUser $socialiteUser, string $provider): User
+    {
+        $user = $this->createNewUser($socialiteUser, $provider);
+
+        // Create OAuth connection for the new user
+        $user->oauthConnections()->create([
+            'provider' => $provider,
+            'provider_id' => $socialiteUser->getId(),
+            'data' => $socialiteUser->getRaw(),
+            'token' => $socialiteUser->token,
+            'refresh_token' => $socialiteUser->refreshToken,
+            'expires_at' => $socialiteUser->expiresIn ? now()->addSeconds($socialiteUser->expiresIn) : null,
+        ]);
+
+        return $user;
     }
 
     private function updateUserProfile(User $user, SocialiteUser $socialiteUser, string $provider): void

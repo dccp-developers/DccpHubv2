@@ -68,10 +68,7 @@ final class SocialAuthService
             'email_verified_at' => now()
         ];
 
-        // Add provider-specific fields
-        if ($provider === 'google') {
-            $updateData['google_id'] = $socialiteUser->getId();
-        }
+        // Provider-specific data will be stored in OAuth connections table instead
 
         if ($socialiteUser->getAvatar()) {
             $updateData['avatar'] = $socialiteUser->getAvatar();
@@ -100,6 +97,7 @@ final class SocialAuthService
         return DB::transaction(function () use ($socialiteUser, $provider, $person, $personType, $role) {
             $userData = [
                 'name' => $socialiteUser->getName(),
+                'username' => $socialiteUser->getEmail(), // Use email as username for OAuth users
                 'email' => $socialiteUser->getEmail(),
                 'password' => Hash::make(str()->random(32)), // Random password for OAuth users
                 'role' => $role,
@@ -109,10 +107,7 @@ final class SocialAuthService
                 'email_verified_at' => now()
             ];
 
-            // Add provider-specific fields
-            if ($provider === 'google') {
-                $userData['google_id'] = $socialiteUser->getId();
-            }
+            // Provider-specific data will be stored in OAuth connections table instead
 
             if ($socialiteUser->getAvatar()) {
                 $userData['avatar'] = $socialiteUser->getAvatar();

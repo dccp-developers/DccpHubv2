@@ -313,3 +313,22 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
         ->names('subscriptions')
         ->only(['index', 'create', 'store', 'show']);
 });
+
+// ============================================================================
+// PWA ROUTES
+// ============================================================================
+
+// Service Worker route
+Route::get('/sw.js', function () {
+    $path = public_path('sw.js');
+    if (!file_exists($path)) {
+        abort(404);
+    }
+
+    return response()->file($path, [
+        'Content-Type' => 'application/javascript',
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Pragma' => 'no-cache',
+        'Expires' => '0'
+    ]);
+})->name('sw');

@@ -46,7 +46,7 @@ final class CreateNewUser implements CreatesNewUsers
         return DB::transaction(fn () => tap(User::query()->create([
             'name' => $input['name'],
             'email' => $input['email'],
-            'username' => $input['name'],
+            'username' => $input['name'], // Use name as username for now
             'phone' => $input['phone'],
             'password' => Hash::make($input['password']),
             'role' => $personData['type'] === Faculty::class ? 'faculty' : 'student',

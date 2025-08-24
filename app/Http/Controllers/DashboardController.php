@@ -33,8 +33,8 @@ final class DashboardController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        // Eager load team relationships to prevent lazy loading issues
-        $user->load(['currentTeam', 'ownedTeams', 'teams']);
+        // Load user relationships if needed
+        // Note: Team functionality has been removed
 
         // Redirect guest users to the guest dashboard
         if (isset($user->role) && $user->role === 'guest') {
@@ -46,9 +46,14 @@ final class DashboardController extends Controller
             return redirect()->route('faculty.dashboard');
         }
 
-        // Ensure the user is a student
-        if (!$user->isStudent()) {
-            abort(403, 'Only students can access the dashboard.');
+        // Allow students and admins to access the dashboard
+        if (!$user->isStudent() && !$user->isAdmin()) {
+            abort(403, 'Only students and admins can access the dashboard.');
+        }
+
+        // Handle admin users with a simplified dashboard
+        if ($user->isAdmin()) {
+            return $this->getAdminDashboard($user);
         }
 
         /** @var Students $student */
@@ -340,7 +345,7 @@ final class DashboardController extends Controller
             // Get the correct student identifier based on student type
             if ($student instanceof \App\Models\Students) {
                 // College student - use the id as student_id for attendance records
-                $studentId = (string) $student->id;
+                $studentId = $student->id;
             } elseif ($student instanceof \App\Models\ShsStudents) {
                 // SHS student - use student_lrn
                 $studentId = $student->student_lrn;
@@ -395,5 +400,44 @@ final class DashboardController extends Controller
             'alerts' => [],
             'recentClasses' => []
         ];
+    }
+
+    /**
+     * Get admin dashboard with basic admin information
+     */
+    private function getAdminDashboard(User $user): Response
+    {
+        // Get general settings
+        $generalSettings = GeneralSettings::first();
+
+        // Get current semester and school year using the service
+        $currentSemester = $this->settingsService->getCurrentSemester();
+        $currentSchoolYear = $this->settingsService->getCurrentSchoolYearString();
+
+        return Inertia::render('Dashboard', [
+            'user' => [
+                'name' => $user->name,
+                'role' => $user->role,
+                'email' => $user->email,
+            ],
+            'generalSettings' => $generalSettings,
+            'currentSemester' => $currentSemester,
+            'currentSchoolYear' => $currentSchoolYear,
+            'isAdmin' => true,
+            'stats' => [
+                'total' => 0,
+                'present' => 0,
+                'absent' => 0,
+                'late' => 0,
+                'excused' => 0,
+                'partial' => 0,
+                'present_count' => 0,
+                'attendance_rate' => 0,
+            ],
+            'alerts' => [],
+            'recentClasses' => [],
+            'todaysClasses' => [],
+            'attendanceData' => $this->getDefaultAttendanceData(),
+        ]);
     }
 }

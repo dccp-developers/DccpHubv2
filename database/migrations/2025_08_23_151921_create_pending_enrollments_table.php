@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        if (!Schema::hasTable('pending_enrollments')) {
+
+            Schema::create('pending_enrollments', function (Blueprint $table) {
+            $table->id();
+            $table->json('data'); // Store enrollment data as JSON
+            $table->timestamps();
+        });
+
+        }
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('pending_enrollments');
+    }
+};

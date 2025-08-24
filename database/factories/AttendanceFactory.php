@@ -37,13 +37,15 @@ class AttendanceFactory extends Factory
             'status' => $this->faker->randomElement(AttendanceStatus::cases())->value,
             'remarks' => $this->faker->optional(0.3)->sentence(),
             'marked_at' => $this->faker->dateTimeBetween('-30 days', 'now'),
-            'marked_by' => Faculty::factory(),
+            'marked_by' => function () {
+                return Faculty::factory()->create()->id;
+            },
             'ip_address' => $this->faker->ipv4(),
-            'location_data' => $this->faker->optional(0.2)->passthrough([
+            'location_data' => $this->faker->optional(0.2)->passthrough(json_encode([
                 'latitude' => $this->faker->latitude(),
                 'longitude' => $this->faker->longitude(),
                 'accuracy' => $this->faker->numberBetween(1, 100),
-            ]),
+            ])),
         ];
     }
 

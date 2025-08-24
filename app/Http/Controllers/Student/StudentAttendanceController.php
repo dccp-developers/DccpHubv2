@@ -53,10 +53,10 @@ final class StudentAttendanceController extends Controller
         // Get the correct student identifier based on student type
         if ($student instanceof \App\Models\Students) {
             // College student - use the id as student_id for attendance records
-            $studentId = (string) $student->id;
+            $studentId = $student->id; // Keep as int for service calls
         } else {
             // SHS student - use student_lrn
-            $studentId = $student->student_lrn;
+            $studentId = (int) $student->student_lrn; // Cast to int for consistency
         }
 
         try {
@@ -101,10 +101,10 @@ final class StudentAttendanceController extends Controller
         // Get the correct student identifier based on student type
         if ($student instanceof \App\Models\Students) {
             // College student - use the id as student_id for attendance records
-            $studentId = (string) $student->id;
+            $studentId = $student->id; // Keep as int for service calls
         } else {
-            // SHS student - use student_lrn
-            $studentId = $student->student_lrn;
+            // SHS student - use student_lrn (convert to int for consistency)
+            $studentId = (int) $student->student_lrn;
         }
 
         // Verify student is enrolled in this class
@@ -157,10 +157,10 @@ final class StudentAttendanceController extends Controller
         // Get the correct student identifier based on student type
         if ($student instanceof \App\Models\Students) {
             // College student - use the id as student_id for attendance records
-            $studentId = (string) $student->id;
+            $studentId = $student->id; // Keep as int for service calls
         } else {
-            // SHS student - use student_lrn
-            $studentId = $student->student_lrn;
+            // SHS student - use student_lrn (convert to int for consistency)
+            $studentId = (int) $student->student_lrn;
         }
 
         $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : now()->subMonths(3);

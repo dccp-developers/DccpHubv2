@@ -36,11 +36,9 @@ import {
 } from "@/Components/shadcn/ui/sheet";
 import { useColorMode } from "@vueuse/core";
 import AppLogoIcon from "@/Components/AppLogoIcon.vue";
-import SemesterSchoolYearSelector from "@/Components/SemesterSchoolYearSelector.vue";
 import { toast } from "vue-sonner";
 import NavMain from "@/Components/shadcn/NavMain.vue";
 import NavSecondary from "@/Components/shadcn/NavSecondary.vue";
-import AppTeamManager from "@/Components/AppTeamManager.vue";
 import AppUserManager from "@/Components/AppUserManager.vue";
 import {
     LayoutDashboard,
@@ -311,7 +309,6 @@ function renderLink(item) {
             </div>
 
             <div class="flex items-center gap-2">
-                <SemesterSchoolYearSelector />
                 <div class="font-medium text-sm">{{ title || appName }}</div>
             </div>
 
@@ -424,9 +421,6 @@ function renderLink(item) {
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
-                        <SidebarMenuItem v-if="$page.props.jetstream.hasTeamFeatures">
-                            <AppTeamManager />
-                        </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarHeader>
 
@@ -473,7 +467,6 @@ function renderLink(item) {
                             ref="notificationDropdown"
                             class="hidden md:block"
                         />
-                        <SemesterSchoolYearSelector />
                     </div>
                 </header>
                 <main class="flex flex-1 flex-col gap-4 p-4 pt-0 mt-14 md:mt-0">

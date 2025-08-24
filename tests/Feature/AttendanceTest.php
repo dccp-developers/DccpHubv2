@@ -16,12 +16,11 @@ use App\Services\AttendanceService;
 use App\Services\Faculty\FacultyAttendanceService;
 use App\Services\Student\StudentAttendanceService;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 
 class AttendanceTest extends TestCase
 {
-    use RefreshDatabase, WithFaker;
+    use WithFaker;
 
     private User $facultyUser;
     private User $studentUser;
@@ -38,33 +37,33 @@ class AttendanceTest extends TestCase
 
     private function setUpTestData(): void
     {
-        // Create faculty user and record
-        $this->facultyUser = User::factory()->create([
-            'person_type' => Faculty::class,
-        ]);
-
+        // Create faculty record first
         $this->faculty = Faculty::factory()->create([
-            'id' => 'FAC001',
             'first_name' => 'John',
             'last_name' => 'Doe',
-            'email' => $this->facultyUser->email,
         ]);
 
-        $this->facultyUser->update(['person_id' => $this->faculty->id]);
-
-        // Create student user and record
-        $this->studentUser = User::factory()->create([
-            'person_type' => Students::class,
+        // Create faculty user linked to faculty record
+        $this->facultyUser = User::factory()->create([
+            'role' => 'faculty',
+            'person_type' => Faculty::class,
+            'person_id' => $this->faculty->faculty_id_number,
+            'email' => $this->faculty->email,
         ]);
 
+        // Create student record first
         $this->student = Students::factory()->create([
-            'student_id' => 'STU001',
             'first_name' => 'Jane',
             'last_name' => 'Smith',
-            'email' => $this->studentUser->email,
         ]);
 
-        $this->studentUser->update(['person_id' => $this->student->student_id]);
+        // Create student user linked to student record
+        $this->studentUser = User::factory()->create([
+            'role' => 'student',
+            'person_type' => Students::class,
+            'person_id' => $this->student->id,
+            'email' => $this->student->email,
+        ]);
 
         // Create class
         $this->class = Classes::factory()->create([
@@ -75,7 +74,7 @@ class AttendanceTest extends TestCase
         // Create enrollment
         $this->enrollment = class_enrollments::factory()->create([
             'class_id' => $this->class->id,
-            'student_id' => $this->student->student_id,
+            'student_id' => $this->student->id,
         ]);
     }
 
@@ -116,7 +115,7 @@ class AttendanceTest extends TestCase
             'date' => now()->format('Y-m-d'),
             'attendance' => [
                 [
-                    'student_id' => $this->student->student_id,
+                    'student_id' => (string) $this->student->id,
                     'status' => AttendanceStatus::PRESENT->value,
                     'remarks' => 'Test remarks',
                 ]
@@ -131,7 +130,7 @@ class AttendanceTest extends TestCase
 
         $this->assertDatabaseHas('attendances', [
             'class_id' => $this->class->id,
-            'student_id' => $this->student->student_id,
+            'student_id' => $this->student->id,
             'status' => AttendanceStatus::PRESENT->value,
             'date' => now()->format('Y-m-d'),
         ]);
@@ -141,14 +140,14 @@ class AttendanceTest extends TestCase
     public function faculty_cannot_mark_attendance_for_other_faculty_classes(): void
     {
         // Create another faculty and class
-        $otherFaculty = Faculty::factory()->create(['id' => 'FAC002']);
+        $otherFaculty = Faculty::factory()->create();
         $otherClass = Classes::factory()->create(['faculty_id' => $otherFaculty->id]);
 
         $attendanceData = [
             'date' => now()->format('Y-m-d'),
             'attendance' => [
                 [
-                    'student_id' => $this->student->student_id,
+                    'student_id' => (string) $this->student->id,
                     'status' => AttendanceStatus::PRESENT->value,
                 ]
             ]
@@ -181,7 +180,7 @@ class AttendanceTest extends TestCase
         // Create some attendance records
         Attendance::factory()->create([
             'class_enrollment_id' => $this->enrollment->id,
-            'student_id' => $this->student->student_id,
+            'student_id' => $this->student->id,
             'class_id' => $this->class->id,
             'status' => AttendanceStatus::PRESENT->value,
             'date' => now()->subDays(1),
@@ -203,10 +202,10 @@ class AttendanceTest extends TestCase
     public function student_cannot_view_other_student_attendance(): void
     {
         // Create another student and class
-        $otherStudent = Students::factory()->create(['student_id' => 'STU002']);
+        $otherStudent = Students::factory()->create();
         $otherEnrollment = class_enrollments::factory()->create([
             'class_id' => $this->class->id,
-            'student_id' => $otherStudent->student_id,
+            'student_id' => $otherStudent->id,
         ]);
 
         $response = $this->actingAs($this->studentUser)
@@ -247,14 +246,14 @@ class AttendanceTest extends TestCase
         foreach (AttendanceStatus::cases() as $status) {
             $attendance = $attendanceService->markAttendance(
                 $this->class->id,
-                $this->student->student_id,
+                $this->student->id,
                 $status,
                 now()->addDays($status->value === 'present' ? 1 : 2), // Different dates
                 'Test remarks for ' . $status->value,
                 $this->faculty->id
             );
 
-            $this->assertEquals($status->value, $attendance->status);
+            $this->assertEquals($status, $attendance->status);
             $this->assertDatabaseHas('attendances', [
                 'id' => $attendance->id,
                 'status' => $status->value,
@@ -270,7 +269,7 @@ class AttendanceTest extends TestCase
         // Mark initial attendance
         $attendance = $attendanceService->markAttendance(
             $this->class->id,
-            $this->student->student_id,
+            $this->student->id,
             AttendanceStatus::ABSENT,
             now(),
             'Initially absent',
@@ -280,7 +279,7 @@ class AttendanceTest extends TestCase
         // Update to present
         $updatedAttendance = $attendanceService->markAttendance(
             $this->class->id,
-            $this->student->student_id,
+            $this->student->id,
             AttendanceStatus::PRESENT,
             now(),
             'Now present',
@@ -288,7 +287,7 @@ class AttendanceTest extends TestCase
         );
 
         $this->assertEquals($attendance->id, $updatedAttendance->id);
-        $this->assertEquals(AttendanceStatus::PRESENT->value, $updatedAttendance->status);
+        $this->assertEquals(AttendanceStatus::PRESENT, $updatedAttendance->status);
         $this->assertEquals('Now present', $updatedAttendance->remarks);
     }
 
@@ -324,12 +323,12 @@ class AttendanceTest extends TestCase
         // Create some attendance records
         Attendance::factory()->count(3)->create([
             'class_enrollment_id' => $this->enrollment->id,
-            'student_id' => $this->student->student_id,
+            'student_id' => $this->student->id,
             'class_id' => $this->class->id,
             'status' => AttendanceStatus::PRESENT->value,
         ]);
 
-        $dashboardData = $studentAttendanceService->getStudentDashboardData($this->student->student_id);
+        $dashboardData = $studentAttendanceService->getStudentDashboardData($this->student->id);
 
         $this->assertArrayHasKey('classes', $dashboardData);
         $this->assertArrayHasKey('overall_stats', $dashboardData);

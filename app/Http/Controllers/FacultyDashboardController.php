@@ -24,9 +24,6 @@ final class FacultyDashboardController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        // Eager load team relationships to prevent lazy loading issues
-        $user->load(['currentTeam', 'ownedTeams', 'teams']);
-
         // Ensure the user is a faculty member
         if (!$user->isFaculty()) {
             abort(403, 'Only faculty members can access this dashboard.');

@@ -319,8 +319,26 @@ final class UserAccountService
      */
     private function generateSecurePassword(int $length = 12): string
     {
-        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-        return substr(str_shuffle(str_repeat($characters, $length)), 0, $length);
+        $lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $numbers = '0123456789';
+        $special = '!@#$%^&*';
+        
+        // Ensure we have at least one character from each type
+        $password = '';
+        $password .= $lowercase[rand(0, strlen($lowercase) - 1)];
+        $password .= $uppercase[rand(0, strlen($uppercase) - 1)];
+        $password .= $numbers[rand(0, strlen($numbers) - 1)];
+        $password .= $special[rand(0, strlen($special) - 1)];
+        
+        // Fill the rest with random characters from all sets
+        $allCharacters = $lowercase . $uppercase . $numbers . $special;
+        for ($i = 4; $i < $length; $i++) {
+            $password .= $allCharacters[rand(0, strlen($allCharacters) - 1)];
+        }
+        
+        // Shuffle the password to randomize positions
+        return str_shuffle($password);
     }
 
     /**
@@ -328,8 +346,22 @@ final class UserAccountService
      */
     private function sendPasswordResetEmail(User $user, string $newPassword): void
     {
-        // Implement your email sending logic here
-        // This is a placeholder for the actual email implementation
+        try {
+            Mail::to($user->email)->send(new \App\Mail\PasswordReset($user, $newPassword));
+            
+            Log::info('Password reset email sent', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send password reset email', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+            
+            throw $e;
+        }
     }
 
     /**

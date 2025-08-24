@@ -47,6 +47,7 @@
         "barryvdh/laravel-ide-helper": "^3.2",
         "driftingly/rector-laravel": "^2.0",
         "fakerphp/faker": "^1.23",
+        "filament/upgrade": "^4.0",
         "knuckleswtf/scribe": "^4.38",
         "larastan/larastan": "^3.0",
         "laravel/pail": "^1.1",
