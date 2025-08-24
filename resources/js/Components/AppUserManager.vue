@@ -15,6 +15,7 @@ import { Button } from "@/Components/shadcn/ui/button";
 import { Icon } from "@iconify/vue";
 import { Link, router } from "@inertiajs/vue3";
 import { inject, computed, ref, getCurrentInstance } from "vue";
+import SemesterSchoolYearSelector from "@/Components/SemesterSchoolYearSelector.vue";
 
 const route = inject("route");
 
@@ -115,6 +116,13 @@ const TriggerComponent = computed(() => {
                     Billing
                 </DropdownMenuItem>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            
+            <!-- Semester and School Year Selector -->
+            <div class="px-2 py-1.5">
+                <SemesterSchoolYearSelector />
+            </div>
+            
             <DropdownMenuSeparator />
             <DropdownMenuItem @click="logout">
                 <Icon icon="lucide:log-out" />
