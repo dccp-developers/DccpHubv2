@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->unsignedBigInteger('class_enrollment_id')->after('id');
-            $table->foreign('class_enrollment_id')->references('id')->on('class_enrollments');
+            if (!Schema::hasColumn('attendances', 'class_enrollment_id')) {
+                $table->unsignedBigInteger('class_enrollment_id')->after('id');
+                $table->foreign('class_enrollment_id')->references('id')->on('class_enrollments');
+            }
         });
     }
 

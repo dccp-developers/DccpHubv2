@@ -8,7 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('classes', function (Blueprint $table) {
+        if (!Schema::hasTable('classes')) {
+
+            Schema::create('classes', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('subject_id')->nullable();
             $table->string('subject_code')->nullable();
@@ -29,6 +31,8 @@ return new class extends Migration
 
             $table->foreign('faculty_id')->references('id')->on('faculty');
         });
+
+        }
     }
 
     public function down(): void

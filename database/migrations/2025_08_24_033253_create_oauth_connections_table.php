@@ -11,7 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('oauth_connections', function (Blueprint $table) {
+        if (!Schema::hasTable('oauth_connections')) {
+
+            Schema::create('oauth_connections', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->string('provider');
@@ -28,6 +30,8 @@ return new class extends Migration
             // Add foreign key constraint to accounts table
             $table->foreign('user_id')->references('id')->on('accounts')->onDelete('cascade');
         });
+
+        }
     }
 
     /**

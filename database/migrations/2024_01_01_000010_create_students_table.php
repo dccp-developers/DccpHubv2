@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('students', function (Blueprint $table) {
+        if (!Schema::hasTable('students')) {
+            Schema::create('students', function (Blueprint $table) {
             $table->id();
             $table->string('first_name', 50);
             $table->string('last_name', 50);
@@ -37,6 +38,7 @@ return new class extends Migration
             $table->foreign('course_id')->references('id')->on('courses');
             $table->foreign('student_contact_id')->references('id')->on('student_contacts');
         });
+        }
     }
 
     public function down(): void

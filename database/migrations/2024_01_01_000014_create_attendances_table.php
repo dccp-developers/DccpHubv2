@@ -8,7 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('attendances', function (Blueprint $table) {
+        if (!Schema::hasTable('attendances')) {
+
+            Schema::create('attendances', function (Blueprint $table) {
             $table->id();
             $table->string('student_id');
             $table->unsignedBigInteger('class_id');
@@ -30,6 +32,8 @@ return new class extends Migration
             $table->index(['student_id', 'date'], 'idx_attendances_student_date');
             $table->index(['date', 'status'], 'idx_attendances_date_status');
         });
+
+        }
     }
 
     public function down(): void

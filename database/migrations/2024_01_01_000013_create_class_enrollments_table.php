@@ -8,7 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('class_enrollments', function (Blueprint $table) {
+        if (!Schema::hasTable('class_enrollments')) {
+
+            Schema::create('class_enrollments', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('class_id');
             $table->string('student_id');
@@ -28,6 +30,8 @@ return new class extends Migration
 
             $table->foreign('class_id')->references('id')->on('classes');
         });
+
+        }
     }
 
     public function down(): void

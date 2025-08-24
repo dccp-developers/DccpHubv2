@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('faculty', function (Blueprint $table) {
+        if (!Schema::hasTable('faculty')) {
+            Schema::create('faculty', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('faculty_id_number', 20)->nullable()->unique();
             $table->string('first_name');
@@ -32,6 +33,7 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

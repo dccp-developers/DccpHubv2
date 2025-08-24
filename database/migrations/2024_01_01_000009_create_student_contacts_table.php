@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up()
     {
-        Schema::create('student_contacts', function (Blueprint $table) {
+        if (!Schema::hasTable('student_contacts')) {
+
+            Schema::create('student_contacts', function (Blueprint $table) {
             $table->id();
             $table->string('emergency_contact_name', 100)->nullable();
             $table->string('emergency_contact_phone', 20)->nullable();
@@ -16,6 +18,8 @@ return new class extends Migration {
             $table->bigInteger('personal_contact')->nullable();
             $table->timestamps();
         });
+
+        }
     }
 
     public function down()

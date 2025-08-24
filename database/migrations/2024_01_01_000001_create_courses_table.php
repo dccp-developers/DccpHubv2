@@ -8,16 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('courses', function (Blueprint $table) {
-            $table->id();
-            $table->string('code', 20);
-            $table->string('title', 60);
-            $table->text('description');
-            $table->string('department', 255);
-            $table->text('remarks')->nullable();
-            $table->integer('lec_per_unit')->nullable();
-            $table->integer('lab_per_unit')->nullable();
-        });
+        if (!Schema::hasTable('courses')) {
+            Schema::create('courses', function (Blueprint $table) {
+                $table->id();
+                $table->string('code', 20);
+                $table->string('title', 60);
+                $table->text('description');
+                $table->string('department', 255);
+                $table->text('remarks')->nullable();
+                $table->integer('lec_per_unit')->nullable();
+                $table->integer('lab_per_unit')->nullable();
+            });
+        }
     }
 
     public function down(): void

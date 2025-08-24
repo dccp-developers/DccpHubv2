@@ -11,11 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pending_enrollments', function (Blueprint $table) {
+        if (!Schema::hasTable('pending_enrollments')) {
+
+            Schema::create('pending_enrollments', function (Blueprint $table) {
             $table->id();
             $table->json('data'); // Store enrollment data as JSON
             $table->timestamps();
         });
+
+        }
     }
 
     /**
