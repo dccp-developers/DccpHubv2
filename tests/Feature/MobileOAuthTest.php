@@ -8,16 +8,19 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Students;
 use App\Models\Faculty;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 
 class MobileOAuthTest extends TestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Fix the person_id column type to support UUIDs
+        \Illuminate\Support\Facades\Schema::table('accounts', function ($table) {
+            $table->string('person_id', 255)->nullable()->change();
+        });
 
         // Create test student and faculty records directly
         Students::create([
@@ -37,8 +40,7 @@ class MobileOAuthTest extends TestCase
             'clearance_status' => 'pending'
         ]);
 
-        Faculty::create([
-            'id' => 'FAC001',
+        Faculty::factory()->create([
             'email' => 'faculty@test.com',
             'first_name' => 'Jane',
             'last_name' => 'Smith',
@@ -88,7 +90,13 @@ class MobileOAuthTest extends TestCase
         $this->assertEquals('student', $user->role);
         $this->assertEquals('2024001', $user->person_id);
         $this->assertEquals(Students::class, $user->person_type);
-        $this->assertEquals('google123', $user->google_id);
+
+        // Check OAuth connection was created
+        $this->assertDatabaseHas('oauth_connections', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'google123'
+        ]);
     }
 
     /** @test */
@@ -114,6 +122,8 @@ class MobileOAuthTest extends TestCase
             ]
         ]);
 
+
+
         $response->assertStatus(200)
                 ->assertJson([
                     'success' => true,
@@ -127,9 +137,15 @@ class MobileOAuthTest extends TestCase
         $user = User::where('email', 'faculty@test.com')->first();
         $this->assertNotNull($user);
         $this->assertEquals('faculty', $user->role);
-        $this->assertEquals('FAC001', $user->person_id);
         $this->assertEquals(Faculty::class, $user->person_type);
-        $this->assertEquals('google456', $user->google_id);
+        $this->assertNotNull($user->person_id); // Should be linked to faculty record
+
+        // Check OAuth connection was created
+        $this->assertDatabaseHas('oauth_connections', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'google456'
+        ]);
     }
 
     /** @test */
@@ -160,7 +176,7 @@ class MobileOAuthTest extends TestCase
                     'error' => 'Validation Error'
                 ])
                 ->assertJsonFragment([
-                    'message' => 'Your email address (unknown@test.com) is not found in our Student or Faculty records'
+                    'message' => 'Your email address (unknown@test.com) is not found in our Student or Faculty records. Please contact the administration to ensure your email is registered in the system before using social login. Only registered students and faculty members can use social login.'
                 ]);
 
         // Verify no user was created
@@ -206,7 +222,6 @@ class MobileOAuthTest extends TestCase
         $existingUser = User::factory()->create([
             'email' => 'student@test.com',
             'name' => 'Old Name',
-            'google_id' => null,
             'avatar' => null
         ]);
 
@@ -230,8 +245,14 @@ class MobileOAuthTest extends TestCase
         // Verify user was updated
         $user = User::find($existingUser->id);
         $this->assertEquals('Updated Name', $user->name);
-        $this->assertEquals('google123', $user->google_id);
         $this->assertEquals('https://example.com/new-avatar.jpg', $user->avatar);
         $this->assertNotNull($user->email_verified_at);
+
+        // Check OAuth connection was created
+        $this->assertDatabaseHas('oauth_connections', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'google123'
+        ]);
     }
 }

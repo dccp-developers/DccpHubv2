@@ -9,7 +9,7 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
 
 test('email verification screen can be rendered', function (): void {
-    $user = User::factory()->withPersonalTeam()->create([
+    $user = User::factory()->create([
         'email_verified_at' => null,
     ]);
 

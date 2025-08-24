@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\User;
 use App\Models\LoginLink;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use App\Notifications\LoginLinkMail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -49,27 +50,33 @@ describe('can create login link', function (): void {
     });
 
     it('validates email exists', function (): void {
+        $initialLinkCount = DB::table('login_links')->count();
+
         $response = post(route('login-link.store'), [
             'email' => 'nonexistent@example.com',
         ]);
 
         $response->assertSessionHasErrors(['email']);
-        assertDatabaseCount('login_links', 0);
+        assertDatabaseCount('login_links', $initialLinkCount);
         Notification::assertNothingSent();
     });
 
     it('requires valid email format', function (): void {
+        $initialLinkCount = DB::table('login_links')->count();
+
         $response = post(route('login-link.store'), [
             'email' => 'invalid-email',
         ]);
 
         $response->assertSessionHasErrors(['email']);
-        assertDatabaseCount('login_links', 0);
+        assertDatabaseCount('login_links', $initialLinkCount);
         Notification::assertNothingSent();
     });
 
     it('rate limits requests', function (): void {
         $user = User::factory()->create(['email' => 'test@example.com']);
+
+        $initialLinkCount = DB::table('login_links')->count();
 
         // First request should succeed
         post(route('login-link.store'), ['email' => $user->email])
@@ -79,7 +86,7 @@ describe('can create login link', function (): void {
         post(route('login-link.store'), ['email' => $user->email])
             ->assertSessionHas('error');
 
-        assertDatabaseCount('login_links', 1);
+        assertDatabaseCount('login_links', $initialLinkCount + 1);
     });
 });
 

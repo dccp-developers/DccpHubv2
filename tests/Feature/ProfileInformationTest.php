@@ -7,10 +7,13 @@ use App\Models\User;
 test('profile information can be updated', function (): void {
     $this->actingAs($user = User::factory()->create());
 
-    $this->put('/user/profile-information', [
+    $response = $this->put('/user/profile-information', [
         'name' => 'Test Name',
         'email' => 'test@example.com',
+        'is_active' => true,
     ]);
+
+    $response->assertSessionHasNoErrors();
 
     expect($user->fresh())
         ->name->toEqual('Test Name')

@@ -2,14 +2,12 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Storage;
 
 class PWATest extends TestCase
 {
-    use RefreshDatabase;
 
     /**
      * Test that the manifest.json file is accessible
@@ -35,7 +33,7 @@ class PWATest extends TestCase
         // Check specific values
         $this->assertEquals('DCCPHub', $manifest['name']);
         $this->assertEquals('DCCPHub', $manifest['short_name']);
-        $this->assertEquals('/', $manifest['start_url']);
+        $this->assertEquals(config('app.url') . '/', $manifest['start_url']);
         $this->assertEquals('standalone', $manifest['display']);
         
         // Check icons array is not empty

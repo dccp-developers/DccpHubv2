@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Students;
+use App\Models\Courses;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,7 +21,7 @@ final class StudentsFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => $this->faker->unique()->numberBetween(2024001, 2024999),
+            'id' => 2024000000 + (int) (microtime(true) * 1000) % 999999 + rand(1, 999),
             'first_name' => $this->faker->firstName(),
             'last_name' => $this->faker->lastName(),
             'middle_name' => $this->faker->firstName(),
@@ -29,7 +30,7 @@ final class StudentsFactory extends Factory
             'age' => $this->faker->numberBetween(18, 25),
             'address' => $this->faker->address(),
             'contacts' => $this->faker->phoneNumber(),
-            'course_id' => 1, // Default course ID
+            'course_id' => Courses::factory(),
             'academic_year' => 2024,
             'email' => $this->faker->unique()->safeEmail(),
             'remarks' => null,
@@ -39,7 +40,7 @@ final class StudentsFactory extends Factory
             'student_education_id' => null,
             'student_personal_id' => null,
             'document_location_id' => null,
-            'student_id' => null,
+            'student_id' => $this->faker->unique()->numberBetween(20240001, 20249999),
             'status' => 'active',
             'clearance_status' => 'pending',
         ];

@@ -6,14 +6,8 @@ namespace App\Providers;
 
 use Illuminate\Http\Request;
 use Laravel\Jetstream\Jetstream;
-use App\Actions\Jetstream\CreateTeam;
-use App\Actions\Jetstream\DeleteTeam;
 use App\Actions\Jetstream\DeleteUser;
 use Illuminate\Support\ServiceProvider;
-use App\Actions\Jetstream\AddTeamMember;
-use App\Actions\Jetstream\UpdateTeamName;
-use App\Actions\Jetstream\InviteTeamMember;
-use App\Actions\Jetstream\RemoveTeamMember;
 use App\Actions\User\ActiveOauthProviderAction;
 
 final class JetstreamServiceProvider extends ServiceProvider
@@ -33,12 +27,7 @@ final class JetstreamServiceProvider extends ServiceProvider
     {
         $this->configurePermissions();
 
-        Jetstream::createTeamsUsing(CreateTeam::class);
-        Jetstream::updateTeamNamesUsing(UpdateTeamName::class);
-        Jetstream::addTeamMembersUsing(AddTeamMember::class);
-        Jetstream::inviteTeamMembersUsing(InviteTeamMember::class);
-        Jetstream::removeTeamMembersUsing(RemoveTeamMember::class);
-        Jetstream::deleteTeamsUsing(DeleteTeam::class);
+        // Teams functionality disabled
         Jetstream::deleteUsersUsing(DeleteUser::class);
 
         Jetstream::inertia()->whenRendering(

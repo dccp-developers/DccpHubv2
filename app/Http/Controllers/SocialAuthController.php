@@ -6,8 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Laravel\Socialite\Two\User as SocialiteUser;
 use App\Services\SocialAuthService;
 use Laravel\Socialite\Facades\Socialite;
+use App\Models\OauthConnection;
+use Illuminate\Validation\ValidationException;
 
 class SocialAuthController extends Controller
 {
@@ -46,6 +49,23 @@ class SocialAuthController extends Controller
             $socialAuthService = new SocialAuthService();
             $user = $socialAuthService->findOrCreateUser($googleUser, $provider);
 
+            // Create or update OAuth connection
+            OauthConnection::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'provider' => $provider,
+                ],
+                [
+                    'provider_id' => $googleUser->getId(),
+                    'data' => [
+                        'name' => $googleUser->getName(),
+                        'email' => $googleUser->getEmail(),
+                        'avatar' => $googleUser->getAvatar(),
+                    ],
+                    'expires_at' => null, // Mobile OAuth doesn't provide expiration
+                ]
+            );
+
             // Log the user in
             Auth::login($user, true);
 
@@ -65,6 +85,9 @@ class SocialAuthController extends Controller
                 'redirect_url' => route('dashboard')
             ]);
 
+        } catch (ValidationException $e) {
+            // Re-throw validation exceptions to let Laravel handle them properly
+            throw $e;
         } catch (\InvalidArgumentException $e) {
             // Handle validation errors (email not found in records)
             Log::warning('Mobile OAuth validation error', [
@@ -175,7 +198,18 @@ class SocialAuthController extends Controller
             ]);
 
             if ($response->successful()) {
-                return $response->json();
+                $userData = $response->json();
+
+                // Create a Socialite User object from the Google API response
+                $socialiteUser = new SocialiteUser();
+                $socialiteUser->map([
+                    'id' => $userData['id'] ?? null,
+                    'name' => $userData['name'] ?? null,
+                    'email' => $userData['email'] ?? null,
+                    'avatar' => $userData['picture'] ?? null,
+                ]);
+
+                return $socialiteUser;
             }
 
             Log::error('Failed to get user from Google API', [

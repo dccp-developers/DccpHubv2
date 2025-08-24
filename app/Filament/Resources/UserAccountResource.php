@@ -681,14 +681,13 @@ class UserAccountResource extends Resource
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ])
-            ->with(['currentTeam', 'ownedTeams', 'teams']);
+            ]);
     }
 
     public static function getGlobalSearchEloquentQuery(): Builder
     {
         return parent::getGlobalSearchEloquentQuery()
-            ->with(['person', 'currentTeam', 'ownedTeams', 'teams']);
+            ->with(['person']);
     }
 
     public static function getGloballySearchableAttributes(): array

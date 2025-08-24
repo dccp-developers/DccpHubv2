@@ -78,6 +78,6 @@ return [
     |
     */
 
-    'profile_photo_disk' => 'r2',
+    'profile_photo_disk' => env('JETSTREAM_PROFILE_PHOTO_DISK', 'r2'),
 
 ];

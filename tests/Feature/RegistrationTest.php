@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 final class RegistrationTest extends TestCase
 {
@@ -27,6 +26,7 @@ final class RegistrationTest extends TestCase
     {
         $response = $this->postJson('/api/check-id', [
             'id' => '12345',
+            'email' => 'test@example.com',
             'userType' => 'student', // or 'instructor'
         ]);
 

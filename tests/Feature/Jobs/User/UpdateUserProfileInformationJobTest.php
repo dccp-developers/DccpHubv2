@@ -102,7 +102,7 @@ test('it updates user profile photo path from socialite avatar', function (): vo
 
     $job->handle();
 
-    assertDatabaseHas('users', [
+    assertDatabaseHas('accounts', [
         'id' => $this->user->id,
         'profile_photo_path' => $this->socialiteUser->getAvatar(),
     ]);
