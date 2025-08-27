@@ -24,13 +24,13 @@ class AttendanceServiceTest extends TestCase
         $this->attendanceService = app(AttendanceService::class);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_instantiate_attendance_service(): void
     {
         $this->assertInstanceOf(AttendanceService::class, $this->attendanceService);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_calculate_attendance_stats_from_empty_collection(): void
     {
         $emptyCollection = collect();
@@ -45,7 +45,7 @@ class AttendanceServiceTest extends TestCase
         $this->assertEquals(0, $stats['attendance_rate']);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_calculate_attendance_stats_from_collection(): void
     {
         // Create a mock collection of attendance records
@@ -66,7 +66,7 @@ class AttendanceServiceTest extends TestCase
         $this->assertEquals(75.0, $stats['attendance_rate']); // (2 present + 1 late) / 4 * 100
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_validates_attendance_status_enum(): void
     {
         $this->assertTrue(AttendanceStatus::PRESENT instanceof AttendanceStatus);
@@ -78,7 +78,7 @@ class AttendanceServiceTest extends TestCase
         $this->assertEquals('late', AttendanceStatus::LATE->value);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_access_attendance_model(): void
     {
         // Test that we can access the Attendance model
@@ -94,7 +94,7 @@ class AttendanceServiceTest extends TestCase
         $this->assertContains('status', $fillable);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_work_with_carbon_dates(): void
     {
         $today = Carbon::today();
@@ -108,7 +108,7 @@ class AttendanceServiceTest extends TestCase
         $this->assertEquals(date('Y-m-d'), $today->format('Y-m-d'));
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_check_database_connection(): void
     {
         // Test database connection by checking if we can query the tables
@@ -132,7 +132,7 @@ class AttendanceServiceTest extends TestCase
         }
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_handle_attendance_status_casting(): void
     {
         // Test that AttendanceStatus enum works correctly
@@ -153,7 +153,7 @@ class AttendanceServiceTest extends TestCase
         }
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_test_model_relationships(): void
     {
         // Test that model classes exist and can be instantiated
@@ -177,7 +177,7 @@ class AttendanceServiceTest extends TestCase
         $this->assertInstanceOf(Attendance::class, $attendance);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_handles_missing_data_gracefully(): void
     {
         // Test that the service handles missing data gracefully
@@ -191,7 +191,7 @@ class AttendanceServiceTest extends TestCase
         $this->assertTrue(true);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_calculate_complex_attendance_stats(): void
     {
         // Test with more complex attendance data

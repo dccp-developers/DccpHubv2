@@ -78,7 +78,7 @@ class AttendanceTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function faculty_can_access_attendance_dashboard(): void
     {
         $response = $this->actingAs($this->facultyUser)
@@ -93,7 +93,7 @@ class AttendanceTest extends TestCase
         );
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function faculty_can_view_class_attendance(): void
     {
         $response = $this->actingAs($this->facultyUser)
@@ -108,7 +108,7 @@ class AttendanceTest extends TestCase
         );
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function faculty_can_mark_attendance(): void
     {
         $attendanceData = [
@@ -136,7 +136,7 @@ class AttendanceTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function faculty_cannot_mark_attendance_for_other_faculty_classes(): void
     {
         // Create another faculty and class
@@ -159,7 +159,7 @@ class AttendanceTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function student_can_access_attendance_dashboard(): void
     {
         $response = $this->actingAs($this->studentUser)
@@ -174,7 +174,7 @@ class AttendanceTest extends TestCase
         );
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function student_can_view_class_attendance_details(): void
     {
         // Create some attendance records
@@ -198,7 +198,7 @@ class AttendanceTest extends TestCase
         );
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function student_cannot_view_other_student_attendance(): void
     {
         // Create another student and class
@@ -215,7 +215,7 @@ class AttendanceTest extends TestCase
         // Should only see their own attendance data
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function attendance_service_calculates_stats_correctly(): void
     {
         $attendanceService = app(AttendanceService::class);
@@ -238,7 +238,7 @@ class AttendanceTest extends TestCase
         $this->assertEquals(75.0, $stats['attendance_rate']); // 3/4 * 100
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function attendance_can_be_marked_with_different_statuses(): void
     {
         $attendanceService = app(AttendanceService::class);
@@ -261,7 +261,7 @@ class AttendanceTest extends TestCase
         }
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function attendance_can_be_updated(): void
     {
         $attendanceService = app(AttendanceService::class);
@@ -291,7 +291,7 @@ class AttendanceTest extends TestCase
         $this->assertEquals('Now present', $updatedAttendance->remarks);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function faculty_attendance_service_provides_dashboard_summary(): void
     {
         $facultyAttendanceService = app(FacultyAttendanceService::class);
@@ -315,7 +315,7 @@ class AttendanceTest extends TestCase
         $this->assertEquals(1, $summary['total_classes']);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function student_attendance_service_provides_dashboard_data(): void
     {
         $studentAttendanceService = app(StudentAttendanceService::class);
@@ -336,7 +336,7 @@ class AttendanceTest extends TestCase
         $this->assertCount(1, $dashboardData['classes']);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function attendance_validation_prevents_invalid_data(): void
     {
         $invalidAttendanceData = [
