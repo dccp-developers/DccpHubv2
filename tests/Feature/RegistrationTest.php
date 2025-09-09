@@ -10,7 +10,7 @@ final class RegistrationTest extends TestCase
 {
     // use RefreshDatabase;
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_checks_email_existence(): void
     {
         $response = $this->postJson('/api/check-email', [
@@ -21,7 +21,7 @@ final class RegistrationTest extends TestCase
         $response->assertStatus(200); // Check for a successful response
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_checks_id_existence(): void
     {
         $response = $this->postJson('/api/check-id', [

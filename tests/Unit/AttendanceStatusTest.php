@@ -9,7 +9,7 @@ use App\Enums\AttendanceStatus;
 
 class AttendanceStatusTest extends TestCase
 {
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_has_correct_status_values(): void
     {
         $this->assertEquals('present', AttendanceStatus::PRESENT->value);
@@ -19,7 +19,7 @@ class AttendanceStatusTest extends TestCase
         $this->assertEquals('partial', AttendanceStatus::PARTIAL->value);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_provides_correct_labels(): void
     {
         $this->assertEquals('Present', AttendanceStatus::PRESENT->label());
@@ -29,7 +29,7 @@ class AttendanceStatusTest extends TestCase
         $this->assertEquals('Partial', AttendanceStatus::PARTIAL->label());
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_provides_correct_colors(): void
     {
         $this->assertEquals('success', AttendanceStatus::PRESENT->color());
@@ -39,7 +39,7 @@ class AttendanceStatusTest extends TestCase
         $this->assertEquals('info', AttendanceStatus::PARTIAL->color());
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_provides_correct_icons(): void
     {
         $this->assertEquals('check-circle', AttendanceStatus::PRESENT->icon());
@@ -49,7 +49,7 @@ class AttendanceStatusTest extends TestCase
         $this->assertEquals('minus-circle', AttendanceStatus::PARTIAL->icon());
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_correctly_identifies_present_statuses(): void
     {
         $this->assertTrue(AttendanceStatus::PRESENT->isPresent());
@@ -60,7 +60,7 @@ class AttendanceStatusTest extends TestCase
         $this->assertFalse(AttendanceStatus::EXCUSED->isPresent());
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_correctly_identifies_absent_statuses(): void
     {
         $this->assertTrue(AttendanceStatus::ABSENT->isAbsent());
@@ -71,7 +71,7 @@ class AttendanceStatusTest extends TestCase
         $this->assertFalse(AttendanceStatus::EXCUSED->isAbsent());
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_provides_all_status_options(): void
     {
         $options = AttendanceStatus::options();
@@ -87,7 +87,7 @@ class AttendanceStatusTest extends TestCase
         }
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_provides_present_statuses_list(): void
     {
         $presentStatuses = AttendanceStatus::presentStatuses();
@@ -99,7 +99,7 @@ class AttendanceStatusTest extends TestCase
         $this->assertContains(AttendanceStatus::PARTIAL, $presentStatuses);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_provides_absent_statuses_list(): void
     {
         $absentStatuses = AttendanceStatus::absentStatuses();
@@ -109,7 +109,7 @@ class AttendanceStatusTest extends TestCase
         $this->assertContains(AttendanceStatus::ABSENT, $absentStatuses);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_be_created_from_string(): void
     {
         $this->assertEquals(AttendanceStatus::PRESENT, AttendanceStatus::from('present'));
@@ -119,21 +119,21 @@ class AttendanceStatusTest extends TestCase
         $this->assertEquals(AttendanceStatus::PARTIAL, AttendanceStatus::from('partial'));
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_throws_exception_for_invalid_status(): void
     {
         $this->expectException(\ValueError::class);
         AttendanceStatus::from('invalid_status');
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_can_try_from_string_safely(): void
     {
         $this->assertEquals(AttendanceStatus::PRESENT, AttendanceStatus::tryFrom('present'));
         $this->assertNull(AttendanceStatus::tryFrom('invalid_status'));
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function all_cases_are_covered(): void
     {
         $cases = AttendanceStatus::cases();

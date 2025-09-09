@@ -52,7 +52,7 @@ class MobileOAuthTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_handles_mobile_oauth_callback_for_student()
     {
         // Mock Google API response
@@ -99,7 +99,7 @@ class MobileOAuthTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_handles_mobile_oauth_callback_for_faculty()
     {
         // Mock Google API response
@@ -148,7 +148,7 @@ class MobileOAuthTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_rejects_mobile_oauth_callback_for_unregistered_email()
     {
         // Mock Google API response
@@ -184,7 +184,7 @@ class MobileOAuthTest extends TestCase
         $this->assertNull($user);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_validates_required_fields_for_mobile_oauth_callback()
     {
         $response = $this->postJson('/auth/google/callback/mobile', [
@@ -196,7 +196,7 @@ class MobileOAuthTest extends TestCase
                 ->assertJsonValidationErrors(['access_token']);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_handles_google_api_failure_gracefully()
     {
         // Mock Google API failure
@@ -215,7 +215,7 @@ class MobileOAuthTest extends TestCase
                 ]);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_updates_existing_user_on_mobile_oauth_callback()
     {
         // Create existing user

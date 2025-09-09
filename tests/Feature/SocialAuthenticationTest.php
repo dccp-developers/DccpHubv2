@@ -53,7 +53,7 @@ class SocialAuthenticationTest extends TestCase
         $this->facultyEmail = $facultyEmail;
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_creates_student_user_from_social_login_when_email_exists_in_student_records()
     {
         $socialAuthService = new SocialAuthService();
@@ -74,7 +74,7 @@ class SocialAuthenticationTest extends TestCase
         $this->assertNotNull($user->email_verified_at);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_creates_faculty_user_from_social_login_when_email_exists_in_faculty_records()
     {
         $socialAuthService = new SocialAuthService();
@@ -95,7 +95,7 @@ class SocialAuthenticationTest extends TestCase
         $this->assertNotNull($user->email_verified_at);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_throws_exception_when_email_not_found_in_student_or_faculty_records()
     {
         $socialAuthService = new SocialAuthService();
@@ -112,7 +112,7 @@ class SocialAuthenticationTest extends TestCase
         $socialAuthService->findOrCreateUser($socialiteUser, 'google');
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_updates_existing_user_from_social_login()
     {
         // Create existing user
@@ -139,7 +139,7 @@ class SocialAuthenticationTest extends TestCase
         $this->assertNotNull($user->email_verified_at);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_validates_email_exists_in_records()
     {
         $socialAuthService = new SocialAuthService();
@@ -149,7 +149,7 @@ class SocialAuthenticationTest extends TestCase
         $this->assertFalse($socialAuthService->validateEmailInRecords('unknown@test.com'));
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function it_gets_person_data_by_email()
     {
         $socialAuthService = new SocialAuthService();

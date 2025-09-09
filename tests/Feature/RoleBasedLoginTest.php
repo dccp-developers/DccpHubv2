@@ -68,7 +68,7 @@ class RoleBasedLoginTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function faculty_can_login_and_access_faculty_dashboard()
     {
         // Test login
@@ -87,7 +87,7 @@ class RoleBasedLoginTest extends TestCase
         $response->assertOk();
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function college_student_can_login_and_access_student_dashboard()
     {
         // Test login
@@ -111,14 +111,14 @@ class RoleBasedLoginTest extends TestCase
         $this->assertEquals('student', $this->studentUser->role);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function shs_student_functionality_is_not_yet_implemented()
     {
         // This test documents that SHS student functionality is not yet fully implemented
         $this->markTestSkipped('SHS Students functionality is not yet fully implemented in the system');
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function admin_can_login_and_access_admin_features()
     {
         // Test login
@@ -142,7 +142,7 @@ class RoleBasedLoginTest extends TestCase
         $this->assertNull($this->adminUser->person_type);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function users_are_redirected_based_on_their_roles()
     {
         // Faculty should be redirected to faculty dashboard
@@ -161,7 +161,7 @@ class RoleBasedLoginTest extends TestCase
         $response->assertOk();
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function faculty_cannot_access_student_only_routes()
     {
         $response = $this->actingAs($this->facultyUser)
@@ -170,7 +170,7 @@ class RoleBasedLoginTest extends TestCase
         $response->assertForbidden();
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function students_cannot_access_faculty_only_routes()
     {
         $response = $this->actingAs($this->studentUser)
@@ -179,7 +179,7 @@ class RoleBasedLoginTest extends TestCase
         $response->assertForbidden();
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function person_relationships_work_correctly_with_different_id_types()
     {
         // Faculty with UUID
@@ -197,7 +197,7 @@ class RoleBasedLoginTest extends TestCase
         $this->assertEquals($this->student->id, $student->id);
     }
 
-    /** @test */
+    #[\PHPUnit\Framework\Attributes\Test]
     public function user_helper_methods_work_correctly()
     {
         // Test faculty user helper methods
