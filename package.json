@@ -39,7 +39,7 @@
     "@vitejs/plugin-vue": "^5.2.4",
     "@vueuse/core": "^12.8.2",
     "@vueuse/integrations": "^12.8.2",
-    "axios": "^1.11.0",
+    "axios": "^1.12.1",
     "caniuse-lite": "^1.0.30001741",
     "change-case": "^5.4.4",
     "chokidar": "^4.0.3",
